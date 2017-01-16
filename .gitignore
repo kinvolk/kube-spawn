@@ -22,3 +22,20 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+*.lck
+
+# vendor
+/vendor
+
+# binaries
+/cni-noop
+/cnispawn
+/kubeadm-systemd
+
+# ssh keys
+/id_rsa*
+
+# containers
+/kubeadm-systemd-*
+/rootfs.tar.xz
