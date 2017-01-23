@@ -3,9 +3,9 @@
 ## Introduction
 
 __kubeadm-systemd__ is a tool for creating a multi-node Kubernetes cluster
-on the single machine, created mostly for developers __of__ Kubernetes.
+on a single machine, created mostly for developers __of__ Kubernetes.
 
-It aims to be as similar to the solutions recommendend for the production
+It aims to be as similar to the solutions recommendend for production
 clusters as possible.
 
 ## Architecture
@@ -23,10 +23,10 @@ laptops - networkd doesn't provide necessary features for desktop systems
 where Network Manager is usually used. That's why we are using CNI as a
 tool for providing networking for nspawn.
 
-The integration between CNI and systemd-nspawn is made by our binary
+The integration between CNI and systemd-nspawn is made by a binary
 called __cnispawn__ which creates a network namespace, executes a CNI
 plugin on that, and then runs systemd-nspawn inside that namespace.
-By default, systemd-nspawn doesn't create its own network namepsaces,
+By default, systemd-nspawn doesn't create its own network namespaces,
 so the container is succesfully running inside the namespace we
 created.
 
@@ -40,16 +40,16 @@ of Kubernetes, however, we see some issues in them.
   are using for setting up k8s clusters. That brings a very huge
   risk that a developer _of_ k8s may be unable to reproduce some
   bugs or issues which happen in clusters used in production.
-* [kubernetes-dind-cluster](https://github.com/sttts/kubernetes-dind-cluster)
-  - it works great and does a great job in bringing multi-node clusters
+* [kubernetes-dind-cluster](https://github.com/sttts/kubernetes-dind-cluster) -
+  it works great and does a great job in bringing multi-node clusters
   for developers. But still, it uses its own way of creating the
   cluster. And also, in our opinion, Docker isn't very good tool
   for simulating the nodes, since it's an application container
   engine, not an operaring system container engine (like
   systemd-nspawn).
-* [kubeadm-dind-cluster](https://github.com/Mirantis/kubeadm-dind-cluster)
-  - it does a great job with using kubeadm, but still, it uses Docker
+* [kubeadm-dind-cluster](https://github.com/Mirantis/kubeadm-dind-cluster) -
+  it does a great job with using kubeadm, but still, it uses Docker
   instead of any other container engine which is designed for
   containerizing the whole OS, not an application. Also, we prefer
-  to maintain a code for doing such complicated things, instead of
+  to maintain code for doing such complicated things, instead of
   huge shell scripts.
