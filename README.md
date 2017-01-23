@@ -30,11 +30,6 @@ By default, systemd-nspawn doesn't create its own network namepsaces,
 so the container is succesfully running inside the namespace we
 created.
 
-### Ansible
-
-Ansible is used for running kubeadm among multiple nodes and coordinating
-this process.
-
 ## Motivation
 
 There are many other ways for setting up the development environment
