@@ -1,8 +1,8 @@
-# kubeadm-systemd
+# kubeadm-nspawn
 
 ## Introduction
 
-__kubeadm-systemd__ is a tool for creating a multi-node Kubernetes cluster
+__kubeadm-nspawn__ is a tool for creating a multi-node Kubernetes cluster
 on a single machine, created mostly for developers __of__ Kubernetes.
 
 It aims to be as similar to the solutions recommendend for production
@@ -12,7 +12,7 @@ clusters as possible.
 
 ![Architecture Diagram](architecture.png?raw=true "Architecture")
 
-kubeadm-systemd uses the following third-party components to
+kubeadm-nspawn uses the following third-party components to
 achieve its goal:
 
 ### CNI
