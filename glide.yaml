@@ -1,0 +1,6 @@
+package: github.com/kinvolk/kubeadm-systemd
+import:
+- package: github.com/mholt/archiver
+- package: golang.org/x/crypto
+  subpackages:
+  - ssh
