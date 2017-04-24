@@ -20,7 +20,7 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/kinvolk/kubeadm-systemd/pkg/cnispawn"
+	"github.com/kinvolk/kubeadm-nspawn/pkg/cnispawn"
 )
 
 func main() {

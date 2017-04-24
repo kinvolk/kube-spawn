@@ -27,7 +27,7 @@ import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 )
 
-func RunContainer(name string) (string, error) {
+func RunNode(name string) error {
 	args := []string{
 		"cnispawn",
 		"-path",
@@ -43,31 +43,31 @@ func RunContainer(name string) (string, error) {
 
 	stdout, err := c.StdoutPipe()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if err := c.Start(); err != nil {
-		return "", err
+		return err
 	}
 
 	cniDataJson, err := ioutil.ReadAll(bufio.NewReader(stdout))
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	var cniData cnitypes.Result
 	if err := json.Unmarshal(cniDataJson, &cniData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := c.Wait(); err != nil {
 		var cniError cnitypes.Error
 		if err := json.Unmarshal(cniDataJson, &cniError); err == nil {
-			return "", &cniError
+			return &cniError
 		}
-		return "", err
+		return err
 	}
 
-	log.Printf("Container %s running\n", name)
-	return cniData.IP4.IP.IP.String(), nil
+	log.Printf("Node %s running (%s)\n", name, cniData.IP4.IP.IP.String())
+	return nil
 }

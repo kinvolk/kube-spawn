@@ -36,7 +36,7 @@ var (
 	systemdUnitDest   string = path.Join("usr", "lib", "systemd", "system")
 )
 
-func installFile(containerName, filePath, dest string) error {
+func InstallFile(containerName, filePath, dest string) error {
 	installPath, err := exec.LookPath("install")
 	if err != nil {
 		return err
@@ -68,12 +68,7 @@ func installFile(containerName, filePath, dest string) error {
 
 func installBinary(containerName, binaryPath string) error {
 	fullPath := path.Join(binariesDir, binaryPath)
-	return installFile(containerName, fullPath, binariesDest)
-}
-
-func installSystemdUnit(containerName, systemdUnitPath string) error {
-	fullPath := path.Join(systemdUnitDir, systemdUnitPath)
-	return installFile(containerName, fullPath, systemdUnitDest)
+	return InstallFile(containerName, fullPath, binariesDest)
 }
 
 func installBinaries(containerName string) error {
@@ -94,7 +89,7 @@ func installBinaries(containerName string) error {
 func installCniBinary(containerName, binaryPath string) error {
 	fullPath := path.Join(cniDir, binaryPath)
 	fullDest := path.Join(cniDest, binaryPath)
-	return installFile(containerName, fullPath, fullDest)
+	return InstallFile(containerName, fullPath, fullDest)
 }
 
 func installCniBinaries(containerName string) error {
@@ -113,7 +108,12 @@ func installCniBinaries(containerName string) error {
 }
 
 func installKubeletConfig(containerName string) error {
-	return installFile(containerName, kubeletConfigPath, kubeletConfigDest)
+	return InstallFile(containerName, kubeletConfigPath, kubeletConfigDest)
+}
+
+func installSystemdUnit(containerName, systemdUnitPath string) error {
+	fullPath := path.Join(systemdUnitDir, systemdUnitPath)
+	return InstallFile(containerName, fullPath, systemdUnitDest)
 }
 
 func installSystemdUnits(containerName string) error {

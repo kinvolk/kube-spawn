@@ -20,7 +20,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/kinvolk/kubeadm-systemd/pkg/cnispawn"
+	"github.com/kinvolk/kubeadm-nspawn/pkg/cnispawn"
 )
 
 var (

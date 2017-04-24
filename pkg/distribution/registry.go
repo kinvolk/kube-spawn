@@ -128,7 +128,7 @@ func PushImage() error {
 		if progress, ok := jsonLine["progress"]; ok {
 			fmt.Println(progress)
 		}
-		// fmt.Println(string(line[:]))
+		fmt.Println(string(line[:]))
 	}
 
 	return nil

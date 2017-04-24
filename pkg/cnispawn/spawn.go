@@ -45,13 +45,11 @@ func RunContainer(path string, background bool) error {
 		}
 	}
 
-	// TODO(nhlfr): Don't hardcode kubeadm-systemd specific options,
+	// TODO(nhlfr): Don't hardcode kubeadm-nspawn specific options,
 	// expose all the options of systemd-nspawn instead.
 	args := []string{
 		systemdNspawnPath,
 		"--capability=cap_audit_control,cap_audit_read,cap_audit_write,cap_audit_control,cap_block_suspend,cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_ipc_lock,cap_ipc_owner,cap_kill,cap_lease,cap_linux_immutable,cap_mac_admin,cap_mac_override,cap_mknod,cap_net_admin,cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_setgid,cap_setfcap,cap_setpcap,cap_setuid,cap_sys_admin,cap_sys_boot,cap_sys_chroot,cap_sys_module,cap_sys_nice,cap_sys_pacct,cap_sys_ptrace,cap_sys_rawio,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_syslog,cap_wake_alarm",
-		// "--bind=/proc/sys/net/bridge",
-		// "--capability=cap_audit_write,cap_audit_control,cap_sys_admin,cap_sys_chroot,cap_net_admin,cap_setfcap,cap_syslog",
 		"--bind=/sys/fs/cgroup",
 		"--bind-ro=/boot",
 		"--bind-ro=/lib/modules",
@@ -60,8 +58,9 @@ func RunContainer(path string, background bool) error {
 	}
 
 	env := os.Environ()
-	// env = append(env, "SYSTEMD_NSPAWN_MOUNT_RW=true")
-	env = append(env, "SYSTEMD_NSPAWN_API_VFS_WRITABLE=true")
+	env = append(env, "SYSTEMD_NSPAWN_MOUNT_RW=1")
+	env = append(env, "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1")
+	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=0")
 
 	if background {
 		_, err := syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
