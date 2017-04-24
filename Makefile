@@ -1,15 +1,28 @@
-all: install-vendor
+all: vendor
 	go build -o cni-noop ./cmd/cni-noop
 	go build -o cnispawn ./cmd/cnispawn
-	go build -o kubeadm-systemd ./cmd/kubeadm-systemd
+	go build -o kubeadm-nspawn ./cmd/kubeadm-nspawn
 
-check-glide-installation:
+glide:
 	@which glide || go get -u github.com/Masterminds/glide
 
-install-vendor: check-glide-installation
-	glide install --strip-vendor
-
-update-vendor: check-glide-installation
+glide.lock: glide.yaml | glide
 	glide update --strip-vendor
 
-.PHONY: check-glide-installation install-vendor update-vendor all
+vendor: glide.lock | glide
+	glide install --strip-vendor
+
+.PHONY: glide vendor all
+
+clean:
+	rm -rf ./{kubeadm-nspawn,cni-noop,cnispawn}
+
+clean-rootfs:
+	sudo rm -rf kubeadm-nspawn-*
+
+clean-cni:
+	sudo rm -rf /var/lib/cni/networks/mynet/*
+	sudo iptables-restore < ~/iptables
+
+clean-image:
+	rm -rf rootfs.tar.xz

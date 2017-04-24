@@ -17,71 +17,26 @@ limitations under the License.
 package bootstrap
 
 import (
-	"io"
 	"log"
 	"os"
-	"os/exec"
-	"path"
-	"syscall"
 
-	"github.com/kinvolk/kubeadm-systemd/pkg/ssh"
+	"github.com/kinvolk/kubeadm-nspawn/pkg/ssh"
 )
 
-var (
-	scripts []string = []string{"bootstrap.sh", "init.sh", "weave-daemonset.yaml"}
-)
-
-func copyScript(src, dest string) error {
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func prepareScript(containerName, scriptName string) error {
-	src := path.Join("scripts", scriptName)
-	dest := path.Join(containerName, "root", scriptName)
-
-	if err := copyScript(src, dest); err != nil {
-		return err
-	}
-
-	return os.Chmod(dest, 0755)
-}
-
-func prepareScripts(containerName string) error {
-	for _, script := range scripts {
-		if err := prepareScript(containerName, script); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func ContainerRootfsExists(name string) (bool, error) {
+func NodeRootfsExists(name string) (bool, error) {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
 		}
 		return false, err
 	}
+	log.Printf("Rootfs for node '%s' exists\n", name)
 	return true, nil
 }
 
-func BootstrapContainer(name string) error {
+func BootstrapNode(name string) error {
+	log.Println("Bootstrapping", name)
+
 	if err := installBinaries(name); err != nil {
 		return err
 	}
@@ -95,38 +50,10 @@ func BootstrapContainer(name string) error {
 		return err
 	}
 
-	if err := prepareScripts(name); err != nil {
-		return err
-	}
-
-	systemdNspawn, err := exec.LookPath("systemd-nspawn")
-	if err != nil {
-		return err
-	}
-
-	nspawnBootstrapArgs := []string{systemdNspawn, "-D", name, "/root/bootstrap.sh"}
-
-	pid, err := syscall.ForkExec(systemdNspawn, nspawnBootstrapArgs, &syscall.ProcAttr{
-		Dir:   "",
-		Env:   os.Environ(),
-		Files: []uintptr{uintptr(syscall.Stdin), uintptr(syscall.Stdout), uintptr(syscall.Stderr)},
-		Sys:   &syscall.SysProcAttr{},
-	})
-	if err != nil {
-		return err
-	}
-
-	var status syscall.WaitStatus
-	var rusage syscall.Rusage
-	if _, err := syscall.Wait4(pid, &status, 0, &rusage); err != nil {
-		return err
-	}
-
 	if err := ssh.PrepareAuthorizedKeys(name); err != nil {
 		return err
 	}
 
-	log.Println("Bootstraped container")
-
+	log.Println("Bootstrapped node")
 	return nil
 }

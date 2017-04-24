@@ -40,7 +40,7 @@ it's very risky!
 
 ### Get needed Kubernetes repositories
 
-kubeadm-systemd needs the following repos to exist in your GOPATH:
+kubeadm-nspawn needs the following repos to exist in your GOPATH:
 
 * [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
 * [kubernetes/release](https://github.com/kubernetes/release)
@@ -64,13 +64,12 @@ git remote add upstream git@github.com:kubernetes/release.git
 
 ### Build Kubernetes
 
-kubeadm-systemd needs the built Kubernetes binaries and hyperkube
+kubeadm-nspawn needs the built Kubernetes binaries and hyperkube
 Docker image. You need to build them like that:
 
 ```
 cd $GOPATH/src/k8s.io/kubernetes
 build/run.sh make
-build/copy-output.sh
 cd cluster/images/hyperkube
 make VERSION=latest
 ```
@@ -89,10 +88,10 @@ Then you can build CNI by doing:
 
 ```
 cd cni
-./build.sh
+./build
 ```
 
-And then configure CNI networks needed by kubeadm-systemd:
+And then configure CNI networks needed by kubeadm-nspawn:
 
 ```
 mkdir -p /etc/cni/net.d
@@ -121,109 +120,56 @@ cat >/etc/cni/net.d/99-loopback.conf <<EOF
 EOF
 ```
 
-### Build and run kubeadm-systemd
+## Requirements
 
+### on the host
+
+  * systemd-nspawn with:
+    * `SYSTEMD_NSPAWN_USE_CGNS` https://github.com/systemd/systemd/pull/3809
+    * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
+
+### inside the nspawn container:
+
+  * Docker <= 1.10.3 (or host `systemd-nspawn` that has https://github.com/systemd/systemd/issues/5163 fixed)
+
+## Build and run kubeadm-nspawn
+
+Make sure you have `mkosi` available in you PATH.
 In the directory where you cloned this repository, please do:
 
 ```
 make
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> ./kubeadm-systemd --nodes <number_of_nodes>
+sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> ./kubeadm-nspawn up --nodes <number_of_nodes>
+sudo ./kubeadm-nspawn init
+sudo ./kubeadm-nspawn down
 ```
 
-Sometimes when you Docker doesn't use the newest existing API, you may see
+Alternatively to avoid using `mkosi`:
+```
+sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> IMAGE_URL=<url_to_rootfs_image> ./kubeadm-nspawn up --nodes <number_of_nodes> --image-method=download
+```
+
+Sometimes when Docker doesn't use the newest existing API, you may see
 the following error:
 
 ```
 2017/01/26 16:41:38 Error when pushing image: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
 ```
 
-Then wou will need to include your Docker API version in DOCKER_API_VERSION
+Then you will need to include your Docker API version in DOCKER_API_VERSION
 environment variable:
 
 ```
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> DOCKER_API_VERSION=1.24 ./kubeadm-systemd --nodes <number_of_nodes>
+sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> DOCKER_API_VERSION=1.24 ./kubeadm-nspawn up --nodes <number_of_nodes>
 ```
 
-The process of setting up the containers and running kubeadm
-in them will be very long! But finally, the last lines of the
-output should look like:
+## What works - what doesn't work
 
-```
-2017/01/26 16:13:13 Initializing master
-[kubeadm] WARNING: kubeadm is in alpha, please do not use it for production clusters.
-[init] Using Kubernetes version: v1.6.0-alpha.0
-[init] Using Authorization mode: AlwaysAllow
-[init] A token has not been provided, generating one
-[preflight] Skipping pre-flight checks
-[preflight] Starting the kubelet service
-[certificates] Generated CA certificate and key.
-[certificates] Generated API server certificate and key.
-[certificates] Generated API server kubelet client certificate and key.
-[certificates] Valid certificates and keys now exist in "/etc/kubernetes/pki"
-[kubeconfig] Wrote KubeConfig file to disk: "/etc/kubernetes/admin.conf"
-[kubeconfig] Wrote KubeConfig file to disk: "/etc/kubernetes/kubelet.conf"
-[apiclient] Created API client, waiting for the control plane to become ready
-[apiclient] All control plane components are healthy after 57.825192 seconds
-[apiclient] Waiting for at least one node to register and become ready
-[apiclient] First node is ready after 0.507054 seconds
-[apiclient] Creating a test deployment
-[apiclient] Test deployment succeeded
-[token-discovery] Using token: a85f41:7a45e1cac2e6b9a3
-[token-discovery] Created the kube-discovery deployment, waiting for it to become ready
-[token-discovery] kube-discovery is ready after 30.005429 seconds
-[addons] Created essential addon: kube-proxy
-[addons] Created essential addon: kube-dns
-
-Your Kubernetes master has initialized successfully!
-
-You should now deploy a pod network to the cluster.
-Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
-    http://kubernetes.io/docs/admin/addons/
-
-You can now join any number of machines by running the following on each node:
-
-kubeadm join --discovery token://a85f41:7a45e1cac2e6b9a3@10.22.0.206:9898
-2017/01/26 16:14:49 Joining node
-[kubeadm] WARNING: kubeadm is in alpha, please do not use it for production clusters.
-[preflight] Skipping pre-flight checks
-[preflight] Starting the kubelet service
-[discovery] Created cluster info discovery client, requesting info from "http://10.22.0.206:9898/cluster-info/v1/?token-id=a85f41"
-[discovery] Cluster info object received, verifying signature using given token
-[discovery] Cluster info signature and contents are valid, will use API endpoints [https://10.22.0.206:6443]
-[bootstrap] Trying to connect to endpoint https://10.22.0.206:6443
-[bootstrap] Detected server version: v1.2.0-alpha.7.18692+28c439dcfb0383-dirty
-[bootstrap] Successfully established connection with endpoint "https://10.22.0.206:6443"
-[csr] Created API client to obtain unique certificate for this node, generating keys and certificate signing request
-[csr] Received signed certificate from the API server[csr] Generating kubelet configuration
-[kubeconfig] Wrote KubeConfig file to disk: "/etc/kubernetes/kubelet.conf"
-
-Node join complete:
-* Certificate signing request sent to master and response
-  received.
-* Kubelet informed of new secure connection details.
-
-Run 'kubectl get nodes' on the master to see this machine join.
-2017/01/26 16:14:54 Joining node
-[kubeadm] WARNING: kubeadm is in alpha, please do not use it for production clusters.
-[preflight] Skipping pre-flight checks
-[preflight] Starting the kubelet service
-[discovery] Created cluster info discovery client, requesting info from "http://10.22.0.206:9898/cluster-info/v1/?token-id=a85f41"
-[discovery] Cluster info object received, verifying signature using given token
-[discovery] Cluster info signature and contents are valid, will use API endpoints [https://10.22.0.206:6443]
-[bootstrap] Trying to connect to endpoint https://10.22.0.206:6443
-[bootstrap] Detected server version: v1.2.0-alpha.7.18692+28c439dcfb0383-dirty
-[bootstrap] Successfully established connection with endpoint "https://10.22.0.206:6443"
-[csr] Created API client to obtain unique certificate for this node, generating keys and certificate signing request
-[csr] Received signed certificate from the API server[csr] Generating kubelet configuration
-[kubeconfig] Wrote KubeConfig file to disk: "/etc/kubernetes/kubelet.conf"
-
-Node join complete:
-* Certificate signing request sent to master and response
-  received.
-* Kubelet informed of new secure connection details.
-
-Run 'kubectl get nodes' on the master to see this machine join.
-```
+- [x] bringing up/down multiple nspawn containers
+- [x] bootstrapping nodes
+- [x] initialize node-0 as master with `kubeadm`
+- [x] join nodes to form a cluster
+- [ ] create deployments
 
 ## Architecture
 

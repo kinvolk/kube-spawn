@@ -1,4 +1,4 @@
-package: github.com/kinvolk/kubeadm-systemd
+package: github.com/kinvolk/kubeadm-nspawn
 import:
 - package: github.com/mholt/archiver
 - package: golang.org/x/crypto
