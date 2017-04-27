@@ -4,8 +4,6 @@ set -e
 
 echo "kubernetes" | passwd --stdin root
 
-chmod +x /root/init.sh
-
 cat >>/etc/sysconfig/docker <<-EOF
 INSECURE_REGISTRY='--insecure-registry=10.22.0.1:5000'
 EOF
