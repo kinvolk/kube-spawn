@@ -102,7 +102,6 @@ func createImageMkosi() error {
 		"--format", "tar",
 		"--output", path.Join(osImage),
 		"--cache", "mkosi.cache",
-		"--extra-tree", path.Join("scripts", "node"),
 		"--postinst-script", path.Join("scripts", "bootstrap.sh"),
 	}
 	for _, p := range packageList {
@@ -169,8 +168,6 @@ func bootstrapCentosImage() error {
 
 	log.Println("Installing scripts")
 	bootstrap.InstallFile("tmp", path.Join("scripts", "bootstrap.sh"), path.Join("root", "bootstrap.sh"))
-	bootstrap.InstallFile("tmp", path.Join("scripts", "node", "root", "init.sh"), path.Join("root", "init.sh"))
-	bootstrap.InstallFile("tmp", path.Join("scripts", "node", "root", "weave-daemonset.yaml"), path.Join("root", "weave-daemonset.yaml"))
 
 	log.Println("Running bootstrap script")
 	script := exec.Command("systemd-nspawn", "-D", "tmp", "/root/bootstrap.sh")

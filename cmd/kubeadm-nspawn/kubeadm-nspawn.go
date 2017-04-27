@@ -28,7 +28,6 @@ import (
 	"github.com/kinvolk/kubeadm-nspawn/pkg/distribution"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/nspawntool"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/ssh"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/utils"
 )
 
 const (
@@ -114,27 +113,14 @@ func runInit(cmd *cobra.Command, args []string) {
 		log.Fatal("Error listing running nodes: ", err)
 	}
 
-	if err := ssh.InitializeMaster(nodes[0].IP.String()); err != nil {
-		if err := nspawntool.Cleanup(len(nodes)); err != nil {
-			log.Fatal("Error when cleaning up: ", err)
-		}
-		log.Fatal("Error when initializing master: ", err)
-	}
-
-	token, err := utils.GetToken("kubeadm-nspawn-0")
+	token, err := ssh.InitializeMaster(nodes[0].IP.String())
 	if err != nil {
-		if err := nspawntool.Cleanup(len(nodes)); err != nil {
-			log.Fatal("Error when cleaning up: ", err)
-		}
-		log.Fatal("Error when getting token: ", err)
+		log.Fatal("Error when initializing master: ", err)
 	}
 
 	for i, node := range nodes {
 		if i != 0 {
-			if err := ssh.JoinNode(node.IP.String(), token, nodes[0].IP.String()); err != nil {
-				if err := nspawntool.Cleanup(len(nodes)); err != nil {
-					log.Fatal("Error when cleaning up: ", err)
-				}
+			if err := ssh.JoinNode(node.IP.String(), nodes[0].IP.String(), token); err != nil {
 				log.Fatal("Error when joining node: ", err)
 			}
 		}
@@ -178,8 +164,6 @@ func newListCommand() *cobra.Command {
 }
 
 func runDown(cmf *cobra.Command, args []string) {
-	log.Println("! For now this runs the cleanup code !")
-
 	nodes, err := nspawntool.RunningNodes()
 	if err != nil {
 		log.Fatal("Error listing running nodes: ", err)
