@@ -5,7 +5,7 @@
 __kubeadm-nspawn__ is a tool for creating a multi-node Kubernetes cluster
 on a single machine, created mostly for developers __of__ Kubernetes.
 
-It aims to be as similar to the solutions recommendend for production
+It aims to be as similar to the solutions recommended for production
 clusters as possible.
 
 ## Getting started
@@ -16,7 +16,7 @@ Unfortunately, there is [one pending feature](https://github.com/systemd/systemd
 of systemd-nspawn which is merged in master, but not released yet.
 You will need to build your own systemd-nspawn binary.
 
-We higly recommend using CoreOS' fork which backported that feature
+We highly recommend using CoreOS' fork which backported that feature
 to the 231 version of systemd (which is the one that Fedora and
 the other popular distributions are using in its stable releases).
 
@@ -31,7 +31,7 @@ git checkout v231
 make
 ```
 
-You **shoudn't** do `make install` after that! Using the custom
+You **shouldn't** do `make install` after that! Using the custom
 systemd-nspawn binary with the other components of systemd being
 in another version is totally fine.
 
@@ -169,7 +169,7 @@ sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> DOCKER_API_
 - [x] bootstrapping nodes
 - [x] initialize node-0 as master with `kubeadm`
 - [x] join nodes to form a cluster
-- [ ] create deployments
+- [x] create deployments ([issue #14](https://github.com/kinvolk/kubeadm-nspawn/issues/14))
 
 ## Architecture
 
@@ -190,7 +190,7 @@ The integration between CNI and systemd-nspawn is made by a binary
 called __cnispawn__ which creates a network namespace, executes a CNI
 plugin on that, and then runs systemd-nspawn inside that namespace.
 By default, systemd-nspawn doesn't create its own network namespaces,
-so the container is succesfully running inside the namespace we
+so the container is successfully running inside the namespace we
 created.
 
 ## Motivation
@@ -208,7 +208,7 @@ of Kubernetes, however, we see some issues in them.
   for developers. But still, it uses its own way of creating the
   cluster. And also, in our opinion, Docker isn't very good tool
   for simulating the nodes, since it's an application container
-  engine, not an operaring system container engine (like
+  engine, not an operating system container engine (like
   systemd-nspawn).
 * [kubeadm-dind-cluster](https://github.com/Mirantis/kubeadm-dind-cluster) -
   it does a great job with using kubeadm, but still, it uses Docker
