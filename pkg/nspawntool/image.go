@@ -43,7 +43,7 @@ var (
 		"bind-utils",
 		"ebtables",
 		"ethtool",
-		"docker-1.10.3",
+		"docker",
 		"dnf",
 		"findutils",
 		"iproute",
@@ -98,7 +98,7 @@ func createImageMkosi() error {
 
 	args := []string{
 		"--distribution", "fedora",
-		"--release", "24",
+		"--release", "25",
 		"--format", "tar",
 		"--output", path.Join(osImage),
 		"--cache", "mkosi.cache",

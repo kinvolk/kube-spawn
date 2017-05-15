@@ -4,6 +4,7 @@
 all:
 	go build -o cni-noop ./cmd/cni-noop
 	go build -o cnispawn ./cmd/cnispawn
+	go build -o nspawn-runc ./cmd/nspawn-runc
 	go build -o kubeadm-nspawn ./cmd/kubeadm-nspawn
 
 vendor: glide.lock | glide
