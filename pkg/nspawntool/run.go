@@ -30,8 +30,8 @@ import (
 func RunNode(name string) error {
 	args := []string{
 		"cnispawn",
-		"-path",
-		name,
+		"-d",
+		"--directory", name,
 	}
 
 	c := exec.Cmd{
