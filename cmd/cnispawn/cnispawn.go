@@ -17,20 +17,27 @@ limitations under the License.
 package main
 
 import (
-	"flag"
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/kinvolk/kubeadm-nspawn/pkg/cnispawn"
 )
 
-var (
-	path       = flag.String("path", "", "Path to the container to run")
-	background = flag.Bool("background", true, "Spawn the container in background")
-)
-
 func main() {
-	flag.Parse()
-	if err := cnispawn.RunContainer(*path, *background); err != nil {
-		log.Fatal(err)
+	var background bool
+
+	switch os.Args[1] {
+	case "-i":
+		background = false
+	case "-d":
+		background = true
+	default:
+		fmt.Println("Usage: cnispawn [-i|-d] <nspawn arguments>\n\n-i\tinteractive; container will be spawned with tty attached\n-d\tdetached; container will be run in the background")
+		os.Exit(0)
+	}
+
+	if err := cnispawn.Spawn(background, os.Args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
 	}
 }
