@@ -94,8 +94,8 @@ cd cni
 And then configure CNI networks needed by kubeadm-nspawn:
 
 ```
-mkdir -p /etc/cni/net.d
-cat >/etc/cni/net.d/10-mynet.conf <<EOF
+sudo mkdir -p /etc/cni/net.d
+sudo tee /etc/cni/net.d/10-mynet.conf <<EOF
 {
     "cniVersion": "0.2.0",
     "name": "mynet",
@@ -112,7 +112,7 @@ cat >/etc/cni/net.d/10-mynet.conf <<EOF
     }
 }
 EOF
-cat >/etc/cni/net.d/99-loopback.conf <<EOF
+sudo tee /etc/cni/net.d/99-loopback.conf <<EOF
 {
     "cniVersion": "0.2.0",
     "type": "loopback"
@@ -124,9 +124,11 @@ EOF
 
 ### on the host
 
-  * systemd-nspawn with:
+  * systemd-nspawn v233, or systemd-nspawn v231 with backports for:
     * `SYSTEMD_NSPAWN_USE_CGNS` https://github.com/systemd/systemd/pull/3809
     * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
+  * mkosi
+  * glide from https://github.com/Masterminds/glide
 
 ### inside the nspawn container:
 
@@ -134,7 +136,7 @@ EOF
 
 ## Build and run kubeadm-nspawn
 
-Make sure you have `mkosi` available in you PATH.
+Make sure you have `mkosi` and `glide` available in you PATH.
 In the directory where you cloned this repository, please do:
 
 ```
