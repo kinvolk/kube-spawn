@@ -183,7 +183,7 @@ func newDownCommand() *cobra.Command {
 	return cmd
 }
 
-func newKubeadmSystemdCommand() *cobra.Command {
+func newKubeadmNspawnCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kubeadm-nspawn",
 		Short: "kubeadm-nspawn is a tool for creating a multi-node dev Kubernetes cluster",
@@ -202,7 +202,7 @@ func newKubeadmSystemdCommand() *cobra.Command {
 }
 
 func main() {
-	if err := newKubeadmSystemdCommand().Execute(); err != nil {
+	if err := newKubeadmNspawnCommand().Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
