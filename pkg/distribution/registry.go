@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -31,28 +32,14 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func StartRegistry() error {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return err
-	}
+func dockerProgress(rc io.ReadCloser) error {
+	var status string
 
-	readerCloser, err := cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
-		All: true,
-		// RegistryAuth header cannot be empty, even if no authentication is used at all...
-		RegistryAuth: "123",
-	})
-	if err != nil {
-		return err
-	}
-	defer readerCloser.Close()
-
-	bufReader := bufio.NewReader(readerCloser)
-
+	bufReader := bufio.NewReader(rc)
 	for {
 		line, _, err := bufReader.ReadLine()
-		if err != io.EOF {
-			break
+		if err == io.EOF {
+			return nil
 		} else if err != nil {
 			return err
 		}
@@ -62,7 +49,38 @@ func StartRegistry() error {
 			return err
 		}
 
-		fmt.Println(string(line[:]))
+		if errMsg, ok := jsonLine["error"]; ok {
+			if errMsgStr, ok := errMsg.(string); ok {
+				return fmt.Errorf(errMsgStr)
+			}
+		}
+
+		if s, ok := jsonLine["status"]; ok {
+			if s.(string) != status {
+				status = s.(string)
+				log.Println(status)
+			}
+		}
+	}
+}
+
+func StartRegistry() error {
+	ctx := context.Background()
+
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+
+	log.Println("Pulling registry image")
+	readerCloser, err := cli.ImagePull(ctx, "docker.io/library/registry:2", types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+	defer readerCloser.Close()
+
+	if err := dockerProgress(readerCloser); err != nil {
+		return err
 	}
 
 	if _, err := cli.ContainerCreate(context.Background(), &containertypes.Config{
@@ -75,9 +93,7 @@ func StartRegistry() error {
 	}, &networktypes.NetworkingConfig{}, "registry"); err != nil && !strings.Contains(err.Error(), "Conflict") {
 		return err
 	}
-
-	// return cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{})
-	return cli.ContainerStart(context.Background(), "registry", types.ContainerStartOptions{})
+	return cli.ContainerStart(ctx, "registry", types.ContainerStartOptions{})
 }
 
 func PushImage() error {
@@ -94,6 +110,7 @@ func PushImage() error {
 		return err
 	}
 
+	log.Println("Pushing hyperkube image to local registry")
 	readerCloser, err := cli.ImagePush(context.Background(), "10.22.0.1:5000/hyperkube-amd64", types.ImagePushOptions{
 		All: true,
 		// RegistryAuth header cannot be empty, even if no authentication is used at all...
@@ -104,32 +121,8 @@ func PushImage() error {
 	}
 	defer readerCloser.Close()
 
-	bufReader := bufio.NewReader(readerCloser)
-
-	for {
-		line, _, err := bufReader.ReadLine()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		var jsonLine map[string]interface{}
-		if err := json.Unmarshal(line, &jsonLine); err != nil {
-			return err
-		}
-
-		if errMsg, ok := jsonLine["error"]; ok {
-			if errMsgStr, ok := errMsg.(string); ok {
-				return fmt.Errorf(errMsgStr)
-			}
-		}
-
-		if progress, ok := jsonLine["progress"]; ok {
-			fmt.Println(progress)
-		}
-		fmt.Println(string(line[:]))
+	if err := dockerProgress(readerCloser); err != nil {
+		return err
 	}
-
 	return nil
 }
