@@ -4,16 +4,33 @@ set -e
 
 echo "kubernetes" | passwd --stdin root
 
-cat >>/etc/sysconfig/docker <<-EOF
-INSECURE_REGISTRY='--insecure-registry=10.22.0.1:5000'
+mkdir -p /etc/docker
+cat >/etc/docker/daemon.json <<-EOF
+{
+    "insecure-registries": ["10.22.0.1:5000"],
+    "default-runtime": "nspawn",
+    "runtimes": {
+        "oci": { "path": "/usr/libexec/docker/docker-runc-current" },
+        "nspawn": { "path": "/opt/nspawn-runc" }
+    },
+    "storage-driver": "overlay"
+}
 EOF
 
-cat >/etc/sysconfig/docker-storage <<-EOF
-DOCKER_STORAGE_OPTIONS="--storage-driver overlay"
-EOF
-
-cat >/etc/sysconfig/docker-storage-setup <<-EOF
-STORAGE_DRIVER="overlay"
+mkdir -p /etc/systemd/system/docker.service.d
+cat >/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf <<-EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd-current \
+          --containerd /run/containerd.sock \
+          --exec-opt native.cgroupdriver=systemd \
+          --userland-proxy-path=/usr/libexec/docker/docker-proxy-current \
+          $OPTIONS \
+          $DOCKER_STORAGE_OPTIONS \
+          $DOCKER_NETWORK_OPTIONS \
+          $ADD_REGISTRY \
+          $BLOCK_REGISTRY \
+          $INSECURE_REGISTRY
 EOF
 
 systemctl daemon-reload || true
@@ -35,7 +52,7 @@ mkdir -p /etc/systemd/system/kubelet.service.d
 cat >/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf <<-EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=\
---cgroup-driver=cgroupfs \
+--cgroup-driver=systemd \
 --enforce-node-allocatable= \
 --cgroups-per-qos=false \
 --authentication-token-webhook"
