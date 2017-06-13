@@ -20,20 +20,64 @@ import (
 	"bufio"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
+	"path"
+	"strings"
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cniversion "github.com/containernetworking/cni/pkg/version"
 )
 
+const bindro string = "--bind-ro="
+
+var (
+	gopath       string = os.Getenv("GOPATH")
+	binariesDir  string = path.Join(gopath, "src", "k8s.io", "kubernetes", "_output", "bin")
+	binariesDest string = path.Join("usr", "bin")
+
+	cniDir  string = path.Join(gopath, "src", "github.com", "containernetworking", "cni", "bin")
+	cniDest string = path.Join("opt", "cni", "bin")
+
+	kubeletConfigPath string = path.Join(gopath, "src", "k8s.io", "release", "rpm", "10-kubeadm.conf")
+	kubeletConfigDest string = path.Join("etc", "systemd", "system", "kubelet.service.d", "10-kubeadm.conf")
+
+	systemdUnitDir  string = path.Join(gopath, "src", "k8s.io", "kubernetes", "build", "debs")
+	systemdUnitDest string = path.Join("usr", "lib", "systemd", "system")
+)
+
+var defaultArgs = []string{
+	bindro + path.Join(gopath, "/src/github.com/containernetworking/cni/bin:/opt/cni/bin"),
+	bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
+	bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
+
+	bindro + path.Join(gopath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
+	bindro + path.Join(gopath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+
+	bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
+	bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
+
+	bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubelet:/usr/bin/kubelet"),
+	bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubeadm:/usr/bin/kubeadm"),
+	bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubectl:/usr/bin/kubectl"),
+}
+
+func parseBind(bindstring string) string {
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return strings.Replace(bindstring, "$PWD", pwd, 1)
+}
+
 func RunNode(name string) error {
 	args := []string{
 		"cnispawn",
 		"-d",
-		"--directory", name,
+		// "--ephemeral",
+		"--machine", name,
 	}
+	args = append(args, defaultArgs...)
 
 	c := exec.Cmd{
 		Path:   "cnispawn",

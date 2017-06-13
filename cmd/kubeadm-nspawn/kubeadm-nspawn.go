@@ -38,16 +38,16 @@ var (
 	version      string
 	gopath       string = os.Getenv("GOPATH")
 	nodes        int
-	imageMethod  string
 	printVersion bool
+	baseImage    string
 )
 
 func runUp(cmd *cobra.Command, args []string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
-		log.Fatal("Error when checking CNI bridge: ", err)
+		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
 	if err := distribution.StartRegistry(); err != nil {
-		log.Fatal("Error when starting registry: ", err)
+		log.Fatalf("Error starting registry: %s", err)
 	}
 
 	if err := bootstrap.WriteNetConf(); err != nil {
@@ -63,42 +63,32 @@ func runUp(cmd *cobra.Command, args []string) {
 		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
-		log.Fatal("Error when pushing image: ", err)
+		log.Fatalf("Error pushing hyperkube image: %s", err)
 	}
 
-	if err := ssh.PrepareSSHKeys(); err != nil {
-		log.Fatal("Error when generating SSH keys: ", err)
+	log.Printf("Checking base image")
+	if baseImage == "" {
+		log.Fatal("No base image specified.")
 	}
-
-	if err := nspawntool.CreateImage(imageMethod); err != nil {
-		log.Fatal("Error when creating image: ", err)
+	if !bootstrap.NodeExists(baseImage) {
+		log.Fatal("Base image not found.")
 	}
 
 	for i := 0; i < nodes; i++ {
-		name := nspawntool.GetNodeName(i)
+		name := bootstrap.GetNodeName(i)
 
-		rootfsExists, err := bootstrap.NodeRootfsExists(name)
-		if err != nil {
-			log.Fatal("Error when checking node rootfs directory: ", err)
-		}
-
-		if !rootfsExists {
-			if err := nspawntool.ExtractImage(name); err != nil {
-				log.Fatal("Error when extracting image: ", err)
-			}
-			if err := bootstrap.BootstrapNode(name); err != nil {
-				log.Fatal("Error when bootstrapping node: ", err)
-			}
-			if err := nspawntool.RunBootstrapScript(name); err != nil {
-				log.Fatal("Error running bootstrap script: ", err)
+		if !bootstrap.NodeExists(name) {
+			if err := bootstrap.NewNode(baseImage, name); err != nil {
+				log.Fatalf("Error cloning base image: %s", err)
 			}
 		}
 
 		if err := nspawntool.RunNode(name); err != nil {
-			if err := nspawntool.Cleanup(nodes); err != nil {
-				log.Fatal("Error when cleaning up: ", err)
-			}
-			log.Fatal("Error when running node: ", err)
+			log.Fatalf("Error running node: %s", err)
+		}
+
+		if err := nspawntool.RunBootstrapScript(name); err != nil {
+			log.Fatalf("Error running bootstrap script: %s", err)
 		}
 	}
 }
@@ -110,30 +100,28 @@ func newUpCommand() *cobra.Command {
 		Run:   runUp,
 	}
 	cmd.Flags().IntVarP(&nodes, "nodes", "n", 1, "number of nodes to spawn")
-	cmd.Flags().StringVarP(&imageMethod, "image-method", "m", "mkosi", "method to use for setting up node rootfs [mkosi, download]")
+	cmd.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
 	return cmd
 }
 
 func runInit(cmd *cobra.Command, args []string) {
-	log.Println("Warning: experimental!")
-
-	nodes, err := nspawntool.RunningNodes()
+	nodes, err := bootstrap.GetRunningNodes()
 	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
+		log.Fatalf("Error listing running nodes: %s", err)
 	}
 	if len(nodes) == 0 {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
 
-	token, err := ssh.InitializeMaster(nodes[0].IP.String())
+	token, err := ssh.InitializeMaster(nodes[0].IP)
 	if err != nil {
-		log.Fatal("Error when initializing master: ", err)
+		log.Fatalf("Error initializing master: %s", err)
 	}
 
 	for i, node := range nodes {
 		if i != 0 {
-			if err := ssh.JoinNode(node.IP.String(), nodes[0].IP.String(), token); err != nil {
-				log.Fatal("Error when joining node: ", err)
+			if err := ssh.JoinNode(node.IP, nodes[0].IP, token); err != nil {
+				log.Fatalf("Error joining node: %s", err)
 			}
 		}
 	}
@@ -144,53 +132,6 @@ func newInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Execute kubeadm",
 		Run:   runInit,
-	}
-	return cmd
-}
-
-func runList(cmd *cobra.Command, args []string) {
-	nodes, err := nspawntool.RunningNodes()
-	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
-	}
-
-	if len(nodes) > 0 {
-		fmt.Println("NODE\t\t\tPID\tIP")
-		for _, n := range nodes {
-			fmt.Printf("%v\t%v\t%v\n", n.Name, n.PID, n.IP.String())
-		}
-		fmt.Printf("\n%v nodes listed.\n", len(nodes))
-	} else {
-		fmt.Println("No nodes.")
-	}
-}
-
-func newListCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List running nodes",
-		Run:     runList,
-	}
-	return cmd
-}
-
-func runDown(cmf *cobra.Command, args []string) {
-	nodes, err := nspawntool.RunningNodes()
-	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
-	}
-
-	if err := nspawntool.Cleanup(len(nodes)); err != nil {
-		log.Fatal("Error when bringing down nodes: ", err)
-	}
-}
-
-func newDownCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "down",
-		Short: "Stop running nodes",
-		Run:   runDown,
 	}
 	return cmd
 }
@@ -213,8 +154,6 @@ func newKubeadmNspawnCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
 	cmd.AddCommand(newUpCommand())
 	cmd.AddCommand(newInitCommand())
-	cmd.AddCommand(newListCommand())
-	cmd.AddCommand(newDownCommand())
 	return cmd
 }
 
