@@ -37,6 +37,7 @@ var (
 	version      string
 	gopath       string = os.Getenv("GOPATH")
 	nodes        int
+	k8srelease   string
 	printVersion bool
 	baseImage    string
 )
@@ -45,25 +46,6 @@ func runUp(cmd *cobra.Command, args []string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
 		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
-	if err := distribution.StartRegistry(); err != nil {
-		log.Fatalf("Error starting registry: %s", err)
-	}
-
-	if err := bootstrap.WriteNetConf(); err != nil {
-		log.Fatal("Error writing CNI configuration: ", err)
-	}
-
-	var err error
-	for i := 0; i < pushImageRetries; i++ {
-		err = distribution.PushImage()
-		if err == nil {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-	if err != nil {
-		log.Fatalf("Error pushing hyperkube image: %s", err)
-	}
 
 	log.Printf("Checking base image")
 	if baseImage == "" {
@@ -71,6 +53,14 @@ func runUp(cmd *cobra.Command, args []string) {
 	}
 	if !bootstrap.NodeExists(baseImage) {
 		log.Fatal("Base image not found.")
+	}
+
+	bootstrap.CreateSharedTmpdir()
+
+	if k8srelease != "" {
+		if err := bootstrap.DownloadK8sBins(k8srelease, "./k8s"); err != nil {
+			log.Fatalf("Error downloading k8s files: %s", err)
+		}
 	}
 
 	for i := 0; i < nodes; i++ {
@@ -82,14 +72,18 @@ func runUp(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		if err := nspawntool.RunNode(name); err != nil {
+		if err := nspawntool.RunNode(k8srelease, name); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
 
 		if err := nspawntool.RunBootstrapScript(name); err != nil {
 			log.Fatalf("Error running bootstrap script: %s", err)
 		}
+
+		log.Printf("Success! %s started.", name)
 	}
+
+	log.Printf("All nodes are running. Use machinectl to login/stop/etc.")
 }
 
 func newUpCommand() *cobra.Command {
@@ -104,6 +98,24 @@ func newUpCommand() *cobra.Command {
 }
 
 func runInit(cmd *cobra.Command, args []string) {
+	if k8srelease == "" {
+		// we don't need to run a docker registry
+		if err := distribution.StartRegistry(); err != nil {
+			log.Fatalf("Error starting registry: %s", err)
+		}
+		var err error
+		for i := 0; i < pushImageRetries; i++ {
+			err = distribution.PushImage()
+			if err == nil {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+		if err != nil {
+			log.Fatalf("Error pushing hyperkube image: %s", err)
+		}
+	}
+
 	nodes, err := bootstrap.GetRunningNodes()
 	if err != nil {
 		log.Fatalf("Error listing running nodes: %s", err)
@@ -112,15 +124,14 @@ func runInit(cmd *cobra.Command, args []string) {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
 
-	token, err := nspawntool.InitializeMaster(nodes[0].IP)
-	if err != nil {
-		log.Fatalf("Error initializing master: %s", err)
+	if err := nspawntool.InitializeMaster(k8srelease, nodes[0].Name); err != nil {
+		log.Fatalf("Error initializing master node %s: %s", nodes[0].Name, err)
 	}
 
 	for i, node := range nodes {
 		if i != 0 {
-			if err := nspawntool.JoinNode(node.IP, nodes[0].IP, token); err != nil {
-				log.Fatalf("Error joining node: %s", err)
+			if err := nspawntool.JoinNode(k8srelease, node.Name, nodes[0].IP); err != nil {
+				log.Fatalf("Error joining worker node %s: %s", node.Name, err)
 			}
 		}
 	}
@@ -151,6 +162,7 @@ func newKubeadmNspawnCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
+	cmd.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", "", "Kubernetes version to spawn")
 	cmd.AddCommand(newUpCommand())
 	cmd.AddCommand(newInitCommand())
 	return cmd

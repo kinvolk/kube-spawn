@@ -29,7 +29,8 @@ import (
 )
 
 var (
-	gopath string = os.Getenv("GOPATH")
+	gopath  string = os.Getenv("GOPATH")
+	cniPath string = os.Getenv("CNI_PATH")
 )
 
 type CniNetns struct {
@@ -45,7 +46,6 @@ func NewCniNetns() (*CniNetns, error) {
 	sNetnsPath := strings.Split(netns.Path(), "/")
 	containerId := sNetnsPath[len(sNetnsPath)-1]
 
-	cniPath := path.Join(gopath, "src", "github.com", "containernetworking", "cni", "bin")
 	cniPluginPath := path.Join(cniPath, "bridge")
 
 	env := os.Environ()
