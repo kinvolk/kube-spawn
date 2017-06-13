@@ -27,7 +27,6 @@ import (
 	"github.com/kinvolk/kubeadm-nspawn/pkg/bootstrap"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/distribution"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/nspawntool"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/ssh"
 )
 
 const (
@@ -113,14 +112,14 @@ func runInit(cmd *cobra.Command, args []string) {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
 
-	token, err := ssh.InitializeMaster(nodes[0].IP)
+	token, err := nspawntool.InitializeMaster(nodes[0].IP)
 	if err != nil {
 		log.Fatalf("Error initializing master: %s", err)
 	}
 
 	for i, node := range nodes {
 		if i != 0 {
-			if err := ssh.JoinNode(node.IP, nodes[0].IP, token); err != nil {
+			if err := nspawntool.JoinNode(node.IP, nodes[0].IP, token); err != nil {
 				log.Fatalf("Error joining node: %s", err)
 			}
 		}
