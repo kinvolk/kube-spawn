@@ -19,7 +19,6 @@ package bootstrap
 import (
 	"log"
 	"os"
-	"os/exec"
 	"path"
 
 	"github.com/kinvolk/kubeadm-nspawn/pkg/ssh"
@@ -54,24 +53,9 @@ func BootstrapNode(name string) error {
 	if err := InstallFile(name, path.Join(".", "nspawn-runc"), path.Join("opt", "nspawn-runc")); err != nil {
 		log.Printf("%v, skipping", err)
 	}
-	if err := RunBootstrapScript(name); err != nil {
-		return err
-	}
 	if err := ssh.PrepareAuthorizedKeys(name); err != nil {
 		log.Printf("%v, skipping", err)
 	}
 	log.Println("Bootstrapped node")
 	return nil
-}
-
-func RunBootstrapScript(name string) error {
-	if err := InstallFile(name, path.Join("scripts", "bootstrap.sh"), path.Join("root", "bootstrap.sh")); err != nil {
-		return err
-	}
-
-	log.Println("Running bootstrap script")
-	script := exec.Command("systemd-nspawn", "-D", name, "/root/bootstrap.sh")
-	script.Stdout = os.Stdout
-	script.Stderr = os.Stderr
-	return script.Run()
 }

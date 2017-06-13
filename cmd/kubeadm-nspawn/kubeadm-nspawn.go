@@ -87,7 +87,10 @@ func runUp(cmd *cobra.Command, args []string) {
 				log.Fatal("Error when extracting image: ", err)
 			}
 			if err := bootstrap.BootstrapNode(name); err != nil {
-				log.Fatal("Error when bootstrapping node :", err)
+				log.Fatal("Error when bootstrapping node: ", err)
+			}
+			if err := nspawntool.RunBootstrapScript(name); err != nil {
+				log.Fatal("Error running bootstrap script: ", err)
 			}
 		}
 
