@@ -112,6 +112,9 @@ func runInit(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal("Error listing running nodes: ", err)
 	}
+	if len(nodes) == 0 {
+		log.Fatal("No node running. Is systemd-nspawn running correctly?")
+	}
 
 	token, err := ssh.InitializeMaster(nodes[0].IP.String())
 	if err != nil {
