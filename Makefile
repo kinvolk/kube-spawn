@@ -7,6 +7,9 @@ all:
 	go build -o nspawn-runc ./cmd/nspawn-runc
 	go build -o kubeadm-nspawn ./cmd/kubeadm-nspawn
 
+cnibridge:
+	go get -u github.com/containernetworking/plugins/plugins/main/bridge
+
 vendor: glide.lock | glide
 	glide --quiet install --strip-vendor
 glide.lock: | glide
