@@ -35,9 +35,11 @@ const (
 )
 
 var (
-	gopath      string = os.Getenv("GOPATH")
-	nodes       int
-	imageMethod string
+	version      string
+	gopath       string = os.Getenv("GOPATH")
+	nodes        int
+	imageMethod  string
+	printVersion bool
 )
 
 func runUp(cmd *cobra.Command, args []string) {
@@ -189,11 +191,16 @@ func newKubeadmNspawnCommand() *cobra.Command {
 		Short: "kubeadm-nspawn is a tool for creating a multi-node dev Kubernetes cluster",
 		Long:  "kubeadm-nspawn is a tool for creating a multi-node dev Kubernetes cluster, by using the local source code and systemd-nspawn containers",
 		Run: func(cmd *cobra.Command, args []string) {
+			if printVersion {
+				fmt.Printf("kubeadm-nspawn %s\n", version)
+				os.Exit(0)
+			}
 			if err := cmd.Usage(); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
+	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
 	cmd.AddCommand(newUpCommand())
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newListCommand())
