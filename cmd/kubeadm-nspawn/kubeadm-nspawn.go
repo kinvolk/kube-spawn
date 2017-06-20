@@ -50,6 +50,10 @@ func runUp(cmd *cobra.Command, args []string) {
 		log.Fatal("Error when starting registry: ", err)
 	}
 
+	if err := bootstrap.WriteNetConf(); err != nil {
+		log.Fatal("Error writing CNI configuration: ", err)
+	}
+
 	var err error
 	for i := 0; i < pushImageRetries; i++ {
 		err = distribution.PushImage()

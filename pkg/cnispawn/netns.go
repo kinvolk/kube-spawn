@@ -24,7 +24,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/kinvolk/kubeadm-nspawn/pkg/bootstrap"
 )
 
 var (
@@ -67,7 +68,7 @@ func NewCniNetns() (*CniNetns, error) {
 		return nil, err
 	}
 
-	netconfig, err := ioutil.ReadFile("/etc/cni/net.d/10-mynet.conf")
+	netconfig, err := ioutil.ReadFile(bootstrap.NspawnNetPath)
 	if err != nil {
 		return nil, err
 	}
