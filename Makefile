@@ -1,11 +1,15 @@
 .PHONY: vendor all reset-cni
 .PHONY: clean clean-bins clean-rootfs clean-image clean-ssh-keys 
 
+VERSION=$(shell git describe --tags --always --dirty)
+
 all:
 	go build -o cni-noop ./cmd/cni-noop
 	go build -o cnispawn ./cmd/cnispawn
 	go build -o nspawn-runc ./cmd/nspawn-runc
-	go build -o kubeadm-nspawn ./cmd/kubeadm-nspawn
+	go build -o kubeadm-nspawn \
+		-ldflags "-X main.version=$(VERSION)" \
+		./cmd/kubeadm-nspawn
 
 vendor: glide.lock | glide
 	glide --quiet install --strip-vendor
