@@ -1,12 +1,9 @@
-hash: 7058458753d65f0b9cb4cd5094099f99a7e23bde9b37dd4ca72a67a97ef7a337
-updated: 2017-07-11T11:14:07.468254662+02:00
+hash: db7fc736db02e1ef10cf824a4af75802571e11a709ec68b6156b32987fa530b8
+updated: 2017-07-12T14:32:43.239638568+01:00
 imports:
 - name: github.com/containernetworking/cni
   version: 137b4975ecab6e1f0c24c1e3c228a50a3cfba75e
   subpackages:
-  - libcni
-  - pkg/invoke
-  - pkg/skel
   - pkg/types
   - pkg/types/020
   - pkg/types/current
@@ -15,6 +12,8 @@ imports:
   version: 5bbff37294de9dfb33771dac6f53411c88abe62a
   subpackages:
   - pkg/ns
+  - plugins/ipam/host-local
+  - plugins/main/bridge
 - name: github.com/docker/distribution
   version: f86db6b22663a27ba4d278220b7e34be528b1e79
   subpackages:
@@ -57,9 +56,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/Masterminds/semver
-  version: abff1900528dbdaf6f3f5aa92c398be1eaf2a9f7
-- name: github.com/mholt/archiver
-  version: 24d540239654d76e79c8f4e3d5bd56d90712becb
+  version: 517734cc7d6470c0d07130e40fd40bdeb9bcd3fd
 - name: github.com/Microsoft/go-winio
   version: f533f7a102197536779ea3a8cb881d639e21ec5a
 - name: github.com/opencontainers/go-digest
@@ -83,10 +80,6 @@ imports:
   - nl
 - name: github.com/vishvananda/netns
   version: 8ba1072b58e0c2a240eb5f6120165c7776c3e7b8
-- name: golang.org/x/crypto
-  version: 41d678d1df78cd0410143162dff954e6dc09300f
-  subpackages:
-  - ssh
 - name: golang.org/x/net
   version: 8663ed5da4fd087c3cfb99a996e628b72e2f0948
   subpackages:
