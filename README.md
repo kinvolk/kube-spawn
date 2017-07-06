@@ -90,28 +90,18 @@ go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
   * systemd-nspawn v233, or systemd-nspawn v231 with backports for:
     * `SYSTEMD_NSPAWN_USE_CGNS` https://github.com/systemd/systemd/pull/3809
     * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
-  * mkosi
   * glide from https://github.com/Masterminds/glide
-
-### inside the nspawn container:
-
-  * Docker <= 1.10.3 (or host `systemd-nspawn` that has https://github.com/systemd/systemd/issues/5163 fixed)
 
 ## Build and run kubeadm-nspawn
 
-Make sure you have `mkosi` and `glide` available in you PATH.
+Make sure you have `glide` available in you PATH.
 In the directory where you cloned this repository, please do:
 
 ```
-make
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> ./kubeadm-nspawn up --nodes <number_of_nodes>
+make vendor all
+sudo machinectl pull-raw --verify=no https://stable.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
+sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> CNI_PATH=<path_to_cni_plugins_bins> ./kubeadm-nspawn up --image coreos --nodes 2
 sudo ./kubeadm-nspawn init
-sudo ./kubeadm-nspawn down
-```
-
-Alternatively to avoid using `mkosi`:
-```
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> IMAGE_URL=<url_to_rootfs_image> ./kubeadm-nspawn up --nodes <number_of_nodes> --image-method=download
 ```
 
 Sometimes when Docker doesn't use the newest existing API, you may see
@@ -122,11 +112,7 @@ the following error:
 ```
 
 Then you will need to include your Docker API version in DOCKER_API_VERSION
-environment variable:
-
-```
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> DOCKER_API_VERSION=1.24 ./kubeadm-nspawn up --nodes <number_of_nodes>
-```
+environment variable: `DOCKER_API_VERSION=1.24 `
 
 ## What works - what doesn't work
 

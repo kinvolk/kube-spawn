@@ -27,7 +27,6 @@ import (
 	"github.com/kinvolk/kubeadm-nspawn/pkg/bootstrap"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/distribution"
 	"github.com/kinvolk/kubeadm-nspawn/pkg/nspawntool"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/ssh"
 )
 
 const (
@@ -38,66 +37,53 @@ var (
 	version      string
 	gopath       string = os.Getenv("GOPATH")
 	nodes        int
-	imageMethod  string
+	k8srelease   string
 	printVersion bool
+	baseImage    string
 )
 
 func runUp(cmd *cobra.Command, args []string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
-		log.Fatal("Error when checking CNI bridge: ", err)
-	}
-	if err := distribution.StartRegistry(); err != nil {
-		log.Fatal("Error when starting registry: ", err)
+		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
 
-	if err := bootstrap.WriteNetConf(); err != nil {
-		log.Fatal("Error writing CNI configuration: ", err)
+	log.Printf("Checking base image")
+	if baseImage == "" {
+		log.Fatal("No base image specified.")
+	}
+	if !bootstrap.NodeExists(baseImage) {
+		log.Fatal("Base image not found.")
 	}
 
-	var err error
-	for i := 0; i < pushImageRetries; i++ {
-		err = distribution.PushImage()
-		if err == nil {
-			break
+	bootstrap.CreateSharedTmpdir()
+
+	if k8srelease != "" {
+		if err := bootstrap.DownloadK8sBins(k8srelease, "./k8s"); err != nil {
+			log.Fatalf("Error downloading k8s files: %s", err)
 		}
-		time.Sleep(1 * time.Second)
-	}
-	if err != nil {
-		log.Fatal("Error when pushing image: ", err)
-	}
-
-	if err := ssh.PrepareSSHKeys(); err != nil {
-		log.Fatal("Error when generating SSH keys: ", err)
-	}
-
-	if err := nspawntool.CreateImage(imageMethod); err != nil {
-		log.Fatal("Error when creating image: ", err)
 	}
 
 	for i := 0; i < nodes; i++ {
-		name := nspawntool.GetNodeName(i)
+		name := bootstrap.GetNodeName(i)
 
-		rootfsExists, err := bootstrap.NodeRootfsExists(name)
-		if err != nil {
-			log.Fatal("Error when checking node rootfs directory: ", err)
-		}
-
-		if !rootfsExists {
-			if err := nspawntool.ExtractImage(name); err != nil {
-				log.Fatal("Error when extracting image: ", err)
-			}
-			if err := bootstrap.BootstrapNode(name); err != nil {
-				log.Fatal("Error when bootstrapping node :", err)
+		if !bootstrap.NodeExists(name) {
+			if err := bootstrap.NewNode(baseImage, name); err != nil {
+				log.Fatalf("Error cloning base image: %s", err)
 			}
 		}
 
-		if err := nspawntool.RunNode(name); err != nil {
-			if err := nspawntool.Cleanup(nodes); err != nil {
-				log.Fatal("Error when cleaning up: ", err)
-			}
-			log.Fatal("Error when running node: ", err)
+		if err := nspawntool.RunNode(k8srelease, name); err != nil {
+			log.Fatalf("Error running node: %s", err)
 		}
+
+		if err := nspawntool.RunBootstrapScript(name); err != nil {
+			log.Fatalf("Error running bootstrap script: %s", err)
+		}
+
+		log.Printf("Success! %s started.", name)
 	}
+
+	log.Printf("All nodes are running. Use machinectl to login/stop/etc.")
 }
 
 func newUpCommand() *cobra.Command {
@@ -107,30 +93,45 @@ func newUpCommand() *cobra.Command {
 		Run:   runUp,
 	}
 	cmd.Flags().IntVarP(&nodes, "nodes", "n", 1, "number of nodes to spawn")
-	cmd.Flags().StringVarP(&imageMethod, "image-method", "m", "mkosi", "method to use for setting up node rootfs [mkosi, download]")
+	cmd.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
 	return cmd
 }
 
 func runInit(cmd *cobra.Command, args []string) {
-	log.Println("Warning: experimental!")
+	if k8srelease == "" {
+		// we don't need to run a docker registry
+		if err := distribution.StartRegistry(); err != nil {
+			log.Fatalf("Error starting registry: %s", err)
+		}
+		var err error
+		for i := 0; i < pushImageRetries; i++ {
+			err = distribution.PushImage()
+			if err == nil {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+		if err != nil {
+			log.Fatalf("Error pushing hyperkube image: %s", err)
+		}
+	}
 
-	nodes, err := nspawntool.RunningNodes()
+	nodes, err := bootstrap.GetRunningNodes()
 	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
+		log.Fatalf("Error listing running nodes: %s", err)
 	}
 	if len(nodes) == 0 {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
 
-	token, err := ssh.InitializeMaster(nodes[0].IP.String())
-	if err != nil {
-		log.Fatal("Error when initializing master: ", err)
+	if err := nspawntool.InitializeMaster(k8srelease, nodes[0].Name); err != nil {
+		log.Fatalf("Error initializing master node %s: %s", nodes[0].Name, err)
 	}
 
 	for i, node := range nodes {
 		if i != 0 {
-			if err := ssh.JoinNode(node.IP.String(), nodes[0].IP.String(), token); err != nil {
-				log.Fatal("Error when joining node: ", err)
+			if err := nspawntool.JoinNode(k8srelease, node.Name, nodes[0].IP); err != nil {
+				log.Fatalf("Error joining worker node %s: %s", node.Name, err)
 			}
 		}
 	}
@@ -141,53 +142,6 @@ func newInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Execute kubeadm",
 		Run:   runInit,
-	}
-	return cmd
-}
-
-func runList(cmd *cobra.Command, args []string) {
-	nodes, err := nspawntool.RunningNodes()
-	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
-	}
-
-	if len(nodes) > 0 {
-		fmt.Println("NODE\t\t\tPID\tIP")
-		for _, n := range nodes {
-			fmt.Printf("%v\t%v\t%v\n", n.Name, n.PID, n.IP.String())
-		}
-		fmt.Printf("\n%v nodes listed.\n", len(nodes))
-	} else {
-		fmt.Println("No nodes.")
-	}
-}
-
-func newListCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List running nodes",
-		Run:     runList,
-	}
-	return cmd
-}
-
-func runDown(cmf *cobra.Command, args []string) {
-	nodes, err := nspawntool.RunningNodes()
-	if err != nil {
-		log.Fatal("Error listing running nodes: ", err)
-	}
-
-	if err := nspawntool.Cleanup(len(nodes)); err != nil {
-		log.Fatal("Error when bringing down nodes: ", err)
-	}
-}
-
-func newDownCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "down",
-		Short: "Stop running nodes",
-		Run:   runDown,
 	}
 	return cmd
 }
@@ -208,10 +162,9 @@ func newKubeadmNspawnCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
+	cmd.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", "", "Kubernetes version to spawn")
 	cmd.AddCommand(newUpCommand())
 	cmd.AddCommand(newInitCommand())
-	cmd.AddCommand(newListCommand())
-	cmd.AddCommand(newDownCommand())
 	return cmd
 }
 

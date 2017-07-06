@@ -1,141 +1,75 @@
-/*
-Copyright 2017 Kinvolk GmbH
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package bootstrap
 
 import (
-	"io/ioutil"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
-	"os/exec"
 	"path"
-	"regexp"
+	"strings"
+)
+
+const (
+	k8sURL       string = "https://dl.k8s.io/v$VERSION/bin/linux/amd64/"
+	k8sGithubURL string = "https://raw.githubusercontent.com/kubernetes/release/master/rpm/"
 )
 
 var (
-	gopath            string = os.Getenv("GOPATH")
-	binariesDir       string = path.Join(gopath, "src", "k8s.io", "kubernetes", "_output", "bin")
-	binariesDest      string = path.Join("usr", "bin")
-	cniDir            string = path.Join(gopath, "src", "github.com", "containernetworking", "cni", "bin")
-	cniDest           string = path.Join("opt", "cni", "bin")
-	kubeletConfigPath string = path.Join(gopath, "src", "k8s.io", "release", "rpm", "10-kubeadm.conf")
-	kubeletConfigDest string = path.Join("etc", "systemd", "system", "kubelet.service.d", "10-kubeadm.conf")
-	systemdUnitDir    string = path.Join(gopath, "src", "k8s.io", "kubernetes", "build", "debs")
-	systemdUnitDest   string = path.Join("usr", "lib", "systemd", "system")
+	k8sfiles = []string{
+		k8sURL + "kubelet",
+		k8sURL + "kubeadm",
+		k8sURL + "kubectl",
+		k8sGithubURL + "kubelet.service",
+		k8sGithubURL + "10-kubeadm.conf",
+	}
 )
 
-func InstallFile(containerName, filePath, dest string) error {
-	installPath, err := exec.LookPath("install")
+func Download(url, fpath string) (*os.File, error) {
+	fd, err := os.OpenFile(fpath, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dest = path.Join(containerName, dest)
-
-	args := []string{
-		installPath,
-		"-D",
-		filePath,
-		dest,
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("error downloading %s: %s", url, err)
 	}
+	defer resp.Body.Close()
 
-	c := exec.Cmd{
-		Path:   installPath,
-		Args:   args,
-		Dir:    "",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+	if _, err := io.Copy(fd, resp.Body); err != nil {
+		return nil, err
 	}
-	if err := c.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return fd, nil
 }
 
-func installBinary(containerName, binaryPath string) error {
-	fullPath := path.Join(binariesDir, binaryPath)
-	return InstallFile(containerName, fullPath, binariesDest)
-}
-
-func installBinaries(containerName string) error {
-	binaries, err := ioutil.ReadDir(binariesDir)
-	if err != nil {
-		return err
+func DownloadK8sBins(version, dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, os.ModePerm)
 	}
+	for _, url := range k8sfiles {
+		// replace placeholder $VERSION with actual version parameter
+		// TODO we need some way to validate this or a better way to get
+		// kubelet/kubeadm/kubectl binaries
+		url = strings.Replace(url, "$VERSION", version, 1)
 
-	for _, binary := range binaries {
-		if err := installBinary(containerName, binary.Name()); err != nil {
-			return err
+		var fd *os.File
+		fpath := path.Join(dir, path.Base(url))
+
+		if _, err := os.Stat(fpath); os.IsNotExist(err) {
+			log.Printf("%s downloading...\n", fpath)
+			fd, err = Download(url, fpath)
+			if err != nil {
+				return fmt.Errorf("error downloading %s: %s", url, err)
+			}
+		} else {
+			log.Printf("%s already downloaded, skipping...\n", fpath)
+			fd, err = os.Open(fpath)
+			if err != nil {
+				return fmt.Errorf("error opening %s: %s", fpath, err)
+			}
 		}
+		fd.Close()
 	}
-
-	return nil
-}
-
-func installCniBinary(containerName, binaryPath string) error {
-	fullPath := path.Join(cniDir, binaryPath)
-	fullDest := path.Join(cniDest, binaryPath)
-	return InstallFile(containerName, fullPath, fullDest)
-}
-
-func installCniBinaries(containerName string) error {
-	binaries, err := ioutil.ReadDir(cniDir)
-	if err != nil {
-		return err
-	}
-
-	for _, binary := range binaries {
-		if err := installCniBinary(containerName, binary.Name()); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func installKubeletConfig(containerName string) error {
-	return InstallFile(containerName, kubeletConfigPath, kubeletConfigDest)
-}
-
-func installSystemdUnit(containerName, systemdUnitPath string) error {
-	fullPath := path.Join(systemdUnitDir, systemdUnitPath)
-	return InstallFile(containerName, fullPath, systemdUnitDest)
-}
-
-func installSystemdUnits(containerName string) error {
-	distFiles, err := ioutil.ReadDir(systemdUnitDir)
-	if err != nil {
-		return err
-	}
-
-	r, err := regexp.Compile(".service$")
-	if err != nil {
-		return err
-	}
-
-	for _, distFile := range distFiles {
-		if !r.MatchString(distFile.Name()) {
-			continue
-		}
-
-		if err := installSystemdUnit(containerName, distFile.Name()); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
