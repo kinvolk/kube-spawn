@@ -25,6 +25,7 @@ import (
 	"os/exec"
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
+	cniversion "github.com/containernetworking/cni/pkg/version"
 )
 
 func RunNode(name string) error {
@@ -50,14 +51,14 @@ func RunNode(name string) error {
 		return err
 	}
 
-	cniDataJson, err := ioutil.ReadAll(bufio.NewReader(stdout))
+	cniDataJSON, err := ioutil.ReadAll(bufio.NewReader(stdout))
 	if err != nil {
 		return err
 	}
 
-	var cniData cnitypes.Result
-	if err := json.Unmarshal(cniDataJson, &cniData); err != nil {
-		return err
+	if _, err := cniversion.NewResult(cniversion.Current(), cniDataJSON); err != nil {
+		log.Printf("unexpected result output: %s", cniDataJSON)
+		return fmt.Errorf("unable to parse result: %s", err)
 	}
 
 	if err := c.Wait(); err != nil {
@@ -68,6 +69,5 @@ func RunNode(name string) error {
 		return err
 	}
 
-	log.Printf("Node %s running (%s)\n", name, cniData.IP4.IP.IP.String())
 	return nil
 }

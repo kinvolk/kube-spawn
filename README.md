@@ -74,51 +74,14 @@ cd cluster/images/hyperkube
 make VERSION=latest
 ```
 
-### Build CNI with plugins
-
-Firstly, you need to get a repo of CNI:
+### Get CNI plugins
 
 ```
-mkdir -p $GOPATH/src/github.com/containernetworking
-cd $GOPATH/src/github.com/containernetworking
-git clone git@github.com:containernetworking/cni.git
+go get -u github.com/containernetworking/plugins/plugins/main/bridge
+go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
 ```
 
-Then you can build CNI by doing:
-
-```
-cd cni
-./build
-```
-
-And then configure CNI networks needed by kubeadm-nspawn:
-
-```
-sudo mkdir -p /etc/cni/net.d
-sudo tee /etc/cni/net.d/10-mynet.conf <<EOF
-{
-    "cniVersion": "0.2.0",
-    "name": "mynet",
-    "type": "bridge",
-    "bridge": "cni0",
-    "isGateway": true,
-    "ipMasq": true,
-    "ipam": {
-        "type": "host-local",
-        "subnet": "10.22.0.0/16",
-        "routes": [
-            { "dst": "0.0.0.0/0" }
-        ]
-    }
-}
-EOF
-sudo tee /etc/cni/net.d/99-loopback.conf <<EOF
-{
-    "cniVersion": "0.2.0",
-    "type": "loopback"
-}
-EOF
-```
+`kubeadm-nspawn` will configure the networks it needs in `/etc/cni/net.d`.
 
 ## Requirements
 
