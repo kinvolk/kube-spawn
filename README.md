@@ -1,169 +1,112 @@
 # kube-spawn
 
-## Introduction
-
-__kube-spawn__ is a tool for creating a multi-node Kubernetes cluster
+`kube-spawn` is a tool for creating a multi-node Kubernetes cluster
 on a single machine, created mostly for developers __of__ Kubernetes.
 
 It aims to be as similar to the solutions recommended for production
 clusters as possible.
 
-## Getting started
-
-### Build proper systemd-nspawn version
-
-Unfortunately, there is [one pending feature](https://github.com/systemd/systemd/pull/4395)
-of systemd-nspawn which is merged in master, but not released yet.
-You will need to build your own systemd-nspawn binary.
-
-We highly recommend using CoreOS' fork which backported that feature
-to the 231 version of systemd (which is the one that Fedora and
-the other popular distributions are using in its stable releases).
-
-In order to do that, please use the following commands:
-
-```
-git clone git@github.com:coreos/systemd.git
-cd systemd
-git checkout v231
-./autogen.sh
-./configure
-make
-```
-
-You **shouldn't** do `make install` after that! Using the custom
-systemd-nspawn binary with the other components of systemd being
-in another version is totally fine.
-
-You may try to use master branch from upstream systemd repository, but
-it's very risky!
-
-### Get needed Kubernetes repositories
-
-kube-spawn needs the following repos to exist in your GOPATH:
-
-* [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
-* [kubernetes/release](https://github.com/kubernetes/release)
-
-Also, bulding Kubernetes may rely on having your own fork and the
-separate remote called `upstream`. In this HOWTO, we assume that
-you have these repositories forked.
-
-You can clone then by the following commands:
-
-```
-mkdir -p $GOPATH/src/k8s.io
-cd $GOPATH/src/k8s.io
-git clone git@github.com:<your_username>/kubernetes.git
-git clone git@github.com:<your_username>/release.git
-cd kubernetes
-git remote add upstream git@github.com:kubernetes/kubernetes.git
-cd ../release
-git remote add upstream git@github.com:kubernetes/release.git
-```
-
-### Build Kubernetes
-
-kube-spawn needs the built Kubernetes binaries and hyperkube
-Docker image. You need to build them like that:
-
-```
-cd $GOPATH/src/k8s.io/kubernetes
-build/run.sh make
-cd cluster/images/hyperkube
-make VERSION=latest
-```
-
-### Get CNI plugins
-
-```
-go get -u github.com/containernetworking/plugins/plugins/main/bridge
-go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
-```
-
-`kube-spawn` will configure the networks it needs in `/etc/cni/net.d`.
-
 ## Requirements
 
-### on the host
+* **Host:**
+  - `systemd-nspawn` at least version 233
+  - tested: Fedora 26, ...
 
-  * systemd-nspawn v233, or systemd-nspawn v231 with backports for:
-    * `SYSTEMD_NSPAWN_USE_CGNS` https://github.com/systemd/systemd/pull/3809
-    * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
-  * glide from https://github.com/Masterminds/glide
+* **Kubernetes** at least version 1.7.0
 
-## Build and run kube-spawn
+## Quickstart
 
-Make sure you have `glide` available in you PATH.
-In the directory where you cloned this repository, please do:
+`kube-spawn` should run well on Fedroa 26. If you want to test it in a
+controlled environment, you can use [Vagrant](doc/vagrant.md).
 
-```
-make vendor all
-sudo machinectl pull-raw --verify=no https://stable.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> CNI_PATH=<path_to_cni_plugins_bins> ./kube-spawn up --image coreos --nodes 2
-sudo ./kube-spawn init
-```
-
-Sometimes when Docker doesn't use the newest existing API, you may see
-the following error:
+To setup `kube-spawn` on your machine, make sure you have a working [Go environment](https://golang.org/doc/install):
 
 ```
-2017/01/26 16:41:38 Error when pushing image: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
+# Get the needed CNI plugins
+$ go get -u github.com/containernetworking/plugins/plugins/main/bridge
+$ go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
+
+# Get glide
+$ go get -u github.com/Masterminds/glide
+
+# Get the source for this project
+$ go get -d github.com/kinvolk/kube-spawn
 ```
 
-Then you will need to include your Docker API version in DOCKER_API_VERSION
-environment variable: `DOCKER_API_VERSION=1.24 `
+`kube-nspawn` will configure the networks it needs in `/etc/cni/net.d`.
 
-## What works - what doesn't work
+```
+# Build the tool
+$ cd $GOPATH/src/github.com/kinvolk/kube-spawn
+$ make vendor all
 
-- [x] bringing up/down multiple nspawn containers
-- [x] bootstrapping nodes
-- [x] initialize node-0 as master with `kubeadm`
-- [x] join nodes to form a cluster
-- [x] create deployments ([issue #14](https://github.com/kinvolk/kube-spawn/issues/14))
+# Get the recommended container image
+$ sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
 
-## Architecture
+# Spawn and provision nodes for the cluster
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
 
-![Architecture Diagram](architecture.png?raw=true "Architecture")
+# Setup Kubernetes
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn init
+```
 
-kube-spawn uses the following third-party components to
-achieve its goal:
+## Running local Kubernetes builds
 
-### CNI
+One of the main use cases of `kube-spawn` is to be able to easily test patches to
+Kubernetes. To do this, some additional steps are required.
 
-Raw systemd-nspawn needs systemd-networkd for automanaging the networking
-for containers, which is bad for developers trying to use nspawn on their
-laptops - networkd doesn't provide necessary features for desktop systems
-where Network Manager is usually used. That's why we are using CNI as a
-tool for providing networking for nspawn.
+To get the Hyperkube image of your local Kubernetes build to deploy, `kube-spawn` sets up
+a local insecure Docker registry. Pushing images to it needs to be enabled by adding
+the following to the docker daemon configuration file (`/etc/docker/daemon.json`).
 
-The integration between CNI and systemd-nspawn is made by a binary
-called __cnispawn__ which creates a network namespace, executes a CNI
-plugin on that, and then runs systemd-nspawn inside that namespace.
-By default, systemd-nspawn doesn't create its own network namespaces,
-so the container is successfully running inside the namespace we
-created.
+```
+...
+      "insecure-registries": [
+          "10.22.0.1:5000"
+      ]
+...
+```
 
-## Motivation
+The following steps assume you have a local checkout of the Kubernetes source.
 
-There are many other ways for setting up the development environment
-of Kubernetes, however, we see some issues in them.
+```
+# Build Kubernetes
+$ cd $GOPATH/src/k8s.io/kubernetes
+$ build/run.sh make
 
-* `hack/local-up-cluster.sh` - it only supports single-node clusters
-  and doesn't share _any_ similarity with the tools that operators
-  are using for setting up k8s clusters. That brings a very huge
-  risk that a developer _of_ k8s may be unable to reproduce some
-  bugs or issues which happen in clusters used in production.
-* [kubernetes-dind-cluster](https://github.com/sttts/kubernetes-dind-cluster) -
-  it works great and does a great job in bringing multi-node clusters
-  for developers. But still, it uses its own way of creating the
-  cluster. And also, in our opinion, Docker isn't very good tool
-  for simulating the nodes, since it's an application container
-  engine, not an operating system container engine (like
-  systemd-nspawn).
-* [kubeadm-dind-cluster](https://github.com/Mirantis/kubeadm-dind-cluster) -
-  it does a great job with using kubeadm, but still, it uses Docker
-  instead of any other container engine which is designed for
-  containerizing the whole OS, not an application. Also, we prefer
-  to maintain code for doing such complicated things, instead of
-  huge shell scripts.
+# Build a Hyperkube image
+$ cd cluster/images/hyperkube
+$ make VERSION=latest
+```
+
+Assuming you have built `kube-spawn` and pulled the CoreOS image, do:
+
+```
+# Spawn and provision nodes for the cluster
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev up --image=coreos --nodes=3
+
+# Setup Kubernetes
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev init
+```
+
+## Deploying to your local cluster
+
+`kube-spawn` creates `tmp/` inside the directory you run it in.
+There you can find the `kubeconfig` for the cluster and a `token` file with
+a `kubeadm` token, that can be used to join more nodes.
+
+To verify everything worked you can run:
+```
+$ kubectl --kubeconfig ./tmp/kubeconfig get nodes
+
+
+$ kubectl --kubeconfig ./tmp/kubeconfig create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
+```
+
+## Command Usage
+
+Run `kube-spawn -h`
+
+## Troubleshooting
+
+see [doc/troubleshooting](doc/troubleshooting.md)
