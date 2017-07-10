@@ -23,5 +23,6 @@ func JoinNode(k8srelease, name, masterIP string) error {
 	if k8srelease != "" {
 		cmd = []string{"/opt/kubeadm-nspawn/join-release.sh"}
 	}
+	cmd = append(cmd, masterIP)
 	return bootstrap.Exec(nil, os.Stdout, os.Stderr, name, cmd...)
 }
