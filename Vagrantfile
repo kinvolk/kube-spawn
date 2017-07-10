@@ -13,7 +13,9 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn", create: true, type: "rsync"
 
-  config.vbguest.auto_update = false
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
   config.vm.provider :virtualbox do |vb|
       vb.check_guest_additions = false
       vb.functional_vboxsf = false
