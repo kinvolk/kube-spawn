@@ -22,6 +22,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
@@ -30,7 +31,8 @@ import (
 )
 
 const (
-	pushImageRetries int = 10
+	pushImageRetries int    = 10
+	k8sStableVersion string = "1.7.0"
 )
 
 var (
@@ -41,6 +43,37 @@ var (
 	printVersion bool
 	baseImage    string
 )
+
+func checkK8sStableRelease(k8srel string) bool {
+	v, err := semver.NewVersion(k8srel)
+	if err != nil {
+		// fallback to default version
+		v, _ = semver.NewVersion(k8sStableVersion)
+	}
+
+	c, err := semver.NewConstraint(">=" + k8sStableVersion)
+	if err != nil {
+		log.Printf("Cannot get constraint for >= %s: %v", k8sStableVersion, err)
+		return false
+	}
+
+	return c.Check(v)
+}
+
+func doCheckK8sStableRelease(k8srel string) {
+	if !checkK8sStableRelease(k8srelease) {
+		log.Printf("WARNING: K8s with version <%s is not compatible with kube-spawn.",
+			k8sStableVersion)
+		log.Printf("It's highly recommended to upgrade K8s to 1.7 or newer.")
+		// Print a kind warning, and continue to run.
+		// It should still allow kubeadm to run with Kubernetes <1.7,
+		// to be able to allow end users to flexibly handle various cases.
+	}
+}
+
+func isDev(k8srel string) bool {
+	return k8srel == "" || k8srel == "dev"
+}
 
 func runUp(cmd *cobra.Command, args []string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
@@ -61,7 +94,9 @@ func runUp(cmd *cobra.Command, args []string) {
 
 	bootstrap.CreateSharedTmpdir()
 
-	if k8srelease != "" {
+	doCheckK8sStableRelease(k8srelease)
+
+	if !isDev(k8srelease) {
 		if err := bootstrap.DownloadK8sBins(k8srelease, "./k8s"); err != nil {
 			log.Fatalf("Error downloading k8s files: %s", err)
 		}
@@ -102,7 +137,9 @@ func newUpCommand() *cobra.Command {
 }
 
 func runInit(cmd *cobra.Command, args []string) {
-	if k8srelease == "" {
+	doCheckK8sStableRelease(k8srelease)
+
+	if isDev(k8srelease) {
 		// we don't need to run a docker registry
 		if err := distribution.StartRegistry(); err != nil {
 			log.Fatalf("Error starting registry: %s", err)
@@ -166,7 +203,7 @@ func newKubeadmNspawnCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
-	cmd.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", "", "Kubernetes version to spawn")
+	cmd.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
 	cmd.AddCommand(newUpCommand())
 	cmd.AddCommand(newInitCommand())
 	return cmd
