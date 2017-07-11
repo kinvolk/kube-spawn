@@ -24,9 +24,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kinvolk/kubeadm-nspawn/pkg/bootstrap"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/distribution"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/nspawntool"
+	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/distribution"
+	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
 )
 
 const (
@@ -152,12 +152,12 @@ func newInitCommand() *cobra.Command {
 
 func newKubeadmNspawnCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "kubeadm-nspawn",
-		Short: "kubeadm-nspawn is a tool for creating a multi-node dev Kubernetes cluster",
-		Long:  "kubeadm-nspawn is a tool for creating a multi-node dev Kubernetes cluster, by using the local source code and systemd-nspawn containers",
+		Use:   "kube-spawn",
+		Short: "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster",
+		Long:  "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster, by using the local source code and systemd-nspawn containers",
 		Run: func(cmd *cobra.Command, args []string) {
 			if printVersion {
-				fmt.Printf("kubeadm-nspawn %s\n", version)
+				fmt.Printf("kube-spawn %s\n", version)
 				os.Exit(0)
 			}
 			if err := cmd.Usage(); err != nil {

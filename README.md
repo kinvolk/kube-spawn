@@ -1,8 +1,8 @@
-# kubeadm-nspawn
+# kube-spawn
 
 ## Introduction
 
-__kubeadm-nspawn__ is a tool for creating a multi-node Kubernetes cluster
+__kube-spawn__ is a tool for creating a multi-node Kubernetes cluster
 on a single machine, created mostly for developers __of__ Kubernetes.
 
 It aims to be as similar to the solutions recommended for production
@@ -40,7 +40,7 @@ it's very risky!
 
 ### Get needed Kubernetes repositories
 
-kubeadm-nspawn needs the following repos to exist in your GOPATH:
+kube-spawn needs the following repos to exist in your GOPATH:
 
 * [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
 * [kubernetes/release](https://github.com/kubernetes/release)
@@ -64,7 +64,7 @@ git remote add upstream git@github.com:kubernetes/release.git
 
 ### Build Kubernetes
 
-kubeadm-nspawn needs the built Kubernetes binaries and hyperkube
+kube-spawn needs the built Kubernetes binaries and hyperkube
 Docker image. You need to build them like that:
 
 ```
@@ -81,7 +81,7 @@ go get -u github.com/containernetworking/plugins/plugins/main/bridge
 go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
 ```
 
-`kubeadm-nspawn` will configure the networks it needs in `/etc/cni/net.d`.
+`kube-spawn` will configure the networks it needs in `/etc/cni/net.d`.
 
 ## Requirements
 
@@ -92,7 +92,7 @@ go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
     * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
   * glide from https://github.com/Masterminds/glide
 
-## Build and run kubeadm-nspawn
+## Build and run kube-spawn
 
 Make sure you have `glide` available in you PATH.
 In the directory where you cloned this repository, please do:
@@ -100,8 +100,8 @@ In the directory where you cloned this repository, please do:
 ```
 make vendor all
 sudo machinectl pull-raw --verify=no https://stable.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
-sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> CNI_PATH=<path_to_cni_plugins_bins> ./kubeadm-nspawn up --image coreos --nodes 2
-sudo ./kubeadm-nspawn init
+sudo GOPATH=$GOPATH SYSTEMD_NSPAWN_PATH=<path_to_your_nspawn_binary> CNI_PATH=<path_to_cni_plugins_bins> ./kube-spawn up --image coreos --nodes 2
+sudo ./kube-spawn init
 ```
 
 Sometimes when Docker doesn't use the newest existing API, you may see
@@ -120,13 +120,13 @@ environment variable: `DOCKER_API_VERSION=1.24 `
 - [x] bootstrapping nodes
 - [x] initialize node-0 as master with `kubeadm`
 - [x] join nodes to form a cluster
-- [x] create deployments ([issue #14](https://github.com/kinvolk/kubeadm-nspawn/issues/14))
+- [x] create deployments ([issue #14](https://github.com/kinvolk/kube-spawn/issues/14))
 
 ## Architecture
 
 ![Architecture Diagram](architecture.png?raw=true "Architecture")
 
-kubeadm-nspawn uses the following third-party components to
+kube-spawn uses the following third-party components to
 achieve its goal:
 
 ### CNI

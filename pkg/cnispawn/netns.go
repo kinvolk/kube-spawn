@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/kinvolk/kubeadm-nspawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 )
 
 var (
