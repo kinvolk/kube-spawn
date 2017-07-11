@@ -47,6 +47,10 @@ func runUp(cmd *cobra.Command, args []string) {
 		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
 
+	if err := bootstrap.WriteNetConf(); err != nil {
+		log.Fatalf("Error writing CNI configuration: %s", err)
+	}
+
 	log.Printf("Checking base image")
 	if baseImage == "" {
 		log.Fatal("No base image specified.")
