@@ -7,11 +7,11 @@ import (
 	"path"
 )
 
-const NspawnNetPath string = "/etc/cni/net.d/10-kubeadm-nspawn-net.conf"
+const NspawnNetPath string = "/etc/cni/net.d/10-kube-spawn-net.conf"
 const NspawnNetConf string = `
 {
     "cniVersion": "0.2.0",
-    "name": "kubeadm-nspawn-net",
+    "name": "kube-spawn-net",
     "type": "bridge",
     "bridge": "cni0",
     "isGateway": true,

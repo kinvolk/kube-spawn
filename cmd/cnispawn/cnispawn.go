@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kinvolk/kubeadm-nspawn/pkg/cnispawn"
+	"github.com/kinvolk/kube-spawn/pkg/cnispawn"
 )
 
 func main() {

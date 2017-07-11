@@ -6,10 +6,10 @@ VERSION=$(shell git describe --tags --always --dirty)
 all:
 	go build -o cni-noop ./cmd/cni-noop
 	go build -o cnispawn ./cmd/cnispawn
-	go build -o nspawn-runc ./cmd/nspawn-runc
-	go build -o kubeadm-nspawn \
+	go build -o kube-spawn-runc ./cmd/kube-spawn-runc
+	go build -o kube-spawn \
 		-ldflags "-X main.version=$(VERSION)" \
-		./cmd/kubeadm-nspawn
+		./cmd/kube-spawn
 
 vendor: glide.lock | glide
 	glide --quiet install --strip-vendor
@@ -22,9 +22,9 @@ clean: clean-bins clean-rootfs clean-image clean-ssh-keys
 clean-ssh-keys:
 	rm -rf ./id_rsa*
 clean-bins:
-	rm -rf ./{cni-noop,cnispawn,kubeadm-nspawn}
+	rm -rf ./{cni-noop,cnispawn,kube-spawn}
 clean-rootfs:
-	sudo rm -rf kubeadm-nspawn-*
+	sudo rm -rf kube-spawn-*
 clean-image:
 	rm -rf rootfs.tar.xz
 

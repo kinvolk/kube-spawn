@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	runcPath string = os.Getenv("NSPAWN_RUNC_BINARY_PATH")
-	logPath  string = os.Getenv("NSPAWN_RUNC_LOG_PATH")
+	runcPath string = os.Getenv("KUBE_SPAWN_RUNC_BINARY_PATH")
+	logPath  string = os.Getenv("KUBE_SPAWN_RUNC_LOG_PATH")
 )
 
 func main() {

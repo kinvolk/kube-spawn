@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-const containerNameTemplate string = "kubeadm-nspawn-%d"
+const containerNameTemplate string = "kube-spawn-%d"
 
 type Node struct {
 	Name string

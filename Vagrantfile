@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
   # config.vm.provision "shell", inline: "DEBIAN_FRONTEND=noninteractive apt-get install -y golang git docker.io systemd-container tmux"
 
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kubeadm-nspawn", create: true, type: "rsync"
+  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn", create: true, type: "rsync"
 
   config.vbguest.auto_update = false
   config.vm.provider :virtualbox do |vb|
@@ -33,7 +33,7 @@ cat >>/home/vagrant/build.sh <<-EOF
 #!/bin/bash
 set -xe
 
-cd $GOPATH/src/github.com/kinvolk/kubeadm-nspawn
+cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
 go get -u github.com/containernetworking/plugins/plugins/main/bridge
 go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
@@ -42,8 +42,8 @@ make vendor all
 
 sudo machinectl show-image coreos || sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
 
-sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kubeadm-nspawn --kubernetes-version=1.6.6 up --nodes 2 --image coreos
-sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kubeadm-nspawn --kubernetes-version=1.6.6 init
+sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=1.6.6 up --nodes 2 --image coreos
+sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=1.6.6 init
 EOF
 fi
 HERE

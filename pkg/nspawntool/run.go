@@ -51,11 +51,11 @@ var (
 
 var k8sbinds []string
 var defaultBinds = []string{
-	// kubeadm-nspawn bins
-	"--bind=" + parseBind("$PWD/scripts:/opt/kubeadm-nspawn"),
-	bindro + parseBind("$PWD/nspawn-runc:/opt/nspawn-runc"),
+	// kube-spawn bins
+	"--bind=" + parseBind("$PWD/scripts:/opt/kube-spawn"),
+	bindro + parseBind("$PWD/kube-spawn-runc:/opt/kube-spawn-runc"),
 	// shared tmpdir
-	"--bind=" + parseBind("$PWD/tmp:/tmp/kubeadm-nspawn"),
+	"--bind=" + parseBind("$PWD/tmp:/tmp/kube-spawn"),
 	// extra configs
 	bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
 	bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),

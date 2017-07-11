@@ -1,4 +1,4 @@
-package: github.com/kinvolk/kubeadm-nspawn
+package: github.com/kinvolk/kube-spawn
 import:
 - package: github.com/mholt/archiver
 - package: golang.org/x/crypto

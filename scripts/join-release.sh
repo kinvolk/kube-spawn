@@ -3,7 +3,7 @@
 set -e
 
 MASTER_IP=$1
-TOKEN=$(cat /tmp/kubeadm-nspawn/token)
+TOKEN=$(cat /tmp/kube-spawn/token)
 
 set -x
 
