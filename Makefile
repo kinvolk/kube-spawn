@@ -11,6 +11,9 @@ all:
 		-ldflags "-X main.version=$(VERSION)" \
 		./cmd/kubeadm-nspawn
 
+cnibridge:
+	go get -u github.com/containernetworking/plugins/plugins/main/bridge
+
 vendor: glide.lock | glide
 	glide --quiet install --strip-vendor
 glide.lock: | glide
