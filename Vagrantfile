@@ -13,7 +13,9 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn", create: true, type: "rsync"
 
-  config.vbguest.auto_update = false
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
   config.vm.provider :virtualbox do |vb|
       vb.check_guest_additions = false
       vb.functional_vboxsf = false
@@ -21,40 +23,6 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--cpus", "1"]
   end
 
-  config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, inline: <<HERE
-echo 'Setting up correct env. variables'
-echo "export GOPATH=$GOPATH" >> /home/vagrant/.bash_profile
-echo "export PATH=$PATH:$GOPATH/bin:/usr/local/go/bin" >> /home/vagrant/.bash_profile
-
-echo 'Writing build.sh'
-source ~/.bash_profile
-if [[ ! -f /home/vagrant/build.sh ]]; then
-cat >>/home/vagrant/build.sh <<-EOF
-#!/bin/bash
-set -xe
-
-cd $GOPATH/src/github.com/kinvolk/kube-spawn
-
-go get -u github.com/containernetworking/plugins/plugins/main/bridge
-go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
-
-make vendor all
-
-sudo machinectl show-image coreos || sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
-
-sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=1.6.6 up --nodes 2 --image coreos
-sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=1.6.6 init
-EOF
-fi
-HERE
-
-  config.vm.provision "shell", inline: <<HERE
-echo 'Modifying environment'
-chown -R vagrant:vagrant /home/vagrant
-chmod +x /home/vagrant/build.sh
-setenforce 0
-systemctl stop firewalld
-sudo groupadd docker && sudo gpasswd -a ${USER} docker && sudo systemctl restart docker && newgrp docker
-usermod -aG docker vagrant
-HERE
+  config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+  config.vm.provision "shell", path: "scripts/vagrant-mod-env.sh"
 end

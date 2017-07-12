@@ -1,27 +1,37 @@
-hash: 4fd9333c7f68ff1e551b0eb267aa915335782206a8501906e48ffc62e0400c1d
-updated: 2017-01-27T15:33:09.639904031+01:00
+hash: 7058458753d65f0b9cb4cd5094099f99a7e23bde9b37dd4ca72a67a97ef7a337
+updated: 2017-07-11T11:14:07.468254662+02:00
 imports:
 - name: github.com/containernetworking/cni
-  version: 5c3c17164270150467498a32c71436c7cd5501be
+  version: 137b4975ecab6e1f0c24c1e3c228a50a3cfba75e
+  subpackages:
+  - libcni
+  - pkg/invoke
+  - pkg/skel
+  - pkg/types
+  - pkg/types/020
+  - pkg/types/current
+  - pkg/version
+- name: github.com/containernetworking/plugins
+  version: 5bbff37294de9dfb33771dac6f53411c88abe62a
   subpackages:
   - pkg/ns
-  - pkg/types
 - name: github.com/docker/distribution
-  version: 7a0972304e201e2a5336a69d00e112c27823f554
+  version: f86db6b22663a27ba4d278220b7e34be528b1e79
   subpackages:
   - digestset
   - reference
 - name: github.com/docker/docker
-  version: fe5f49685df0d52127158f7e9a2882b8c4168dab
+  version: 3d6ab220db348d82310487e3156d445f19dc0661
   subpackages:
+  - api
   - api/types
   - api/types/blkiodev
   - api/types/container
   - api/types/events
   - api/types/filters
+  - api/types/image
   - api/types/mount
   - api/types/network
-  - api/types/reference
   - api/types/registry
   - api/types/strslice
   - api/types/swarm
@@ -29,48 +39,46 @@ imports:
   - api/types/versions
   - api/types/volume
   - client
+  - pkg/ioutils
+  - pkg/longpath
+  - pkg/mount
+  - pkg/system
   - pkg/tlsconfig
 - name: github.com/docker/go-connections
-  version: eb315e36415380e7c2fdee175262560ff42359da
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
   subpackages:
   - nat
   - sockets
   - tlsconfig
 - name: github.com/docker/go-units
-  version: e30f1e79f3cd72542f2026ceec18d3bd67ab859c
-- name: github.com/dsnet/compress
-  version: b9aab3c6a04eef14c56384b4ad065e7b73438862
-  subpackages:
-  - bzip2
-  - bzip2/internal/sais
-  - internal
-  - internal/prefix
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- name: github.com/docker/libtrust
+  version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/Masterminds/semver
+  version: abff1900528dbdaf6f3f5aa92c398be1eaf2a9f7
 - name: github.com/mholt/archiver
   version: 24d540239654d76e79c8f4e3d5bd56d90712becb
 - name: github.com/Microsoft/go-winio
-  version: 307e919c663683a9000576fdc855acaf9534c165
-- name: github.com/nwaples/rardecode
-  version: f22b7ef81a0afac9ce1447d37e5ab8e99fbd2f73
+  version: f533f7a102197536779ea3a8cb881d639e21ec5a
 - name: github.com/opencontainers/go-digest
-  version: 21dfd564fd89c944783d00d069f33e3e7123c448
-- name: github.com/pkg/errors
-  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
-- name: github.com/Sirupsen/logrus
-  version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
-- name: github.com/spf13/cobra
-  version: c29ece4386f74084680e5e6d02d7b943ae630f63
-- name: github.com/spf13/pflag
-  version: a9a634f3de0a7529baded7ad6b0c7467d5c6eca7
-- name: github.com/ulikunitz/xz
-  version: 76f94b7c69c6f84be96bcfc2443042b198689565
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
+- name: github.com/opencontainers/image-spec
+  version: 1b24aca6c83b826936087d56271f34fcef46c7b2
   subpackages:
-  - internal/hash
-  - internal/xlog
-  - lzma
+  - specs-go
+  - specs-go/v1
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
+- name: github.com/Sirupsen/logrus
+  version: 3d4380f53a34dcdc95f0c1db702615992b38d9a4
+- name: github.com/spf13/cobra
+  version: 4d647c8944eb42504a714e57e97f244ed6344722
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/vishvananda/netlink
-  version: a4f22d8ad2327663017dbb309b5e3f8b6f348020
+  version: 4e28683688429fdf8413cc610d59fb1841986300
   subpackages:
   - nl
 - name: github.com/vishvananda/netns
@@ -78,18 +86,15 @@ imports:
 - name: golang.org/x/crypto
   version: 41d678d1df78cd0410143162dff954e6dc09300f
   subpackages:
-  - curve25519
-  - ed25519
-  - ed25519/internal/edwards25519
   - ssh
 - name: golang.org/x/net
-  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
+  version: 8663ed5da4fd087c3cfb99a996e628b72e2f0948
   subpackages:
   - context
   - context/ctxhttp
   - proxy
 - name: golang.org/x/sys
-  version: e11762ca30adc5b39fdbfd8c4250dabeb8e456d3
+  version: 076b546753157f758b316e59bcb51e6807c04057
   subpackages:
   - unix
   - windows
