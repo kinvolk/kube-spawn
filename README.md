@@ -10,7 +10,6 @@ clusters as possible.
 
 * **Host:**
   - `systemd-nspawn` at least version 233
-  - tested: Fedora 26, ...
 
 * **Kubernetes** at least version 1.7.0
 
