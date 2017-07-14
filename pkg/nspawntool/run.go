@@ -32,6 +32,7 @@ import (
 )
 
 const bindro string = "--bind-ro="
+const bindrw string = "--bind="
 
 var (
 	gopath  string = os.Getenv("GOPATH")
@@ -52,17 +53,17 @@ var (
 var k8sbinds []string
 var defaultBinds = []string{
 	// kube-spawn bins
-	"--bind=" + parseBind("$PWD/scripts:/opt/kube-spawn"),
+	bindrw + parseBind("$PWD/scripts:/opt/kube-spawn"),
 	bindro + parseBind("$PWD/kube-spawn-runc:/opt/kube-spawn-runc"),
 	// shared tmpdir
-	"--bind=" + parseBind("$PWD/tmp:/tmp/kube-spawn"),
+	bindrw + parseBind("$PWD/tmp:/tmp/kube-spawn"),
 	// extra configs
 	bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
 	bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
 	bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
 	bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 	// cni bins
-	bindro + path.Join(cnipath+":/opt/cni/bin"),
+	bindrw + path.Join(cnipath+":/opt/cni/bin"),
 }
 
 func parseBind(bindstring string) string {
