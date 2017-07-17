@@ -11,7 +11,11 @@ Vagrant.configure("2") do |config|
   # config.vm.provision "shell", inline: "DEBIAN_FRONTEND=noninteractive apt-get install -y golang git docker.io systemd-container tmux"
 
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn", create: true, type: "rsync"
+  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
+    create: true,
+    owner: "vagrant",
+    group: "vagrant",
+    type: "rsync"
 
   if Vagrant.has_plugin?("vagrant-vbguest")
     config.vbguest.auto_update = false
@@ -22,6 +26,10 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--memory", "4096"]
       vb.customize ["modifyvm", :id, "--cpus", "2"]
   end
+
+  # NOTE: chown is explicitly needed, even when synced_folder is configured
+  # with correct owner/group. Maybe a vagrant issue?
+  config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
 
   config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
   config.vm.provision "shell", path: "scripts/vagrant-mod-env.sh"
