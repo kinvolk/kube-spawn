@@ -59,9 +59,6 @@ func main() {
 		}
 	}
 	cmd := exec.Command(runcPath, newArgs...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
