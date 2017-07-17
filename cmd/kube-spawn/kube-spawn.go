@@ -17,9 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Masterminds/semver"
@@ -73,6 +76,45 @@ func doCheckK8sStableRelease(k8srel string) {
 
 func isDev(k8srel string) bool {
 	return k8srel == "" || k8srel == "dev"
+}
+
+func isOverlayfsAvailable() bool {
+	f, err := os.Open("/proc/filesystems")
+	if err != nil {
+		log.Fatalf("cannot open /proc/filesystems: %v", err)
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if s.Text() == "nodev\toverlay" {
+			return true
+		}
+	}
+	return false
+}
+
+func isConntrackHashsizeCorrect() bool {
+	hsStr, err := ioutil.ReadFile("/sys/module/nf_conntrack/parameters/hashsize")
+	if err != nil {
+		log.Printf("nf_conntrack module is not loaded: %v", err)
+		return false
+	}
+	hs, _ := strconv.Atoi(string(hsStr))
+
+	ctmaxStr, err := ioutil.ReadFile("/proc/sys/net/nf_conntrack_max")
+	if err != nil {
+		log.Printf("cannot open /proc/sys/net/nf_conntrack_max: %v", err)
+		return false
+	}
+	ctmax, _ := strconv.Atoi(string(ctmaxStr))
+
+	if hs < (ctmax / 4) {
+		log.Printf("hashsize(%d) should be greater than nf_conntrack_max/4 (%d).\n", hs, ctmax/4)
+		return false
+	}
+
+	return true
 }
 
 func runUp(cmd *cobra.Command, args []string) {
@@ -164,6 +206,15 @@ func runInit(cmd *cobra.Command, args []string) {
 	if len(nodes) == 0 {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
+
+	if !isOverlayfsAvailable() {
+		log.Println("Warning: overlayfs not found, docker would not run. Please do \"modprobe overlay\".")
+	}
+	if !isConntrackHashsizeCorrect() {
+		log.Println("Warning: kube-proxy could crash due to insufficient nf_conntrack hashsize.")
+	}
+
+	log.Println("Note: init on master can take a couple of minutes until every k8s pod came up.")
 
 	if err := nspawntool.InitializeMaster(k8srelease, nodes[0].Name); err != nil {
 		log.Fatalf("Error initializing master node %s: %s", nodes[0].Name, err)

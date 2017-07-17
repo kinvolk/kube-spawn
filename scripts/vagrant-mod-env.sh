@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+if [ ${EUID} -ne 0 ]; then
+	echo "This script must be run as root"
+	exit 1
+fi
+
 USER=vagrant
 HOME=/home/${USER}
 
@@ -13,10 +18,12 @@ chmod +x ${HOME}/build.sh
 # we should ignore the error and continue.
 setenforce 0 || true
 systemctl stop firewalld
-sudo groupadd docker && sudo gpasswd -a ${USER} docker && sudo systemctl restart docker && newgrp docker
+groupadd docker && gpasswd -a ${USER} docker && systemctl restart docker && newgrp docker
 usermod -aG docker ${USER}
-sudo modprobe overlay
+
+modprobe overlay
+modprobe nf_conntrack
 
 NF_HASHSIZE=/sys/module/nf_conntrack/parameters/hashsize
 
-[ -f ${NF_HASHSIZE} ] && echo "131072" | sudo tee ${NF_HASHSIZE}
+[ -f ${NF_HASHSIZE} ] && echo "131072" > ${NF_HASHSIZE}
