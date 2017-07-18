@@ -11,13 +11,12 @@ USER=vagrant
 HOME=/home/${USER}
 
 echo 'Modifying environment'
-chown -R ${USER}:${USER} ${HOME}/go/src/github.com/kinvolk/kube-spawn/k8s
 chmod +x ${HOME}/build.sh
 
 # setenforce always returns 1 when selinux is disabled.
 # we should ignore the error and continue.
 setenforce 0 || true
-systemctl stop firewalld
+systemctl is-active firewalld 1>/dev/null && systemctl stop firewalld
 groupadd docker && gpasswd -a ${USER} docker && systemctl restart docker && newgrp docker
 usermod -aG docker ${USER}
 
