@@ -6,7 +6,7 @@ ENV["LC_ALL"] = "en_US.UTF-8"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "jhcook/fedora26"
-  config.vm.provision "shell", inline: "dnf install -y btrfs-progs docker git go kubernetes strace tmux"
+  config.vm.provision "shell", inline: "dnf install -y btrfs-progs docker git go kubernetes qemu-img strace tmux"
   # config.vm.box = "ubuntu/zesty64"
   # config.vm.provision "shell", inline: "DEBIAN_FRONTEND=noninteractive apt-get install -y golang git docker.io systemd-container tmux"
 

@@ -144,15 +144,24 @@ func runUp(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	var nodesToCreate []string
+
 	for i := 0; i < nodes; i++ {
 		name := bootstrap.GetNodeName(i)
-
-		if !bootstrap.NodeExists(name) {
-			if err := bootstrap.NewNode(baseImage, name); err != nil {
-				log.Fatalf("Error cloning base image: %s", err)
-			}
+		if bootstrap.NodeExists(name) {
+			continue
 		}
+		if err := bootstrap.NewNode(baseImage, name); err != nil {
+			log.Fatalf("Error cloning base image: %s", err)
+		}
+		nodesToCreate = append(nodesToCreate, name)
+	}
 
+	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToCreate)); err != nil {
+		log.Printf("Warning: cannot enlarge storage pool: %s", err)
+	}
+
+	for _, name := range nodesToCreate {
 		if err := nspawntool.RunNode(k8srelease, name); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
