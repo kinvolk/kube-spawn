@@ -17,8 +17,10 @@ limitations under the License.
 package bootstrap
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -30,6 +32,9 @@ import (
 
 const (
 	containerNameTemplate string = "kube-spawn-%d"
+	ctHashsizeModparam    string = "/sys/module/nf_conntrack/parameters/hashsize"
+	ctHashsizeValue       string = "131072"
+	ctMaxSysctl           string = "/proc/sys/net/nf_conntrack_max"
 	machinesDir           string = "/var/lib/machines"
 	machinesImage         string = "/var/lib/machines.raw"
 )
@@ -296,4 +301,140 @@ func runBtrfsDisableQuota() error {
 	}
 
 	return nil
+}
+
+func EnsureRequirements() {
+	// Ensure that the system requirements are satisfied for starting
+	// kube-spawn. It's just like running the commands below:
+	//
+	// modprobe overlay
+	// modprobe nf_conntrack
+	// echo "131072" > /sys/module/nf_conntrack/parameters/hashsize
+	ensureOverlayfs()
+	ensureConntrackHashsize()
+
+	// TODO: handle SELinux as well as firewalld
+}
+
+func isOverlayfsAvailable() bool {
+	f, err := os.Open("/proc/filesystems")
+	if err != nil {
+		log.Fatalf("cannot open /proc/filesystems: %v", err)
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if s.Text() == "nodev\toverlay" {
+			return true
+		}
+	}
+	return false
+}
+
+func runModprobe(moduleName string) error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("modprobe"); err != nil {
+		// fall back to an ordinary abspath
+		cmdPath = "/usr/sbin/modprobe"
+	}
+
+	args := []string{
+		cmdPath,
+		moduleName,
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureOverlayfs() {
+	if isOverlayfsAvailable() {
+		return
+	}
+
+	log.Println("Warning: overlayfs not found, docker would not run.")
+	log.Println("loading overlay module... ")
+
+	if err := runModprobe("overlay"); err != nil {
+		log.Printf("error running modprobe overlay: %v\n", err)
+		return
+	}
+}
+
+func isConntrackLoaded() bool {
+	if _, err := os.Stat(ctHashsizeModparam); os.IsNotExist(err) {
+		log.Printf("nf_conntrack module is not loaded: %v\n", err)
+		return false
+	}
+
+	return true
+}
+
+func isConntrackHashsizeCorrect() bool {
+	hsStr, err := ioutil.ReadFile(ctHashsizeModparam)
+	if err != nil {
+		log.Printf("cannot read from %s: %v\n", ctHashsizeModparam, err)
+		return false
+	}
+	hs, _ := strconv.Atoi(string(hsStr))
+
+	ctmaxStr, err := ioutil.ReadFile(ctMaxSysctl)
+	if err != nil {
+		log.Printf("cannot open %s: %v\n", ctMaxSysctl, err)
+		return false
+	}
+	ctmax, _ := strconv.Atoi(string(ctmaxStr))
+
+	if hs < (ctmax / 4) {
+		log.Printf("hashsize(%d) should be greater than nf_conntrack_max/4 (%d).\n", hs, ctmax/4)
+		return false
+	}
+
+	return true
+}
+
+func setConntrackHashsize() error {
+	if err := ioutil.WriteFile(ctHashsizeModparam, []byte(ctHashsizeValue), os.FileMode(0600)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureConntrackHashsize() {
+	if !isConntrackLoaded() {
+		log.Println("Warning: nf_conntrack module is not loaded.")
+		log.Println("loading nf_conntrack module... ")
+
+		if err := runModprobe("nf_conntrack"); err != nil {
+			log.Printf("error running modprobe nf_conntrack: %v\n", err)
+			return
+		}
+	}
+
+	if isConntrackHashsizeCorrect() {
+		return
+	}
+
+	log.Println("Warning: kube-proxy could crash due to insufficient nf_conntrack hashsize.")
+	log.Printf("setting nf_conntrack hashsize to %s... ", ctHashsizeValue)
+
+	if err := setConntrackHashsize(); err != nil {
+		log.Printf("error setting conntrack hashsize: %v\n", err)
+		return
+	}
 }
