@@ -148,7 +148,6 @@ func RunNode(k8srelease, name string) error {
 		check := exec.Command("systemctl", "--machine", name, "status", "basic.target", "--state=running")
 		check.Run()
 		if ready = check.ProcessState.Success(); !ready {
-			log.Printf("%+v", check.ProcessState)
 			time.Sleep(2 * time.Second)
 			retries++
 		}
