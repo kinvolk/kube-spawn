@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
   end
 
   # Fedora 26
-  config.vm.define "fedora" do |fedora|
+  config.vm.define "fedora", primary: true do |fedora|
     config.vm.provision "shell", inline: "dnf install -y btrfs-progs docker git go kubernetes qemu-img strace tmux"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
@@ -38,7 +38,7 @@ Vagrant.configure("2") do |config|
   end
 
   # Ubuntu 17.04 (Zesty)
-  config.vm.define "ubuntu" do |ubuntu|
+  config.vm.define "ubuntu", autostart: false do |ubuntu|
     config.vm.box = "ubuntu/zesty64"
     config.vm.provision "shell", inline: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -; echo \"deb http://apt.kubernetes.io/ kubernetes-xenial main\" > /etc/apt/sources.list.d/kubernetes.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io golang git qemu-utils selinux-utils systemd-container kubectl tmux"
 
@@ -55,7 +55,7 @@ Vagrant.configure("2") do |config|
   end
 
   # Debian testing
-  config.vm.define "debian" do |debian|
+  config.vm.define "debian", autostart: false do |debian|
     config.vm.box = "debian/testing64"
     config.vm.provision "shell", inline: "echo deb http://apt.dockerproject.org/repo debian-stretch main > /etc/apt/sources.list.d/docker.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated docker-engine; DEBIAN_FRONTEND=noninteractive apt-get install -y golang git kubernetes-client qemu-utils selinux-utils systemd-container tmux"
 
