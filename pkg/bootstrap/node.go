@@ -67,7 +67,7 @@ func NewNode(baseImage, machine string) error {
 	return nil
 }
 
-func NodeExists(machine string) bool {
+func MachineImageExists(machine string) bool {
 	// TODO: we could also parse machinectl list-images to find that
 	if _, err := os.Stat(path.Join(machinesDir, machine+".raw")); err != nil {
 		if os.IsNotExist(err) {
@@ -108,6 +108,20 @@ func GetRunningNodes() ([]Node, error) {
 	}
 
 	return nodes, nil
+}
+
+func IsNodeRunning(nodeName string) bool {
+	var err error
+	var runNodes []Node
+	if runNodes, err = GetRunningNodes(); err != nil {
+		return false
+	}
+	for _, n := range runNodes {
+		if strings.TrimSpace(nodeName) == strings.TrimSpace(n.Name) {
+			return true
+		}
+	}
+	return false
 }
 
 func EnlargeStoragePool(baseImage string, nodes int) error {
