@@ -75,7 +75,7 @@ func isDev(k8srel string) bool {
 	return k8srel == "" || k8srel == "dev"
 }
 
-func runUp(cmd *cobra.Command, args []string) {
+func runSetup(cmd *cobra.Command, args []string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
 		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
@@ -140,11 +140,11 @@ func runUp(cmd *cobra.Command, args []string) {
 	log.Printf("All nodes are running. Use machinectl to login/stop/etc.")
 }
 
-func newUpCommand() *cobra.Command {
+func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "up",
+		Use:   "setup",
 		Short: "Start nodes",
-		Run:   runUp,
+		Run:   runSetup,
 	}
 	cmd.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmd.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
@@ -223,7 +223,7 @@ func newKubeadmNspawnCommand() *cobra.Command {
 	}
 	cmd.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
 	cmd.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
-	cmd.AddCommand(newUpCommand())
+	cmd.AddCommand(newSetupCommand())
 	cmd.AddCommand(newInitCommand())
 	return cmd
 }
