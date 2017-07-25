@@ -143,7 +143,7 @@ func RunNode(k8srelease, name string) error {
 
 	if err := c.Wait(); err != nil {
 		var cniError cnitypes.Error
-		if err := json.Unmarshal(cniDataJSON, &cniError); err == nil {
+		if err := json.Unmarshal(cniDataJSON, &cniError); err != nil {
 			return fmt.Errorf("error unmarshaling cni error: %s", err)
 		}
 		return fmt.Errorf("error running cnispawn: %s", cniError)
