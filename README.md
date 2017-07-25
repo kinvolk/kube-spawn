@@ -43,7 +43,7 @@ $ make vendor all
 $ sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
 
 # Spawn and provision nodes for the cluster
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn setup --image=coreos --nodes=3
 
 # Setup Kubernetes
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn init
@@ -82,7 +82,7 @@ Assuming you have built `kube-spawn` and pulled the CoreOS image, do:
 
 ```
 # Spawn and provision nodes for the cluster
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev up --image=coreos --nodes=3
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev setup --image=coreos --nodes=3
 
 # Setup Kubernetes
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev init
