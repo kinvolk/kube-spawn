@@ -35,19 +35,8 @@ const bindro string = "--bind-ro="
 const bindrw string = "--bind="
 
 var (
-	gopath  string = os.Getenv("GOPATH")
-	cnipath string = os.Getenv("CNI_PATH")
-	// binariesDir  string = path.Join(gopath, "src", "k8s.io", "kubernetes", "_output", "bin")
-	// binariesDest string = path.Join("usr", "bin")
-
-	// cniDir  string = path.Join(gopath, "src", "github.com", "containernetworking", "cni", "bin")
-	// cniDest string = path.Join("opt", "cni", "bin")
-
-	// kubeletConfigPath string = path.Join(gopath, "src", "k8s.io", "release", "rpm", "10-kubeadm.conf")
-	// kubeletConfigDest string = path.Join("etc", "systemd", "system", "kubelet.service.d", "10-kubeadm.conf")
-
-	// systemdUnitDir  string = path.Join(gopath, "src", "k8s.io", "kubernetes", "build", "debs")
-	// systemdUnitDest string = path.Join("usr", "lib", "systemd", "system")
+	goPath  string = os.Getenv("GOPATH")
+	cniPath string = os.Getenv("CNI_PATH")
 )
 
 var k8sbinds []string
@@ -63,7 +52,7 @@ var defaultBinds = []string{
 	bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
 	bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 	// cni bins
-	bindrw + path.Join(cnipath+":/opt/cni/bin"),
+	bindrw + path.Join(cniPath+":/opt/cni/bin"),
 }
 
 func parseBind(bindstring string) string {
@@ -96,12 +85,12 @@ func RunNode(k8srelease, name string) error {
 	} else {
 		k8sbinds = []string{
 			// bins
-			bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubelet:/usr/bin/kubelet"),
-			bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubeadm:/usr/bin/kubeadm"),
-			bindro + path.Join(gopath, "/src/k8s.io/kubernetes/_output/bin/kubectl:/usr/bin/kubectl"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubelet:/usr/bin/kubelet"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubeadm:/usr/bin/kubeadm"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubectl:/usr/bin/kubectl"),
 			// service files
-			bindro + path.Join(gopath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
-			bindro + path.Join(gopath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
+			bindro + path.Join(goPath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
 		}
 	}
 	args = append(args, k8sbinds...)
