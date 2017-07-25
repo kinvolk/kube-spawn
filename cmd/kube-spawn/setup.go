@@ -137,8 +137,14 @@ func doSetup(numNodes int, baseImage string) {
 		os.Exit(1)
 	}
 
-	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToRun)); err != nil {
-		log.Printf("Warning: cannot enlarge storage pool: %s", err)
+	var poolSize int64
+	var err error
+	if poolSize, err = bootstrap.GetPoolSize(baseImage, len(nodesToRun)); err != nil {
+		log.Printf("cannot get pool size: %v", err)
+	} else {
+		if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
+			log.Printf("Warning: cannot enlarge storage pool: %v", err)
+		}
 	}
 
 	for _, name := range nodesToRun {
