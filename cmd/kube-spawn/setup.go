@@ -18,6 +18,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ import (
 )
 
 var (
-	nodes     int
+	numNodes  int
 	baseImage string
 
 	cmdSetup = &cobra.Command{
@@ -40,7 +41,7 @@ var (
 func init() {
 	cmdKubeSpawn.AddCommand(cmdSetup)
 
-	cmdSetup.Flags().IntVarP(&nodes, "nodes", "n", 1, "number of nodes to spawn")
+	cmdSetup.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
 }
 
@@ -72,10 +73,10 @@ func doCheckK8sStableRelease(k8srel string) {
 }
 
 func runSetup(cmd *cobra.Command, args []string) {
-	doSetup(nodes, baseImage)
+	doSetup(numNodes, baseImage)
 }
 
-func doSetup(nodes int, baseImage string) {
+func doSetup(numNodes int, baseImage string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
 		log.Fatalf("Error checking CNI bridge: %s", err)
 	}
@@ -102,24 +103,30 @@ func doSetup(nodes int, baseImage string) {
 		}
 	}
 
-	var nodesToCreate []string
+	var nodesToRun []string
 
-	for i := 0; i < nodes; i++ {
+	for i := 0; i < numNodes; i++ {
 		name := bootstrap.GetNodeName(i)
-		if bootstrap.MachineImageExists(name) {
+		if !bootstrap.MachineImageExists(name) {
+			if err := bootstrap.NewNode(baseImage, name); err != nil {
+				log.Fatalf("Error cloning base image: %s", err)
+			}
+		}
+		if bootstrap.IsNodeRunning(name) {
 			continue
 		}
-		if err := bootstrap.NewNode(baseImage, name); err != nil {
-			log.Fatalf("Error cloning base image: %s", err)
-		}
-		nodesToCreate = append(nodesToCreate, name)
+		nodesToRun = append(nodesToRun, name)
+	}
+	if len(nodesToRun) == 0 {
+		log.Printf("No nodes to create. stop")
+		os.Exit(1)
 	}
 
-	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToCreate)); err != nil {
+	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToRun)); err != nil {
 		log.Printf("Warning: cannot enlarge storage pool: %s", err)
 	}
 
-	for _, name := range nodesToCreate {
+	for _, name := range nodesToRun {
 		if err := nspawntool.RunNode(k8srelease, name); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
