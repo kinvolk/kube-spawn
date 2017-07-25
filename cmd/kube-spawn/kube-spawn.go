@@ -38,7 +38,7 @@ const (
 var (
 	version      string
 	gopath       string = os.Getenv("GOPATH")
-	nodes        int
+	numNodes     int
 	k8srelease   string
 	printVersion bool
 	baseImage    string
@@ -88,7 +88,7 @@ func runUp(cmd *cobra.Command, args []string) {
 	if baseImage == "" {
 		log.Fatal("No base image specified.")
 	}
-	if !bootstrap.NodeExists(baseImage) {
+	if !bootstrap.MachineImageExists(baseImage) {
 		log.Fatal("Base image not found.")
 	}
 
@@ -102,24 +102,30 @@ func runUp(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var nodesToCreate []string
+	var nodesToRun []string
 
-	for i := 0; i < nodes; i++ {
+	for i := 0; i < numNodes; i++ {
 		name := bootstrap.GetNodeName(i)
-		if bootstrap.NodeExists(name) {
+		if !bootstrap.MachineImageExists(name) {
+			if err := bootstrap.NewNode(baseImage, name); err != nil {
+				log.Fatalf("Error cloning base image: %s", err)
+			}
+		}
+		if bootstrap.IsNodeRunning(name) {
 			continue
 		}
-		if err := bootstrap.NewNode(baseImage, name); err != nil {
-			log.Fatalf("Error cloning base image: %s", err)
-		}
-		nodesToCreate = append(nodesToCreate, name)
+		nodesToRun = append(nodesToRun, name)
+	}
+	if len(nodesToRun) == 0 {
+		log.Printf("No nodes to create. stop")
+		os.Exit(1)
 	}
 
-	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToCreate)); err != nil {
+	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToRun)); err != nil {
 		log.Printf("Warning: cannot enlarge storage pool: %s", err)
 	}
 
-	for _, name := range nodesToCreate {
+	for _, name := range nodesToRun {
 		if err := nspawntool.RunNode(k8srelease, name); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
@@ -140,7 +146,7 @@ func newUpCommand() *cobra.Command {
 		Short: "Start nodes",
 		Run:   runUp,
 	}
-	cmd.Flags().IntVarP(&nodes, "nodes", "n", 1, "number of nodes to spawn")
+	cmd.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmd.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
 	return cmd
 }
