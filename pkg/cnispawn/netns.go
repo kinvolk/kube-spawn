@@ -26,11 +26,12 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 var (
-	gopath  string = os.Getenv("GOPATH")
-	cniPath string = os.Getenv("CNI_PATH")
+	goPath  string
+	cniPath string
 )
 
 type CniNetns struct {
@@ -38,6 +39,16 @@ type CniNetns struct {
 }
 
 func NewCniNetns() (*CniNetns, error) {
+	var err error
+
+	if goPath, err = utils.GetValidGoPath(); err != nil {
+		return nil, fmt.Errorf("cnispawn: invalid GOPATH %q", goPath)
+	}
+
+	if cniPath, err = utils.GetValidCniPath(goPath); err != nil {
+		return nil, fmt.Errorf("cnispawn: invalid CNI_PATH %q", cniPath)
+	}
+
 	netns, err := ns.NewNS()
 	if err != nil {
 		return nil, err
@@ -48,12 +59,15 @@ func NewCniNetns() (*CniNetns, error) {
 
 	cniPluginPath := path.Join(cniPath, "bridge")
 
-	env := os.Environ()
+	// CNI-specific environment variables must appear before other ones
+	// obtained from os.Environ(), so that they can override default ones.
+	var env []string
 	env = append(env, "CNI_COMMAND=ADD")
 	env = append(env, fmt.Sprintf("CNI_CONTAINERID=%s", containerId))
 	env = append(env, fmt.Sprintf("CNI_NETNS=%s", netns.Path()))
 	env = append(env, "CNI_IFNAME=eth0")
 	env = append(env, fmt.Sprintf("CNI_PATH=%s", cniPath))
+	env = append(env, os.Environ()...)
 
 	c := exec.Cmd{
 		Path:   cniPluginPath,
