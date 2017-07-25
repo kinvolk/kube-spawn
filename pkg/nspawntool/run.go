@@ -29,30 +29,36 @@ import (
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cniversion "github.com/containernetworking/cni/pkg/version"
+
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 const bindro string = "--bind-ro="
 const bindrw string = "--bind="
 
 var (
-	goPath  string = os.Getenv("GOPATH")
-	cniPath string = os.Getenv("CNI_PATH")
+	goPath  string
+	cniPath string
 )
 
 var k8sbinds []string
-var defaultBinds = []string{
-	// kube-spawn bins
-	bindrw + parseBind("$PWD/scripts:/opt/kube-spawn"),
-	bindro + parseBind("$PWD/kube-spawn-runc:/opt/kube-spawn-runc"),
-	// shared tmpdir
-	bindrw + parseBind("$PWD/tmp:/tmp/kube-spawn"),
-	// extra configs
-	bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
-	bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
-	bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
-	bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
-	// cni bins
-	bindrw + path.Join(cniPath+":/opt/cni/bin"),
+var defaultBinds []string
+
+func getDefaultBinds(cniPath string) []string {
+	return []string{
+		// kube-spawn bins
+		bindrw + parseBind("$PWD/scripts:/opt/kube-spawn"),
+		bindro + parseBind("$PWD/kube-spawn-runc:/opt/kube-spawn-runc"),
+		// shared tmpdir
+		bindrw + parseBind("$PWD/tmp:/tmp/kube-spawn"),
+		// extra configs
+		bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
+		bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
+		bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
+		bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
+		// cni bins
+		bindrw + path.Join(cniPath+":/opt/cni/bin"),
+	}
 }
 
 func parseBind(bindstring string) string {
@@ -64,6 +70,19 @@ func parseBind(bindstring string) string {
 }
 
 func RunNode(k8srelease, name string) error {
+	var err error
+
+	if goPath, err = utils.GetValidGoPath(); err != nil {
+		return fmt.Errorf("RunNode: invalid GOPATH %q", goPath)
+	}
+
+	if cniPath, err = utils.GetValidCniPath(goPath); err != nil {
+		return fmt.Errorf("RunNode: invalid CNI_PATH %q", cniPath)
+	}
+
+	// defaultBinds has to be determined after evaluation of cniPath
+	defaultBinds = getDefaultBinds(cniPath)
+
 	args := []string{
 		"cnispawn",
 		"-d",
