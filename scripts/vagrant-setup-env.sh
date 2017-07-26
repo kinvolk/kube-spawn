@@ -22,9 +22,7 @@ set -xe
 
 cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
-go get -u github.com/containernetworking/plugins/plugins/main/bridge
-go get -u github.com/containernetworking/plugins/plugins/main/loopback
-go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
+go get -u github.com/containernetworking/plugins/plugins/...
 
 make vendor all
 

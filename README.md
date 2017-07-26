@@ -21,9 +21,8 @@ controlled environment, you can use [Vagrant](doc/vagrant.md).
 To setup `kube-spawn` on your machine, make sure you have a working [Go environment](https://golang.org/doc/install):
 
 ```
-# Get the needed CNI plugins
-$ go get -u github.com/containernetworking/plugins/plugins/main/bridge
-$ go get -u github.com/containernetworking/plugins/plugins/ipam/host-local
+# Get CNI plugins
+$ go get -u github.com/containernetworking/plugins/plugins/...
 
 # Get glide
 $ go get -u github.com/Masterminds/glide
