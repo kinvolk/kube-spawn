@@ -44,7 +44,7 @@ func init() {
 
 	cmdSetup.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
-	cmdSetup.Flags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", "", "path to .kube-spawn directory")
+	cmdSetup.Flags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", "", "path to directory where .kube-spawn directory is located")
 }
 
 func checkK8sStableRelease(k8srel string) bool {
