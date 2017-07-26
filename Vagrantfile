@@ -27,7 +27,8 @@ Vagrant.configure("2") do |config|
       create: true,
       owner: "vagrant",
       group: "vagrant",
-      type: "rsync"
+      type: "rsync",
+      rsync__exclude: ".kube-spawn/"
 
     # NOTE: chown is explicitly needed, even when synced_folder is configured
     # with correct owner/group. Maybe a vagrant issue?
@@ -47,7 +48,8 @@ Vagrant.configure("2") do |config|
       create: true,
       owner: "ubuntu",
       group: "ubuntu",
-      type: "rsync"
+      type: "rsync",
+      rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/ubuntu/go ; chown -R ubuntu:ubuntu /home/ubuntu/go"
     config.vm.provision "shell", env: {"GOPATH" => "/home/ubuntu/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
@@ -64,7 +66,8 @@ Vagrant.configure("2") do |config|
       create: true,
       owner: "vagrant",
       group: "vagrant",
-      type: "rsync"
+      type: "rsync",
+      rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
     config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
