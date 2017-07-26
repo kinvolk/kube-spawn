@@ -90,6 +90,10 @@ func RunNode(k8srelease, name, kubeSpawnDir string) error {
 		kubeSpawnDir = parseBind("$PWD/.kube-spawn")
 	}
 
+	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
+		return fmt.Errorf("unable to create directory %q: %v.", kubeSpawnDir, err)
+	}
+
 	if err := bootstrap.PathSupportsOverlay(kubeSpawnDir); err != nil {
 		return fmt.Errorf("unable to create overlayfs on %q: %v. Try to pass a directory with a different filesystem (like ext4 or XFS) to --kube-spawn-dir.", kubeSpawnDir, err)
 	}
