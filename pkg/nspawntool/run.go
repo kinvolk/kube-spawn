@@ -30,6 +30,7 @@ import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cniversion "github.com/containernetworking/cni/pkg/version"
 
+	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
@@ -69,7 +70,7 @@ func parseBind(bindstring string) string {
 	return strings.Replace(bindstring, "$PWD", pwd, 1)
 }
 
-func RunNode(k8srelease, name string) error {
+func RunNode(k8srelease, name, kubeSpawnDir string) error {
 	var err error
 
 	if goPath, err = utils.GetValidGoPath(); err != nil {
@@ -82,6 +83,23 @@ func RunNode(k8srelease, name string) error {
 
 	// defaultBinds has to be determined after evaluation of cniPath
 	defaultBinds = getDefaultBinds(cniPath)
+
+	if kubeSpawnDir == "" {
+		kubeSpawnDir = parseBind("$PWD/.kube-spawn")
+	} else if err := utils.CheckValidDir(kubeSpawnDir); err != nil {
+		kubeSpawnDir = parseBind("$PWD/.kube-spawn")
+	}
+
+	if err := bootstrap.PathSupportsOverlay(kubeSpawnDir); err != nil {
+		return fmt.Errorf("unable to create overlayfs on %q: %v. Try to pass a directory with a different filesystem (like ext4 or XFS) to --kube-spawn-dir.", kubeSpawnDir, err)
+	}
+
+	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
+	// /var/lib/docker inside the node
+	mountDir := path.Join(kubeSpawnDir, "default", name, "mount")
+	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err == nil {
+		defaultBinds = append(defaultBinds, bindrw+mountDir+":/var/lib/docker")
+	}
 
 	args := []string{
 		"cnispawn",
