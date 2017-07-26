@@ -70,7 +70,7 @@ func parseBind(bindstring string) string {
 	return strings.Replace(bindstring, "$PWD", pwd, 1)
 }
 
-func RunNode(k8srelease, name, kubeSpawnDir string) error {
+func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 	var err error
 
 	if goPath, err = utils.GetValidGoPath(); err != nil {
@@ -84,11 +84,12 @@ func RunNode(k8srelease, name, kubeSpawnDir string) error {
 	// defaultBinds has to be determined after evaluation of cniPath
 	defaultBinds = getDefaultBinds(cniPath)
 
-	if kubeSpawnDir == "" {
-		kubeSpawnDir = parseBind("$PWD/.kube-spawn")
-	} else if err := utils.CheckValidDir(kubeSpawnDir); err != nil {
-		kubeSpawnDir = parseBind("$PWD/.kube-spawn")
+	if kubeSpawnDirParent == "" {
+		kubeSpawnDirParent = parseBind("$PWD")
+	} else if err := utils.CheckValidDir(kubeSpawnDirParent); err != nil {
+		kubeSpawnDirParent = parseBind("$PWD")
 	}
+	kubeSpawnDir := path.Join(kubeSpawnDirParent, ".kube-spawn")
 
 	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
 		return fmt.Errorf("unable to create directory %q: %v.", kubeSpawnDir, err)
