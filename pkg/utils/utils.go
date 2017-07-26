@@ -29,7 +29,7 @@ var (
 	cniPath  string = os.Getenv("CNI_PATH")
 )
 
-func checkValidDir(inPath string) error {
+func CheckValidDir(inPath string) error {
 	if fi, err := os.Stat(inPath); os.IsNotExist(err) {
 		return err
 	} else if !fi.IsDir() {
@@ -39,12 +39,12 @@ func checkValidDir(inPath string) error {
 }
 
 func GetValidGoPath() (string, error) {
-	if err := checkValidDir(goPath); err != nil {
+	if err := CheckValidDir(goPath); err != nil {
 		// fall back to $HOME/go
 		goPathOrig := goPath
 		goPath = path.Join(homePath, "go")
 		log.Printf("invalid GOPATH %q, fall back to %s...\n", goPathOrig, goPath)
-		if err := checkValidDir(goPath); err != nil {
+		if err := CheckValidDir(goPath); err != nil {
 			return "", err
 		}
 	}
@@ -53,12 +53,12 @@ func GetValidGoPath() (string, error) {
 }
 
 func GetValidCniPath(inGoPath string) (string, error) {
-	if err := checkValidDir(cniPath); err != nil {
+	if err := CheckValidDir(cniPath); err != nil {
 		// fall back to $GOPATH/bin
 		cniPathOrig := cniPath
 		cniPath = path.Join(inGoPath, "bin")
 		log.Printf("invalid CNI_PATH %q, fall back to %s...\n", cniPathOrig, cniPath)
-		if err := checkValidDir(cniPath); err != nil {
+		if err := CheckValidDir(cniPath); err != nil {
 			return "", err
 		}
 	}

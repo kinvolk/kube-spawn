@@ -28,8 +28,9 @@ import (
 )
 
 var (
-	numNodes  int
-	baseImage string
+	numNodes     int
+	baseImage    string
+	kubeSpawnDir string
 
 	cmdSetup = &cobra.Command{
 		Use:   "setup",
@@ -43,6 +44,7 @@ func init() {
 
 	cmdSetup.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
+	cmdSetup.Flags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", "", "path to .kube-spawn directory")
 }
 
 func checkK8sStableRelease(k8srel string) bool {
@@ -127,7 +129,7 @@ func doSetup(numNodes int, baseImage string) {
 	}
 
 	for _, name := range nodesToRun {
-		if err := nspawntool.RunNode(k8srelease, name); err != nil {
+		if err := nspawntool.RunNode(k8srelease, name, kubeSpawnDir); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
 
