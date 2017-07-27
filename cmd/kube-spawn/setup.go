@@ -96,6 +96,7 @@ func doSetup(numNodes int, baseImage string) {
 	}
 
 	bootstrap.CreateSharedTmpdir()
+	bootstrap.EnsureRequirements()
 
 	doCheckK8sStableRelease(k8srelease)
 
