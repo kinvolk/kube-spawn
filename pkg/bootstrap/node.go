@@ -82,7 +82,12 @@ func MachineImageExists(machine string) bool {
 func GetRunningNodes() ([]Node, error) {
 	var nodes []Node
 
-	cmd := exec.Command("machinectl", "list")
+	args := []string{
+		"list",
+		"--no-legend",
+	}
+
+	cmd := exec.Command("machinectl", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
@@ -91,23 +96,72 @@ func GetRunningNodes() ([]Node, error) {
 		return nil, err
 	}
 
-	raw := strings.Fields(string(b))
-	if len(raw) <= 6 {
-		return nil, fmt.Errorf("No running machines")
-	}
-	totaln, err := strconv.Atoi(raw[(len(raw) - 3)])
-	if err != nil {
-		return nil, err
-	}
-	for i := 1; i <= totaln; i++ {
+	s := bufio.NewScanner(strings.NewReader(string(b)))
+	for s.Scan() {
+		line := strings.Fields(s.Text())
+		if len(line) <= 2 {
+			continue
+		}
+
+		// an example line from systemd v232 or newer:
+		//  kube-spawn-0 container systemd-nspawn coreos 1478.0.0 10.22.0.130...
+		//
+		// systemd v231 or older:
+		//  kube-spawn-0 container systemd-nspawn
+
+		var ipaddr string
+		machineName := line[0]
+		if len(line) >= 6 {
+			ipaddr = strings.TrimSuffix(line[5], "...")
+		} else {
+			ipaddr, err = GetIPAddressLegacy(machineName)
+			if err != nil {
+				return nil, err
+			}
+		}
 		node := Node{
-			Name: raw[i*6],
-			IP:   strings.TrimSuffix(raw[(i*6)+5], "..."),
+			Name: machineName,
+			IP:   ipaddr,
 		}
 		nodes = append(nodes, node)
 	}
 
 	return nodes, nil
+}
+
+func GetIPAddressLegacy(mach string) (string, error) {
+	// machinectl status kube-spawn-0 --no-pager | grep Address
+	args := []string{
+		"status",
+		mach,
+		"--no-pager",
+	}
+
+	cmd := exec.Command("machinectl", args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	b, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	s := bufio.NewScanner(strings.NewReader(string(b)))
+	for s.Scan() {
+		// an example line is like this:
+		//
+		//  Address: 10.22.0.4
+		if strings.Contains(s.Text(), "Address:") {
+			line := strings.TrimSpace(s.Text())
+			fields := strings.Fields(line)
+			if len(fields) <= 1 {
+				continue
+			}
+			return fields[1], nil
+		}
+	}
+
+	return "", err
 }
 
 func IsNodeRunning(nodeName string) bool {
