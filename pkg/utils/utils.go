@@ -21,6 +21,10 @@ import (
 	"log"
 	"os"
 	"path"
+	"syscall"
+	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -64,4 +68,11 @@ func GetValidCniPath(inGoPath string) (string, error) {
 	}
 
 	return cniPath, nil
+}
+
+// IsTerminal returns true if the given file descriptor is a terminal.
+func IsTerminal(fd uintptr) bool {
+	var termios syscall.Termios
+	_, _, err := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(&termios)))
+	return err == 0
 }

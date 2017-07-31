@@ -20,6 +20,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 var (
@@ -59,6 +61,16 @@ func main() {
 		}
 	}
 	cmd := exec.Command(runcPath, newArgs...)
+
+	// Selectively pass Stdout/Stderr, by determining if they are terminal or not.
+	// If we always pass them, interactive mode of connection to containers
+	// will fail with error messages like "container not started".
+	// If we never pass them, then "kubectl logs" won't be able to print any logs.
+	if !utils.IsTerminal(os.Stdout.Fd()) && !utils.IsTerminal(os.Stderr.Fd()) {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
