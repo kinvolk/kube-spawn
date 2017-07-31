@@ -89,16 +89,17 @@ $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev
 
 ## Deploying to your local cluster
 
-`kube-spawn` creates `tmp/` inside the directory you run it in.
+`kube-spawn` creates `.kube-spawn/default/` inside the directory you run it in.
 There you can find the `kubeconfig` for the cluster and a `token` file with
 a `kubeadm` token, that can be used to join more nodes.
 
 To verify everything worked you can run:
 ```
-$ kubectl --kubeconfig ./tmp/kubeconfig get nodes
+$ export KUBECONFIG=$HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+$ kubectl get nodes
 
 
-$ kubectl --kubeconfig ./tmp/kubeconfig create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
+$ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
 ## Command Usage

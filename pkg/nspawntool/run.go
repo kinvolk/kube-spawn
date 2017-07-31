@@ -51,7 +51,7 @@ func getDefaultBinds(cniPath string) []string {
 		bindrw + parseBind("$PWD/scripts:/opt/kube-spawn"),
 		bindro + parseBind("$PWD/kube-spawn-runc:/opt/kube-spawn-runc"),
 		// shared tmpdir
-		bindrw + parseBind("$PWD/tmp:/tmp/kube-spawn"),
+		bindrw + parseBind("$PWD/.kube-spawn/default:/tmp/kube-spawn"),
 		// extra configs
 		bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
 		bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),

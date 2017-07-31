@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	tmpDir      string = "tmp"
+	tmpDir      string = ".kube-spawn/default"
 	FsMagicAUFS        = 0x61756673 // https://goo.gl/CBwx43
 	FsMagicZFS         = 0x2FC12FC1 // https://goo.gl/xTvzO5
 )
