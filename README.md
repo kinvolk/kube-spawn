@@ -48,7 +48,23 @@ $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn setup --image=coreos --n
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn init
 ```
 
-## Running local Kubernetes builds
+Now that you're up and running, you can start using it.
+
+## Deploying to your local cluster
+
+`kube-spawn` creates `.kube-spawn/default/` inside the directory you run it in.
+There you can find the `kubeconfig` for the cluster and a `token` file with
+a `kubeadm` token, that can be used to join more nodes.
+
+To verify everything worked you can run:
+```
+$ export KUBECONFIG=$HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+$ kubectl get nodes
+$ kubectl get pods --all-namespaces
+$ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
+```
+
+## Running local Kubernetes builds (optional)
 
 One of the main use cases of `kube-spawn` is to be able to easily test patches to
 Kubernetes. To do this, some additional steps are required.
@@ -85,21 +101,6 @@ $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev
 
 # Setup Kubernetes
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev init
-```
-
-## Deploying to your local cluster
-
-`kube-spawn` creates `.kube-spawn/default/` inside the directory you run it in.
-There you can find the `kubeconfig` for the cluster and a `token` file with
-a `kubeadm` token, that can be used to join more nodes.
-
-To verify everything worked you can run:
-```
-$ export KUBECONFIG=$HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
-$ kubectl get nodes
-
-
-$ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
 ## Command Usage
