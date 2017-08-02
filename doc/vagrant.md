@@ -5,5 +5,5 @@ The provided Vagrantfile is used to test `kube-spawn` on various Linux distribut
 ```
 $ vagrant up
 $ vagrant ssh
-$ ./build.sh    # sets up environment, runs build and up/init command
+$ ./build.sh    # sets up environment, runs build and setup/init command
 ```

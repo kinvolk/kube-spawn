@@ -1,6 +1,37 @@
 Here are some common issues that we encountered and how we work around or
 fix the. If you discover more, please create an issue or submit a PR.
 
+## Missing GOPATH environment variable
+
+`kube-spawn` is able to check for environment variables, such as `$GOPATH` and `$CNI_PATH`, which are necessary for launching nspawn containers as well as creating network namespaces for CNI. If `$GOPATH` is unavailable, it tries to fall back to `$HOME/go`. If `$CNI_PATH` is unavailable, it tries to fall back to `$GOPATH/bin`. Doing so, `kube-spawn` should be able to figure out most probable paths.
+
+If any path-related problem still occurs, please try the following approaches:
+
+* try to run with `sudo -E kube-spawn ...` to pass normal-user's env variables
+* try to run with pre-defined `GOPATH` or `CNI_PATH`, for example `sudo GOPATH=/home/myuser/go CNI_PATH=/home/myuser/go/bin kube-spawn ...`
+
+## SELinux and firewalld
+
+To run `kube-spawn`, it is recommended to turn off SELinux enforcing mode as well as to stop firewalld:
+
+```
+$ sudo setenforce 0
+$ sudo systemctl stop firewalld.service
+$ sudo iptables -P FORWARD ACCEPT
+```
+
+However, it is also true that disabling security framework is not always desirable. So it is planned to handle security policy instead of disabling them. Until then, there's no easy way to get around.
+
+## Restarting machines fails without removing machine images
+
+If your `start` (or `setup`) command fails upon restarting machines without any reason, please try to removing existing images like:
+
+```
+$ for i in $(seq 0 2); do sudo machinectl remove kube-spawn-$i; done
+```
+
+That could make the setup process do the job again. Ideally the remaining images should be handled automatically. For that it is planned to implement storing node infos persistently. (See https://github.com/kinvolk/kube-spawn/issues/37)
+
 ## Running on a version of systemd < 233
 
 You can build systemd-nspawn yourself and include these patches:
@@ -30,7 +61,7 @@ in another version is totally fine.
 You may try to use master branch from upstream systemd repository, but we
 don't encourage it.
 
-You can pass `kubeadm-nspawn` an alternative `systemd-nspawn` binary by setting the
+You can pass `kube-spawn` an alternative `systemd-nspawn` binary by setting the
 environment variable `SYSTEMD_NSPAWN_PATH` to where you have built your own.
 
 
@@ -47,12 +78,12 @@ environment variable: `DOCKER_API_VERSION=1.24 `
 
 ## Getting the Kubernetes repositories
 
-kubeadm-nspawn needs the following repos to exist in your GOPATH:
+kube-spawn needs the following repos to exist in your GOPATH:
 
 * [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
 * [kubernetes/release](https://github.com/kubernetes/release)
 
-Also, bulding Kubernetes may rely on having your own fork and the
+Also, building Kubernetes may rely on having your own fork and the
 separate remote called `upstream`. In this HOWTO, we assume that
 you have these repositories forked.
 
