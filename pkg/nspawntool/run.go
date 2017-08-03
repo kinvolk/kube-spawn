@@ -138,6 +138,9 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 	}
 	args = append(args, k8sbinds...)
 
+	// NOTE: workaround for making kubelet work with port-forward
+	args = append(args, bindro+parseBind("$PWD/.kube-spawn/extras/socat:/usr/bin/socat"))
+
 	c := exec.Cmd{
 		Path:   "cnispawn",
 		Args:   args,

@@ -106,6 +106,18 @@ func doSetup(numNodes int, baseImage string) {
 		}
 	}
 
+	// NOTE: workaround for making kubelet work with port-forward.
+	// Ideally we should solve the port-forward issue by either
+	// creating general add-ons based on torcx, or creating our own
+	// container image, or at least building socat statically on our own.
+	ksExtraDir := ".kube-spawn/extras"
+	if err := os.MkdirAll(ksExtraDir, os.FileMode(0755)); err != nil {
+		log.Fatalf("Unable to create directory %q: %v.", ksExtraDir, err)
+	}
+	if err := bootstrap.DownloadSocatBin(ksExtraDir); err != nil {
+		log.Fatalf("Error downloading socat files: %s", err)
+	}
+
 	var nodesToRun []string
 
 	for i := 0; i < numNodes; i++ {
