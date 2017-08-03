@@ -1,10 +1,8 @@
 # kube-spawn
 
-`kube-spawn` is a tool for creating a multi-node Kubernetes cluster
-on a single machine, created mostly for developers __of__ Kubernetes.
+`kube-spawn` is a tool for creating a multi-node Kubernetes cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but should also be useful for just trying things out.
 
-It aims to be as similar to the solutions recommended for production
-clusters as possible.
+It attempts to mimic production setups by making use of OS containers to set up nodes.
 
 ## Requirements
 
