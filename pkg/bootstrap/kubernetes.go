@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
 const (
-	k8sURL       string = "https://dl.k8s.io/v$VERSION/bin/linux/amd64/"
-	k8sGithubURL string = "https://raw.githubusercontent.com/kubernetes/release/master/rpm/"
+	k8sURL         string = "https://dl.k8s.io/v$VERSION/bin/linux/amd64/"
+	k8sGithubURL   string = "https://raw.githubusercontent.com/kubernetes/release/master/rpm/"
+	staticSocatUrl string = "https://raw.githubusercontent.com/andrew-d/static-binaries/master/binaries/linux/x86_64/socat"
 )
 
 var (
@@ -71,5 +73,30 @@ func DownloadK8sBins(version, dir string) error {
 		}
 		fd.Close()
 	}
+	return nil
+}
+
+func DownloadSocatBin(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, os.ModePerm)
+	}
+
+	var fd *os.File
+	fpath := filepath.Join(dir, path.Base(staticSocatUrl))
+
+	if _, err := os.Stat(fpath); os.IsNotExist(err) {
+		log.Printf("%s downloading...\n", fpath)
+		fd, err = Download(staticSocatUrl, fpath)
+		if err != nil {
+			return fmt.Errorf("error downloading %s: %s", staticSocatUrl, err)
+		}
+	} else {
+		log.Printf("%s already downloaded, skipping...\n", fpath)
+		fd, err = os.Open(fpath)
+		if err != nil {
+			return fmt.Errorf("error opening %s: %s", fpath, err)
+		}
+	}
+	fd.Close()
 	return nil
 }
