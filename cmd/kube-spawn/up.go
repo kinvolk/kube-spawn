@@ -31,10 +31,18 @@ var (
 		Short: "Up performs together: pulling raw image, setup and init",
 		Run:   runUp,
 	}
+
+	upNumNodes     int
+	upBaseImage    string
+	upKubeSpawnDir string
 )
 
 func init() {
 	cmdKubeSpawn.AddCommand(cmdUp)
+
+	cmdUp.Flags().IntVarP(&upNumNodes, "nodes", "n", 1, "number of nodes to spawn")
+	cmdUp.Flags().StringVarP(&upBaseImage, "image", "i", "coreos", "base image for nodes")
+	cmdUp.Flags().StringVarP(&upKubeSpawnDir, "kube-spawn-dir", "d", "", "path to directory where .kube-spawn directory is located")
 }
 
 func runUp(cmd *cobra.Command, args []string) {
@@ -49,8 +57,8 @@ func runUp(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// sudo ./kube-spawn setup --nodes=2 --image=coreos
-	doSetup(2, "coreos")
+	// e.g: sudo ./kube-spawn setup --nodes=2 --image=coreos
+	doSetup(upNumNodes, upBaseImage, upKubeSpawnDir)
 
 	// sudo ./kube-spawn init
 	doInit()
