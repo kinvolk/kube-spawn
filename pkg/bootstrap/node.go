@@ -179,8 +179,7 @@ func IsNodeRunning(nodeName string) bool {
 }
 
 func GetPoolSize(baseImage string, nodes int) (int64, error) {
-	var poolSize int64  // in bytes
-	var extraSize int64 // in bytes
+	var poolSize, extraSize, biSize int64 // in bytes
 
 	// Give 50% more space for each cloned image.
 	// NOTE: this is just a workaround, as how much space we should add more
@@ -189,24 +188,19 @@ func GetPoolSize(baseImage string, nodes int) (int64, error) {
 	// for the storage pool, every time when it pulls an image to store in
 	// the pool.
 	var extraSizeRatio float64 = 0.5
+	var err error
 
 	baseImageAbspath := path.Join(machinesDir, baseImage+".raw")
 
-	fipool, err := os.Stat(machinesImage)
-	if err != nil {
+	if poolSize, err = getAllocatedFileSize(machinesImage); err != nil {
 		return 0, err
 	}
+	extraSize = int64(float64(poolSize) * extraSizeRatio)
 
-	poolSize = fipool.Size()
-
-	extraSize = int64(float64(fipool.Size()) * extraSizeRatio)
-
-	fiBase, err := os.Stat(baseImageAbspath)
-	if err != nil {
+	if biSize, err = getAllocatedFileSize(baseImageAbspath); err != nil {
 		return 0, err
 	}
-
-	extraSize += int64(float64(fiBase.Size())*extraSizeRatio) * int64(nodes)
+	extraSize += int64(float64(biSize)*extraSizeRatio) * int64(nodes)
 
 	varDir, _ := path.Split(machinesImage)
 	freeVolSpace, err := getVolFreeSpace(varDir)

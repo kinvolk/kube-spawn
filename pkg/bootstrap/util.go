@@ -128,3 +128,20 @@ func getVolFreeSpace(volPath string) (uint64, error) {
 
 	return freeSpace, nil
 }
+
+// get allocated size of file (in bytes)
+func getAllocatedFileSize(filename string) (int64, error) {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return 0, err
+	}
+
+	stat_t, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, fmt.Errorf("cannot determine allocated filesize")
+	}
+
+	// stat(2) returns allocated filesize in blocks, each of which is
+	// a fixed 512 bytes
+	return (stat_t.Blocks * 512), nil
+}
