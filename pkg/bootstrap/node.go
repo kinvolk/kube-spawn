@@ -381,7 +381,9 @@ func EnsureRequirements() {
 	ensureOverlayfs()
 	ensureConntrackHashsize()
 
-	// TODO: handle SELinux as well as firewalld
+	// insert an iptables rules to allow traffic through cni0
+	ensureIptables()
+	// TODO: handle SELinux
 }
 
 func isOverlayfsAvailable() bool {
@@ -504,5 +506,125 @@ func ensureConntrackHashsize() {
 	if err := setConntrackHashsize(); err != nil {
 		log.Printf("error setting conntrack hashsize: %v\n", err)
 		return
+	}
+}
+
+func setIptablesForwardPolicy() error {
+	var cmdPath string
+	var err error
+
+	log.Println("making iptables FORWARD chain defaults to ACCEPT...")
+
+	if cmdPath, err = exec.LookPath("iptables"); err != nil {
+		// fall back to an ordinary abspath
+		cmdPath = "/sbin/iptables"
+	}
+
+	// set the default policy for FORWARD chain to ACCEPT
+	// : iptables -P FORWARD ACCEPT
+	args := []string{
+		cmdPath,
+		"-P",
+		"FORWARD",
+		"ACCEPT",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isCniRuleLoaded() bool {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("iptables"); err != nil {
+		// fall back to an ordinary abspath
+		cmdPath = "/sbin/iptables"
+	}
+
+	// check if a cni iptables rules already exists
+	// : iptables -C FORWARD -i cni0 -j ACCEPT
+	args := []string{
+		cmdPath,
+		"-C",
+		"FORWARD",
+		"-i",
+		"cni0",
+		"-j",
+		"ACCEPT",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+	}
+
+	if err := cmd.Run(); err != nil {
+		// error means that the rule does not exist
+		return false
+	}
+
+	return true
+}
+
+func setAllowCniRule() error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("iptables"); err != nil {
+		// fall back to an ordinary abspath
+		cmdPath = "/sbin/iptables"
+	}
+
+	// insert an iptables rules to allow traffic through cni0
+	// : iptables -I FORWARD 1 -i cni0 -j ACCEPT
+	args := []string{
+		cmdPath,
+		"-I",
+		"FORWARD",
+		"1",
+		"-i",
+		"cni0",
+		"-j",
+		"ACCEPT",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureIptables() {
+	setIptablesForwardPolicy()
+
+	if !isCniRuleLoaded() {
+		log.Println("setting iptables rule to allow CNI traffic...")
+		if err := setAllowCniRule(); err != nil {
+			log.Printf("error running iptables: %v\n", err)
+			return
+		}
 	}
 }
