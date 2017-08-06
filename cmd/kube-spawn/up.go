@@ -17,8 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -26,16 +28,102 @@ import (
 var (
 	cmdUp = &cobra.Command{
 		Use:   "up",
-		Short: "Set up nodes bringing up nspawn containers (deprecated)",
+		Short: "Up performs together: pulling raw image, setup and init",
 		Run:   runUp,
 	}
+
+	upNumNodes     int
+	upBaseImage    string
+	upKubeSpawnDir string
 )
 
 func init() {
 	cmdKubeSpawn.AddCommand(cmdUp)
+
+	cmdUp.Flags().IntVarP(&upNumNodes, "nodes", "n", 1, "number of nodes to spawn")
+	cmdUp.Flags().StringVarP(&upBaseImage, "image", "i", "coreos", "base image for nodes")
+	cmdUp.Flags().StringVarP(&upKubeSpawnDir, "kube-spawn-dir", "d", "", "path to directory where .kube-spawn directory is located")
 }
 
 func runUp(cmd *cobra.Command, args []string) {
-	log.Printf("WARNING: up command is deprecated. Please run setup command instead.")
-	os.Exit(1)
+	if len(args) != 0 {
+		cmd.Usage()
+		os.Exit(1)
+	}
+
+	if err := showImage(); err != nil {
+		if err := pullRawImage(); err != nil {
+			log.Fatalf("%v\n", err)
+		}
+	}
+
+	// e.g: sudo ./kube-spawn setup --nodes=2 --image=coreos
+	doSetup(upNumNodes, upBaseImage, upKubeSpawnDir)
+
+	// sudo ./kube-spawn init
+	doInit()
+
+	log.Printf("All nodes are started.")
+}
+
+func pullRawImage() error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
+		// fall back to an ordinary abspath to machinectl
+		cmdPath = "/usr/bin/machinectl"
+	}
+
+	args := []string{
+		cmdPath,
+		"pull-raw",
+		"--verify=no",
+		"https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2",
+		"coreos",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running machinectl pull-raw: %s", err)
+	}
+
+	return nil
+}
+
+func showImage() error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
+		// fall back to an ordinary abspath to machinectl
+		cmdPath = "/usr/bin/machinectl"
+	}
+
+	args := []string{
+		cmdPath,
+		"show-image",
+		"coreos",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running machinectl show-image: %s", err)
+	}
+
+	return nil
 }

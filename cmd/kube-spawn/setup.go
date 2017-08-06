@@ -43,7 +43,7 @@ func init() {
 	cmdKubeSpawn.AddCommand(cmdSetup)
 
 	cmdSetup.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
-	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "", "base image for nodes")
+	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "coreos", "base image for nodes")
 	cmdSetup.Flags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", "", "path to directory where .kube-spawn directory is located")
 }
 
@@ -75,10 +75,10 @@ func doCheckK8sStableRelease(k8srel string) {
 }
 
 func runSetup(cmd *cobra.Command, args []string) {
-	doSetup(numNodes, baseImage)
+	doSetup(numNodes, baseImage, kubeSpawnDir)
 }
 
-func doSetup(numNodes int, baseImage string) {
+func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	if err := bootstrap.EnsureBridge(); err != nil {
 		log.Fatalf("Error checking CNI bridge: %s", err)
 	}

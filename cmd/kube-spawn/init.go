@@ -93,4 +93,6 @@ func doInit() {
 			}
 		}
 	}
+
+	log.Println("Note: For kubectl to work, please set $KUBECONFIG to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig.")
 }
