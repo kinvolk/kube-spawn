@@ -383,7 +383,8 @@ func EnsureRequirements() {
 
 	// insert an iptables rules to allow traffic through cni0
 	ensureIptables()
-	// TODO: handle SELinux
+	// check for SELinux enforcing mode
+	ensureSelinux()
 }
 
 func isOverlayfsAvailable() bool {
@@ -626,5 +627,43 @@ func ensureIptables() {
 			log.Printf("error running iptables: %v\n", err)
 			return
 		}
+	}
+}
+
+func isSELinuxEnforcing() bool {
+	var cmdGetPath string
+	var err error
+
+	if cmdGetPath, err = exec.LookPath("getenforce"); err != nil {
+		// fall back to an ordinary abspath
+		cmdGetPath = "/usr/sbin/getenforce"
+	}
+
+	argsGet := []string{
+		cmdGetPath,
+	}
+
+	cmdGet := exec.Cmd{
+		Path:   cmdGetPath,
+		Args:   argsGet,
+		Env:    os.Environ(),
+		Stderr: os.Stderr,
+	}
+
+	// As getenforce always returns non-error, we should ignore the error.
+	// Instead, parse the output string directly to determine the current
+	// SELinux mode.
+	outstr, _ := cmdGet.Output()
+	sestatus := strings.TrimSpace(string(outstr))
+	if sestatus == "Enforcing" {
+		return true
+	}
+
+	return false
+}
+
+func ensureSelinux() {
+	if isSELinuxEnforcing() {
+		log.Fatalln("ERROR: SELinux enforcing mode is enabled. You will need to disable it with 'sudo setenforce 0' for kube-spawn to work properly.")
 	}
 }
