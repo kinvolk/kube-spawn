@@ -27,10 +27,11 @@ chmod +x ${HOME}/build.sh
 # we should ignore the error and continue.
 /usr/sbin/setenforce 0 || true
 
-# Stop firewalld to allow traffic by default.
-# Note that especially on Debian systems, it's not sufficient to stop
-# firewalld, because the FORWARD chain's policy is still DROP.
-systemctl is-active firewalld 1>/dev/null && systemctl stop firewalld
+# Run iptables to allow CNI traffic by default.
+iptables -C FORWARD -i cni0 -j ACCEPT 2>/dev/null || iptables -I FORWARD 1 -i cni0 -j ACCEPT
+
+# Note that especially on Debian systems, it's not sufficient to add
+# a single iptables rule, because the FORWARD chain's policy is still DROP.
 iptables -P FORWARD ACCEPT
 sysctl -w net.ipv4.ip_forward=1
 

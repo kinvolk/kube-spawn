@@ -10,14 +10,12 @@ If any path-related problem still occurs, please try the following approaches:
 * try to run with `sudo -E kube-spawn ...` to pass normal-user's env variables
 * try to run with pre-defined `GOPATH` or `CNI_PATH`, for example `sudo GOPATH=/home/myuser/go CNI_PATH=/home/myuser/go/bin kube-spawn ...`
 
-## SELinux and firewalld
+## SELinux
 
-To run `kube-spawn`, it is recommended to turn off SELinux enforcing mode as well as to stop firewalld:
+To run `kube-spawn`, it is recommended to turn off SELinux enforcing mode:
 
 ```
 $ sudo setenforce 0
-$ sudo systemctl stop firewalld.service
-$ sudo iptables -P FORWARD ACCEPT
 ```
 
 However, it is also true that disabling security framework is not always desirable. So it is planned to handle security policy instead of disabling them. Until then, there's no easy way to get around.
