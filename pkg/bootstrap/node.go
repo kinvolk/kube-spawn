@@ -178,8 +178,8 @@ func IsNodeRunning(nodeName string) bool {
 	return false
 }
 
-func EnlargeStoragePool(baseImage string, nodes int) error {
-	var poolSize int64 // in bytes
+func GetPoolSize(baseImage string, nodes int) (int64, error) {
+	var poolSize, extraSize, biSize int64 // in bytes
 
 	// Give 50% more space for each cloned image.
 	// NOTE: this is just a workaround, as how much space we should add more
@@ -188,35 +188,55 @@ func EnlargeStoragePool(baseImage string, nodes int) error {
 	// for the storage pool, every time when it pulls an image to store in
 	// the pool.
 	var extraSizeRatio float64 = 0.5
+	var err error
 
 	baseImageAbspath := path.Join(machinesDir, baseImage+".raw")
 
-	fipool, err := os.Stat(machinesImage)
+	if poolSize, err = getAllocatedFileSize(machinesImage); err != nil {
+		return 0, err
+	}
+	extraSize = int64(float64(poolSize) * extraSizeRatio)
+
+	if biSize, err = getAllocatedFileSize(baseImageAbspath); err != nil {
+		return 0, err
+	}
+	extraSize += int64(float64(biSize)*extraSizeRatio) * int64(nodes)
+
+	varDir, _ := path.Split(machinesImage)
+	freeVolSpace, err := getVolFreeSpace(varDir)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	poolSize = fipool.Size()
-
-	poolSize += int64(float64(fipool.Size()) * extraSizeRatio)
-
-	fiBase, err := os.Stat(baseImageAbspath)
-	if err != nil {
-		return err
+	// extraSize, space to be allocated, shoud be 90% of freeVolSpace,
+	// actual free space on the target volume. Here 90% is simply a
+	// pre-defined estimation of how much space can be occupied.
+	// We should reserve some unallocated free space for the whole host,
+	// as 100% usage of rootfs could badly affect the system's reliability.
+	if extraSize >= int64((float64(freeVolSpace))*0.9) {
+		biSizeMB := int64(biSize / 1024 / 1024)
+		return 0, fmt.Errorf("not enough space on disk for %d nodes, Each node needs about %d MB, so in total you'll need about %d MB available.", nodes, biSizeMB, int64(nodes)*biSizeMB)
 	}
 
-	poolSize += int64(float64(fiBase.Size())*extraSizeRatio) * int64(nodes)
+	poolSize += extraSize
 
+	return poolSize, nil
+}
+
+func EnlargeStoragePool(poolSize int64) error {
 	// It is equivalent to the following shell commands:
 	//  # umount /var/lib/machines
 	//  # qemu-img resize -f raw /var/lib/machines.raw <poolsize>
 	//  # mount -t btrfs -o loop /var/lib/machines.raw /var/lib/machines
 	//  # btrfs filesystem resize max /var/lib/machines
 	//  # btrfs quota disable /var/lib/machines
-	if err := syscall.Unmount(machinesDir, 0); err != nil {
-		// if it's already unmounted, umount(2) returns EINVAL, then continue
-		if !os.IsNotExist(err) && err != syscall.EINVAL {
-			return err
+	if err := checkMountpoint(machinesDir); err == nil {
+		// It means machinesDir is mountpoint, so do unmount
+		if err := syscall.Unmount(machinesDir, 0); err != nil {
+			// if it's already unmounted, umount(2) returns EINVAL, then continue
+			if !os.IsNotExist(err) && err != syscall.EINVAL {
+				return err
+			}
 		}
 	}
 

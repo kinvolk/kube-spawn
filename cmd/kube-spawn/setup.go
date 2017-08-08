@@ -118,6 +118,14 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 		log.Fatalf("Error downloading socat files: %s", err)
 	}
 
+	// estimate get pool size based on sum of virtual image sizes.
+	var poolSize int64
+	var err error
+	if poolSize, err = bootstrap.GetPoolSize(baseImage, numNodes); err != nil {
+		// fail hard in case of error, to avoid running unnecessary nodes
+		log.Fatalf("cannot get pool size: %v", err)
+	}
+
 	var nodesToRun []string
 
 	for i := 0; i < numNodes; i++ {
@@ -137,8 +145,8 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 		os.Exit(1)
 	}
 
-	if err := bootstrap.EnlargeStoragePool(baseImage, len(nodesToRun)); err != nil {
-		log.Printf("Warning: cannot enlarge storage pool: %s", err)
+	if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
+		log.Printf("Warning: cannot enlarge storage pool: %v", err)
 	}
 
 	for _, name := range nodesToRun {

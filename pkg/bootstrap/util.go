@@ -1,8 +1,26 @@
+/*
+Copyright 2017 Kinvolk GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package bootstrap
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 )
@@ -75,4 +93,55 @@ func PathSupportsOverlay(path string) error {
 	}
 
 	return nil
+}
+
+func isSameFilesystem(a, b *syscall.Statfs_t) bool {
+	return a.Fsid == b.Fsid
+}
+
+func checkMountpoint(dir string) error {
+	sfs1 := &syscall.Statfs_t{}
+	if err := syscall.Statfs(dir, sfs1); err != nil {
+		return fmt.Errorf("error calling statfs on %q: %v", dir, err)
+	}
+	sfs2 := &syscall.Statfs_t{}
+	if err := syscall.Statfs(filepath.Dir(dir), sfs2); err != nil {
+		return fmt.Errorf("error calling statfs on %q: %v", dir, err)
+	}
+	if isSameFilesystem(sfs1, sfs2) {
+		return fmt.Errorf("%q is not a mount point", dir)
+	}
+
+	return nil
+}
+
+// get free space of volume mounted on volPath (in bytes)
+func getVolFreeSpace(volPath string) (uint64, error) {
+	var stat syscall.Statfs_t
+
+	if err := syscall.Statfs(volPath, &stat); err != nil {
+		log.Printf("statfs error: %v\n", err)
+		return 0, err
+	}
+
+	freeSpace := stat.Bavail * uint64(stat.Bsize)
+
+	return freeSpace, nil
+}
+
+// get allocated size of file (in bytes)
+func getAllocatedFileSize(filename string) (int64, error) {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return 0, err
+	}
+
+	stat_t, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, fmt.Errorf("cannot determine allocated filesize")
+	}
+
+	// stat(2) returns allocated filesize in blocks, each of which is
+	// a fixed 512 bytes
+	return (stat_t.Blocks * 512), nil
 }
