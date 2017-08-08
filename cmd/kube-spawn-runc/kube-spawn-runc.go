@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -41,7 +42,7 @@ func main() {
 		defer fd.Close()
 	}
 
-	log.Printf("old args: %#v", os.Args[1:])
+	printToLogpath(fmt.Sprintf("old args: %#v", os.Args[1:]))
 
 	for _, a := range os.Args[1:] {
 		newArgs = append(newArgs, a)
@@ -50,7 +51,7 @@ func main() {
 		}
 	}
 
-	log.Printf("new args: %#v", newArgs)
+	printToLogpath(fmt.Sprintf("new args: %#v", newArgs))
 
 	if runcPath == "" {
 		var err error
@@ -73,5 +74,12 @@ func main() {
 
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+// print string only when logPath is explicitly set
+func printToLogpath(fmtStr string) {
+	if logPath != "" {
+		log.Printf("%s", fmtStr)
 	}
 }
