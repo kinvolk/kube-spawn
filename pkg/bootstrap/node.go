@@ -214,7 +214,8 @@ func GetPoolSize(baseImage string, nodes int) (int64, error) {
 	// We should reserve some unallocated free space for the whole host,
 	// as 100% usage of rootfs could badly affect the system's reliability.
 	if extraSize >= int64((float64(freeVolSpace))*0.9) {
-		return 0, fmt.Errorf("no more free space in %s. Please get more space!", varDir)
+		biSizeMB := int64(biSize / 1024 / 1024)
+		return 0, fmt.Errorf("not enough space on disk for %d nodes, Each node needs about %d MB, so in total you'll need about %d MB available.", nodes, biSizeMB, int64(nodes)*biSizeMB)
 	}
 
 	poolSize += extraSize
