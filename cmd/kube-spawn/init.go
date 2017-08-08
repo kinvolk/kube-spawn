@@ -25,6 +25,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/distribution"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 const pushImageRetries int = 10
@@ -94,5 +95,5 @@ func doInit() {
 		}
 	}
 
-	log.Println("Note: For kubectl to work, please set $KUBECONFIG to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig.")
+	log.Println("Note: For kubectl to work, please set $KUBECONFIG to " + utils.GetValidKubeConfig())
 }
