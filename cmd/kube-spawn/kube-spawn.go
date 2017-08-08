@@ -43,7 +43,6 @@ var (
 	}
 
 	version      string
-	gopath       string = os.Getenv("GOPATH")
 	k8srelease   string
 	printVersion bool
 )

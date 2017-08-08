@@ -21,10 +21,16 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
+)
+
+const (
+	kcRelPath string = ".kube-spawn/default/kubeconfig"
+	ksRelPath string = "src/github.com/kinvolk/kube-spawn"
 )
 
 var (
@@ -37,7 +43,16 @@ func CheckValidDir(inPath string) error {
 	if fi, err := os.Stat(inPath); os.IsNotExist(err) {
 		return err
 	} else if !fi.IsDir() {
-		return fmt.Errorf("%q is not a directory.")
+		return fmt.Errorf("%q is not a directory.", inPath)
+	}
+	return nil
+}
+
+func CheckValidFile(inPath string) error {
+	if fi, err := os.Stat(inPath); os.IsNotExist(err) {
+		return err
+	} else if !fi.Mode().IsRegular() {
+		return fmt.Errorf("%q is not a file.", inPath)
 	}
 	return nil
 }
@@ -68,6 +83,32 @@ func GetValidCniPath(inGoPath string) (string, error) {
 	}
 
 	return cniPath, nil
+}
+
+func GetValidKubeConfig() string {
+	var err error
+	var pwd string
+	if pwd, err = os.Getwd(); err != nil {
+		pwd = os.Getenv("PWD")
+	}
+
+	kcPath := filepath.Join(pwd, kcRelPath)
+	if err := CheckValidFile(kcPath); err != nil {
+		// fall back to $GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+		kcPath = filepath.Join(goPath, ksRelPath, kcRelPath)
+		log.Printf("fall back to %s...\n", kcPath)
+
+		if err := CheckValidFile(kcPath); err != nil {
+			// fall back to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+			kcPath = filepath.Join(homePath, "go", ksRelPath, kcRelPath)
+			log.Printf("fall back to %s...\n", kcPath)
+			if err := CheckValidFile(kcPath); err != nil {
+				return ""
+			}
+		}
+	}
+
+	return kcPath
 }
 
 // IsTerminal returns true if the given file descriptor is a terminal.
