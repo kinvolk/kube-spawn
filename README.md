@@ -38,9 +38,10 @@ $ go get -d github.com/kinvolk/kube-spawn
 $ cd $GOPATH/src/github.com/kinvolk/kube-spawn
 $ make vendor all
 
-# The `up` command pulls the image, sets up the nodes and then configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
 ```
+
+The `up` subcommand pulls the image, sets up the nodes and then configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
 
 Now that you're up and running, you can start using it.
 
