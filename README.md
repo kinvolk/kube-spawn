@@ -4,6 +4,8 @@
 
 It attempts to mimic production setups by making use of OS containers to set up nodes.
 
+[![asciicast](https://asciinema.org/a/132605.png)](https://asciinema.org/a/132605)
+
 ## Requirements
 
 * **Host:**
@@ -36,14 +38,8 @@ $ go get -d github.com/kinvolk/kube-spawn
 $ cd $GOPATH/src/github.com/kinvolk/kube-spawn
 $ make vendor all
 
-# Get the recommended container image
-$ sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
-
-# Spawn and provision nodes for the cluster
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn setup --image=coreos --nodes=3
-
-# Setup Kubernetes
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn init
+# The `up` command pulls the image, sets up the nodes and then configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
+$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
 ```
 
 Now that you're up and running, you can start using it.
