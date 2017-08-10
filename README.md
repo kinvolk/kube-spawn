@@ -15,7 +15,7 @@ It attempts to mimic production setups by making use of OS containers to set up 
 
 ## Quickstart
 
-`kube-spawn` should run well on Fedroa 26. If you want to test it in a
+`kube-spawn` should run well on Fedora 26. If you want to test it in a
 controlled environment, you can use [Vagrant](doc/vagrant.md).
 
 To setup `kube-spawn` on your machine, make sure you have a working [Go environment](https://golang.org/doc/install):
