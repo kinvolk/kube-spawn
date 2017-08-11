@@ -24,9 +24,6 @@ To setup `kube-spawn` on your machine, make sure you have a working [Go environm
 # Get CNI plugins
 $ go get -u github.com/containernetworking/plugins/plugins/...
 
-# Get glide
-$ go get -u github.com/Masterminds/glide
-
 # Get the source for this project
 $ go get -d github.com/kinvolk/kube-spawn
 ```

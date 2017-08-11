@@ -11,12 +11,10 @@ all:
 		-ldflags "-X main.version=$(VERSION)" \
 		./cmd/kube-spawn
 
-vendor: glide.lock | glide
-	glide --quiet install --strip-vendor
-glide.lock: | glide
-	glide update --strip-vendor
-glide:
-	@which glide || go get -u github.com/Masterminds/glide
+vendor: | dep
+	dep ensure
+dep:
+	@which dep || go get -u github.com/golang/dep
 
 clean: clean-bins clean-rootfs clean-image clean-ssh-keys
 clean-ssh-keys:
