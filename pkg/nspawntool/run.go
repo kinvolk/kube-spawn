@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -126,11 +127,15 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 			bindro + parseBind("$PWD/k8s/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
 		}
 	} else {
+		k8sOutputDir, err := utils.GetK8sBuildOutputDir(filepath.Join(goPath, "/src/k8s.io/kubernetes"))
+		if err != nil {
+			return fmt.Errorf("error getting k8s output directory: %s", err)
+		}
 		k8sbinds = []string{
 			// bins
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubelet:/usr/bin/kubelet"),
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubeadm:/usr/bin/kubeadm"),
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubectl:/usr/bin/kubectl"),
+			bindro + path.Join(k8sOutputDir, "kubelet:/usr/bin/kubelet"),
+			bindro + path.Join(k8sOutputDir, "kubeadm:/usr/bin/kubeadm"),
+			bindro + path.Join(k8sOutputDir, "kubectl:/usr/bin/kubectl"),
 			// service files
 			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
 			bindro + path.Join(goPath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
