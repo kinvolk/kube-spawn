@@ -57,7 +57,6 @@ func getDefaultBinds(cniPath string) []string {
 		bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
 		bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
 		bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
-		bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		bindro + parseBind("$PWD/etc/kube_tmpfiles_kubelet.conf:/usr/lib/tmpfiles.d/kubelet.conf"),
 		bindro + parseBind("$PWD/etc/weave_50-weave.network:/etc/systemd/network/50-weave.network"),
 		// cni bins
@@ -126,6 +125,8 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 			// service files
 			bindro + parseBind("$PWD/k8s/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
 			bindro + parseBind("$PWD/k8s/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			// config
+			bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		}
 	} else {
 		k8sOutputDir, err := utils.GetK8sBuildOutputDir(filepath.Join(goPath, "/src/k8s.io/kubernetes"))
@@ -140,6 +141,8 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 			// service files
 			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
 			bindro + path.Join(goPath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			// config
+			bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args-k8s18.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		}
 	}
 	args = append(args, k8sbinds...)
