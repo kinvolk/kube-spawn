@@ -42,10 +42,6 @@ func init() {
 	cmdKubeSpawn.AddCommand(cmdInit)
 }
 
-func isDev(k8srel string) bool {
-	return k8srel == "" || k8srel == "dev"
-}
-
 func runInit(cmd *cobra.Command, args []string) {
 	doInit()
 }
@@ -53,7 +49,7 @@ func runInit(cmd *cobra.Command, args []string) {
 func doInit() {
 	doCheckK8sStableRelease(k8srelease)
 
-	if isDev(k8srelease) {
+	if utils.IsK8sDev(k8srelease) {
 		// we don't need to run a docker registry
 		if err := distribution.StartRegistry(); err != nil {
 			log.Fatalf("Error starting registry: %s", err)

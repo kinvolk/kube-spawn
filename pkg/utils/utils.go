@@ -117,3 +117,7 @@ func IsTerminal(fd uintptr) bool {
 	_, _, err := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(&termios)))
 	return err == 0
 }
+
+func IsK8sDev(k8srel string) bool {
+	return k8srel == "" || k8srel == "dev"
+}

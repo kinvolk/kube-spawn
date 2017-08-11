@@ -115,7 +115,7 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 	args = append(args, defaultBinds...)
 
 	// TODO: we should have something like a "bind builder" that reuses code
-	if k8srelease != "" {
+	if !utils.IsK8sDev(k8srelease) {
 		k8sbinds = []string{
 			// bins
 			bindro + parseBind("$PWD/k8s/kubelet:/usr/bin/kubelet"),
