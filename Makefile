@@ -1,5 +1,5 @@
 .PHONY: vendor all reset-cni
-.PHONY: clean clean-bins clean-rootfs clean-image clean-ssh-keys 
+.PHONY: clean clean-bins clean-rootfs clean-image clean-ssh-keys
 
 VERSION=$(shell git describe --tags --always --dirty)
 
@@ -14,7 +14,7 @@ all:
 vendor: | dep
 	dep ensure
 dep:
-	@which dep || go get -u github.com/golang/dep
+	@which dep || go get -u github.com/golang/dep/cmd/dep
 
 clean: clean-bins clean-rootfs clean-image clean-ssh-keys
 clean-ssh-keys:
