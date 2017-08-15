@@ -140,7 +140,7 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 			bindro + path.Join(k8sOutputDir, "kubectl:/usr/bin/kubectl"),
 			// service files
 			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
-			bindro + path.Join(goPath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
 			// config
 			bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args-k8s18.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		}
