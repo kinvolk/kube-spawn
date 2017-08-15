@@ -110,7 +110,11 @@ func GetRunningNodes() ([]Node, error) {
 		//  kube-spawn-0 container systemd-nspawn
 
 		var ipaddr string
-		machineName := line[0]
+		machineName := strings.TrimSpace(line[0])
+		if !strings.HasPrefix(machineName, "kube-spawn-") {
+			continue
+		}
+
 		if len(line) >= 6 {
 			ipaddr = strings.TrimSuffix(line[5], "...")
 		} else {
