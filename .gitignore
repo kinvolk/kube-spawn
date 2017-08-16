@@ -6,6 +6,9 @@
 # Folders
 _obj
 _test
+.kube-spawn
+.vagrant
+k8s
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -24,6 +27,7 @@ _testmain.go
 *.prof
 
 *.lck
+*.log
 
 # vendor
 /vendor
@@ -31,11 +35,12 @@ _testmain.go
 # binaries
 /cni-noop
 /cnispawn
-/kubeadm-systemd
+/kube-spawn
+/kube-spawn-runc
 
 # ssh keys
 /id_rsa*
 
 # containers
-/kubeadm-systemd-*
+/kube-spawn-*
 /rootfs.tar.xz
