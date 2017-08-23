@@ -111,9 +111,27 @@ func GetValidKubeConfig() string {
 	return kcPath
 }
 
+func GetK8sBuildOutputDir(k8sRepoPath string) (string, error) {
+	// first try to use "_output/dockerized/bin/linux/amd64"
+	outputPath := filepath.Join(k8sRepoPath, "_output/dockerized/bin/linux/amd64")
+	if err := CheckValidDir(outputPath); err != nil {
+		// fall back to "_output/bin"
+		outputPath = filepath.Join(k8sRepoPath, "_output/bin")
+		if err := CheckValidDir(outputPath); err != nil {
+			return "", err
+		}
+	}
+
+	return outputPath, nil
+}
+
 // IsTerminal returns true if the given file descriptor is a terminal.
 func IsTerminal(fd uintptr) bool {
 	var termios syscall.Termios
 	_, _, err := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(&termios)))
 	return err == 0
+}
+
+func IsK8sDev(k8srel string) bool {
+	return k8srel == "" || k8srel == "dev"
 }

@@ -3,4 +3,5 @@ authorizationMode: AlwaysAllow
 apiServerExtraArgs:
   insecure-port: "8080"
 controllerManagerExtraArgs:
+kubernetesVersion: latest
 schedulerExtraArgs:

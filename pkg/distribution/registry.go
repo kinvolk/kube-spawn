@@ -104,7 +104,7 @@ func PushImage() error {
 
 	if err := cli.ImageTag(
 		context.Background(),
-		"gcr.io/google_containers/hyperkube-amd64",
+		"gcr.io/google-containers/hyperkube-amd64",
 		"10.22.0.1:5000/hyperkube-amd64",
 	); err != nil {
 		return err

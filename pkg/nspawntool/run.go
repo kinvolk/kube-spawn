@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -56,7 +57,7 @@ func getDefaultBinds(cniPath string) []string {
 		bindro + parseBind("$PWD/etc/daemon.json:/etc/docker/daemon.json"),
 		bindro + parseBind("$PWD/etc/kubeadm.yml:/etc/kubeadm/kubeadm.yml"),
 		bindro + parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf:/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf"),
-		bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
+		bindro + parseBind("$PWD/etc/kube_tmpfiles_kubelet.conf:/usr/lib/tmpfiles.d/kubelet.conf"),
 		bindro + parseBind("$PWD/etc/weave_50-weave.network:/etc/systemd/network/50-weave.network"),
 		// cni bins
 		bindrw + path.Join(cniPath+":/opt/cni/bin"),
@@ -115,7 +116,7 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 	args = append(args, defaultBinds...)
 
 	// TODO: we should have something like a "bind builder" that reuses code
-	if k8srelease != "" {
+	if !utils.IsK8sDev(k8srelease) {
 		k8sbinds = []string{
 			// bins
 			bindro + parseBind("$PWD/k8s/kubelet:/usr/bin/kubelet"),
@@ -124,16 +125,24 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 			// service files
 			bindro + parseBind("$PWD/k8s/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
 			bindro + parseBind("$PWD/k8s/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			// config
+			bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		}
 	} else {
+		k8sOutputDir, err := utils.GetK8sBuildOutputDir(filepath.Join(goPath, "/src/k8s.io/kubernetes"))
+		if err != nil {
+			return fmt.Errorf("error getting k8s output directory: %s", err)
+		}
 		k8sbinds = []string{
 			// bins
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubelet:/usr/bin/kubelet"),
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubeadm:/usr/bin/kubeadm"),
-			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/_output/bin/kubectl:/usr/bin/kubectl"),
+			bindro + path.Join(k8sOutputDir, "kubelet:/usr/bin/kubelet"),
+			bindro + path.Join(k8sOutputDir, "kubeadm:/usr/bin/kubeadm"),
+			bindro + path.Join(k8sOutputDir, "kubectl:/usr/bin/kubectl"),
 			// service files
 			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/debs/kubelet.service:/usr/lib/systemd/system/kubelet.service"),
-			bindro + path.Join(goPath, "/src/k8s.io/release/rpm/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			bindro + path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm.conf:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"),
+			// config
+			bindro + parseBind("$PWD/etc/kube_20-kubeadm-extra-args-k8s18.conf:/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"),
 		}
 	}
 	args = append(args, k8sbinds...)
