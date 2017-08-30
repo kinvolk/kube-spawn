@@ -165,28 +165,28 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 			// bins
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubelet"),
+				filepath.Join(parseBind("$PWD"), bootstrap.K8sDownloadDir, "kubelet"),
 				"/usr/bin/kubelet",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubeadm"),
+				filepath.Join(parseBind("$PWD"), bootstrap.K8sDownloadDir, "kubeadm"),
 				"/usr/bin/kubeadm",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubectl"),
+				filepath.Join(parseBind("$PWD"), bootstrap.K8sDownloadDir, "kubectl"),
 				"/usr/bin/kubectl",
 			},
 			// service files
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubelet.service"),
+				filepath.Join(parseBind("$PWD"), bootstrap.K8sDownloadDir, "kubelet.service"),
 				"/usr/lib/systemd/system/kubelet.service",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/10-kubeadm.conf"),
+				filepath.Join(parseBind("$PWD"), bootstrap.K8sDownloadDir, "10-kubeadm.conf"),
 				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
 			},
 			// config
