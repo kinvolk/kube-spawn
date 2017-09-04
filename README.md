@@ -10,6 +10,7 @@ It attempts to mimic production setups by making use of OS containers to set up 
 
 * **Host:**
   - `systemd-nspawn` at least version 233
+  - `qemu-img`
 
 * **Kubernetes** at least version 1.7.0
 
