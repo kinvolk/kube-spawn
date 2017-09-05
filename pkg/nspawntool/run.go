@@ -158,6 +158,21 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 				parseBind("$PWD/etc/kube_20-kubeadm-extra-args-k8s18.conf"),
 				"/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf",
 			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/rkt/rkt/build-rkt/target/bin/rkt",
+				"/usr/bin/rkt",
+			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/rkt/rkt/build-rkt/target/bin/stage1-coreos.aci",
+				"/usr/bin/stage1-coreos.aci",
+			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/kubernetes-incubator/rktlet/bin/rktlet",
+				"/usr/bin/rktlet",
+			},
 		}, nil
 	} else {
 		// k8s releases pre-built and downloaded
@@ -194,6 +209,21 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 				bindro,
 				parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf"),
 				"/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf",
+			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/rkt/rkt/build-rkt/target/bin/rkt",
+				"/usr/bin/rkt",
+			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/rkt/rkt/build-rkt/target/bin/stage1-coreos.aci",
+				"/usr/bin/stage1-coreos.aci",
+			},
+			{
+				bindro,
+				"/home/iaguis/work/go/src/github.com/kubernetes-incubator/rktlet/bin/rktlet",
+				"/usr/bin/rktlet",
 			},
 		}, nil
 	}
