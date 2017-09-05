@@ -17,12 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
 	"github.com/spf13/cobra"
+
+	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 )
 
 var (
@@ -51,11 +51,7 @@ func runUp(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := showImage(); err != nil {
-		if err := pullRawImage(); err != nil {
-			log.Fatalf("%v\n", err)
-		}
-	}
+	bootstrap.PrepareCoreosImage()
 
 	// e.g: sudo ./kube-spawn setup --nodes=2 --image=coreos
 	doSetup(upNumNodes, upBaseImage, upKubeSpawnDir)
@@ -64,66 +60,4 @@ func runUp(cmd *cobra.Command, args []string) {
 	doInit()
 
 	log.Printf("All nodes are started.")
-}
-
-func pullRawImage() error {
-	var cmdPath string
-	var err error
-
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
-	}
-
-	args := []string{
-		cmdPath,
-		"pull-raw",
-		"--verify=no",
-		"https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2",
-		"coreos",
-	}
-
-	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running machinectl pull-raw: %s", err)
-	}
-
-	return nil
-}
-
-func showImage() error {
-	var cmdPath string
-	var err error
-
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
-	}
-
-	args := []string{
-		cmdPath,
-		"show-image",
-		"coreos",
-	}
-
-	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running machinectl show-image: %s", err)
-	}
-
-	return nil
 }

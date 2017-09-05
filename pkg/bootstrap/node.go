@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/Masterminds/semver"
 )
 
 const (
@@ -37,6 +39,7 @@ const (
 	ctMaxSysctl           string = "/proc/sys/net/nf_conntrack_max"
 	machinesDir           string = "/var/lib/machines"
 	machinesImage         string = "/var/lib/machines.raw"
+	coreosStableVersion   string = "1478.0.0"
 )
 
 type Node struct {
@@ -409,6 +412,8 @@ func EnsureRequirements() {
 	ensureIptables()
 	// check for SELinux enforcing mode
 	ensureSelinux()
+	// check for Container Linux version
+	ensureCoreosVersion()
 }
 
 func isOverlayfsAvailable() bool {
@@ -689,5 +694,163 @@ func isSELinuxEnforcing() bool {
 func ensureSelinux() {
 	if isSELinuxEnforcing() {
 		log.Fatalln("ERROR: SELinux enforcing mode is enabled. You will need to disable it with 'sudo setenforce 0' for kube-spawn to work properly.")
+	}
+}
+
+func showCoreosImage() error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
+		// fall back to an ordinary abspath to machinectl
+		cmdPath = "/usr/bin/machinectl"
+	}
+
+	args := []string{
+		cmdPath,
+		"show-image",
+		"coreos",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running machinectl show-image: %s", err)
+	}
+
+	return nil
+}
+
+func checkCoreosSemver(coreosVer string) error {
+	v, err := semver.NewVersion(coreosVer)
+	if err != nil {
+		return err
+	}
+
+	c, err := semver.NewConstraint(">=" + coreosStableVersion)
+	if err != nil {
+		log.Printf("cannot get constraint for >= %s: %v", coreosStableVersion, err)
+		return err
+	}
+
+	if c.Check(v) {
+		return nil
+	} else {
+		return fmt.Errorf("ERROR: Container Linux version %s is too low in your local image.", coreosVer)
+	}
+}
+
+func checkCoreosVersion() error {
+	args := []string{
+		"image-status",
+		"coreos",
+	}
+
+	cmd := exec.Command("machinectl", args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	b, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	checkCoreosVersionField := func(values []string) error {
+		for _, v := range values {
+			if err := checkCoreosSemver(strings.TrimSpace(v)); err != nil {
+				if err == semver.ErrInvalidSemVer {
+					// just meaning it's not a version field, so continue to the next field
+					continue
+				} else {
+					return err
+				}
+			} else {
+				return nil
+			}
+		}
+		return fmt.Errorf("cannot find a version field")
+	}
+
+	s := bufio.NewScanner(strings.NewReader(string(b)))
+	for s.Scan() {
+		// an example line from machinectl image-status:
+		//  OS: Container Linux by CoreOS 1478.0.0 (Ladybug)
+
+		line := strings.Split(s.Text(), ":")
+		if len(line) <= 1 {
+			continue
+		}
+
+		keyStr := strings.TrimSpace(line[0])
+		valueStr := strings.TrimSpace(line[1])
+		if keyStr != "OS" {
+			continue
+		}
+
+		// now the line has the key "OS", so get the version field in the values
+		values := strings.Fields(valueStr)
+		if err := checkCoreosVersionField(values); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func pullRawCoreosImage() error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
+		// fall back to an ordinary abspath to machinectl
+		cmdPath = "/usr/bin/machinectl"
+	}
+
+	args := []string{
+		cmdPath,
+		"pull-raw",
+		"--verify=no",
+		"https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2",
+		"coreos",
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running machinectl pull-raw: %s", err)
+	}
+
+	return nil
+}
+
+func ensureCoreosVersion() {
+	if err := checkCoreosVersion(); err != nil {
+		log.Println(err)
+		log.Fatalf("You will need to remove the image by 'sudo machinectl remove coreos' then the next run of kube-spawn will download version %s of coreos image automatically.", coreosStableVersion)
+	}
+}
+
+func PrepareCoreosImage() {
+	// If no coreos image exists, just download it
+	if err := showCoreosImage(); err != nil {
+		if err := pullRawCoreosImage(); err != nil {
+			log.Fatalf("%v\n", err)
+		}
+	} else {
+		// If coreos image is not new enough, remove the existing image,
+		// then next time `kube-spawn up` will download a new image again.
+		ensureCoreosVersion()
 	}
 }
