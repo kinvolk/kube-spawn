@@ -266,13 +266,13 @@ func buildDefaultBindsList(name, kubeSpawnDirParent, cniPath string) ([]string, 
 	}
 
 	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
-	// /var/lib/docker inside the node
+	// /var/lib/rktlet inside the node
 	mountDir := path.Join(kubeSpawnDir, "default", name, "mount")
 	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err == nil {
 		bo := bindOption{
 			bindPrefix: bindrw,
 			srcMount:   mountDir,
-			dstMount:   "/var/lib/docker",
+			dstMount:   "/var/lib/rktlet",
 		}
 		outOpt, err := bo.composeBindOption()
 		if err != nil {
