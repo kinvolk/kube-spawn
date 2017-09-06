@@ -9,5 +9,6 @@ set -x
 
 kubeadm reset
 systemctl start kubelet.service
+systemctl start rktlet.service
 
 kubeadm join --skip-preflight-checks --token ${TOKEN} ${MASTER_IP}:6443

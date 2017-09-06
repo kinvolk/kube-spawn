@@ -20,6 +20,7 @@ KUBEADM_NSPAWN_TMP=/tmp/kube-spawn
 
 kubeadm reset
 systemctl start kubelet.service
+systemctl start rktlet.service
 
 kubeadm init --skip-preflight-checks --config /etc/kubeadm/kubeadm.yml --kubernetes-version=${K8S_VERSION}
 kubeadm token generate > ${KUBEADM_NSPAWN_TMP}/token

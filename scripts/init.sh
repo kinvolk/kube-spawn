@@ -18,6 +18,7 @@ KUBEADM_NSPAWN_TMP=/tmp/kube-spawn
 
 kubeadm reset
 systemctl start kubelet.service
+systemctl start rktlet.service
 
 KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64" kubeadm init --skip-preflight-checks --config /etc/kubeadm/kubeadm.yml
 kubeadm token generate > ${KUBEADM_NSPAWN_TMP}/token

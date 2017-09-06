@@ -149,6 +149,11 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 			},
 			{
 				bindro,
+				parseBind("$PWD/etc/rktlet.service"),
+				"/usr/lib/systemd/system/rktlet.service",
+			},
+			{
+				bindro,
 				path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm.conf"),
 				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
 			},
@@ -198,6 +203,11 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 				bindro,
 				parseBind("$PWD/k8s/kubelet.service"),
 				"/usr/lib/systemd/system/kubelet.service",
+			},
+			{
+				bindro,
+				parseBind("$PWD/etc/rktlet.service"),
+				"/usr/lib/systemd/system/rktlet.service",
 			},
 			{
 				bindro,
