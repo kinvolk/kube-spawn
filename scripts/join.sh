@@ -9,6 +9,7 @@ set -x
 
 kubeadm reset
 systemctl start kubelet.service
+systemctl start rktlet.service
 
 mkdir -p /var/lib/weave
 ln -sfT /etc/cni/net.d /etc/rkt/net.d
