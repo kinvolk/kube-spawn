@@ -10,4 +10,5 @@ set -x
 kubeadm reset
 systemctl start kubelet.service
 
+mkdir -p /var/lib/weave
 KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64" kubeadm join --skip-preflight-checks --token ${TOKEN} ${MASTER_IP}:6443
