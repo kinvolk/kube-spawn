@@ -25,6 +25,7 @@ kubeadm init --skip-preflight-checks --config /etc/kubeadm/kubeadm.yml --kuberne
 kubeadm token generate > ${KUBEADM_NSPAWN_TMP}/token
 kubeadm token create $(cat ${KUBEADM_NSPAWN_TMP}/token) --description 'kube-spawn bootstrap token' --ttl 0
 
+mkdir -p /var/lib/weave
 kubectl apply -f https://git.io/weave-kube-1.6
 
 install /etc/kubernetes/admin.conf ${KUBEADM_NSPAWN_TMP}/kubeconfig
