@@ -37,10 +37,3 @@ _testmain.go
 /cnispawn
 /kube-spawn
 /kube-spawn-runc
-
-# ssh keys
-/id_rsa*
-
-# containers
-/kube-spawn-*
-/rootfs.tar.xz

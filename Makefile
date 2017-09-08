@@ -1,5 +1,4 @@
-.PHONY: vendor all reset-cni
-.PHONY: clean clean-bins clean-rootfs clean-image clean-ssh-keys
+.PHONY: vendor all clean dep
 
 VERSION=$(shell git describe --tags --always --dirty)
 
@@ -16,15 +15,9 @@ vendor: | dep
 dep:
 	@which dep || go get -u github.com/golang/dep/cmd/dep
 
-clean: clean-bins clean-rootfs clean-image clean-ssh-keys
-clean-ssh-keys:
-	rm -rf ./id_rsa*
-clean-bins:
-	rm -rf ./{cni-noop,cnispawn,kube-spawn}
-clean-rootfs:
-	sudo rm -rf kube-spawn-*
-clean-image:
-	rm -rf rootfs.tar.xz
-
-reset-cni:
-	sudo rm -rf /var/lib/cni/networks/mynet
+clean:
+	rm -rf \
+		cni-noop \
+		cnispawn \
+		kube-spawn \
+		kube-spawn-runc
