@@ -11,5 +11,5 @@ kubeadm reset
 systemctl start kubelet.service
 systemctl start rktlet.service
 
-mkdir /var/lib/weave
+mkdir -p /var/lib/weave
 kubeadm join --skip-preflight-checks --token ${TOKEN} ${MASTER_IP}:6443
