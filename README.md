@@ -51,7 +51,7 @@ a `kubeadm` token, that can be used to join more nodes.
 
 To verify everything worked you can run:
 ```
-$ export KUBECONFIG=$HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+$ export KUBECONFIG=$GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
 $ kubectl get nodes
 $ kubectl get pods --all-namespaces
 $ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
