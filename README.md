@@ -43,7 +43,9 @@ The `up` subcommand pulls the image, sets up the nodes and then configures the c
 
 Now that you're up and running, you can start using it.
 
-## Deploying to your local cluster
+## How to..
+
+### Deploy to your local cluster
 
 `kube-spawn` creates `.kube-spawn/default/` inside the directory you run it in.
 There you can find the `kubeconfig` for the cluster and a `token` file with
@@ -57,7 +59,7 @@ $ kubectl get pods --all-namespaces
 $ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
-## Running local Kubernetes builds (optional)
+### Run local Kubernetes builds
 
 One of the main use cases of `kube-spawn` is to be able to easily test patches to
 Kubernetes. To do this, some additional steps are required.
@@ -95,6 +97,17 @@ $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev
 # Setup Kubernetes
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev init
 ```
+
+### Access a kube-spawn node
+
+All nodes can be seen with `machinectl list`, `machinectl shell` can be used to access a node, for example:
+
+```
+sudo machinectl shell root@kube-spawn-0
+```
+
+The password is `k8s`.
+
 
 ## Command Usage
 
