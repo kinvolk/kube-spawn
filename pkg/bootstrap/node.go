@@ -842,15 +842,16 @@ func ensureCoreosVersion() {
 	}
 }
 
-func PrepareCoreosImage() {
+func PrepareCoreosImage() error {
 	// If no coreos image exists, just download it
 	if err := showCoreosImage(); err != nil {
 		if err := pullRawCoreosImage(); err != nil {
-			log.Fatalf("%v\n", err)
+			return err
 		}
 	} else {
 		// If coreos image is not new enough, remove the existing image,
 		// then next time `kube-spawn up` will download a new image again.
 		ensureCoreosVersion()
 	}
+	return nil
 }

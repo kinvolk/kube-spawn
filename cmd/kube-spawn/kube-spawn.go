@@ -25,6 +25,8 @@ import (
 )
 
 const k8sStableVersion string = "1.7.0"
+const defaultRuntime string = "docker"
+const kubeSpawnDirDefault string = "/var/lib/kube-spawn"
 
 var (
 	cmdKubeSpawn = &cobra.Command{
@@ -44,12 +46,20 @@ var (
 
 	version      string
 	k8srelease   string
+	k8sruntime   string
 	printVersion bool
+	kubeSpawnDir string
 )
 
 func init() {
-	cmdKubeSpawn.Flags().BoolVarP(&printVersion, "version", "V", false, "output version information")
+	cmdKubeSpawn.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version information")
+	cmdKubeSpawn.PersistentFlags().StringVarP(&k8sruntime, "container-runtime", "r", defaultRuntime, "Runtime to use for the spawned cluster (docker or rkt)")
+	cmdKubeSpawn.PersistentFlags().StringVar(&rktBinDir, "rkt-bin-dir", "", "path to rkt binaries")
+	cmdKubeSpawn.PersistentFlags().StringVar(&rktletBinDir, "rktlet-bin-dir", "", "path to rktlet binaries")
+	cmdKubeSpawn.PersistentFlags().StringVar(&rktBinDir, "rkt-bin-dir", "", "path to rkt binaries")
+	cmdKubeSpawn.PersistentFlags().StringVar(&rktletBinDir, "rktlet-bin-dir", "", "path to rktlet binaries")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
+	cmdKubeSpawn.PersistentFlags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", kubeSpawnDirDefault, "path to kube-spawn asset directory")
 }
 
 func main() {

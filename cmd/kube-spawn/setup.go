@@ -19,6 +19,7 @@ package main
 import (
 	"log"
 	"os"
+	"path"
 
 	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
@@ -29,9 +30,8 @@ import (
 )
 
 var (
-	numNodes     int
-	baseImage    string
-	kubeSpawnDir string
+	numNodes  int
+	baseImage string
 
 	cmdSetup = &cobra.Command{
 		Use:   "setup",
@@ -45,7 +45,6 @@ func init() {
 
 	cmdSetup.Flags().IntVarP(&numNodes, "nodes", "n", 1, "number of nodes to spawn")
 	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "coreos", "base image for nodes")
-	cmdSetup.Flags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", "", "path to directory where .kube-spawn directory is located")
 }
 
 func checkK8sStableRelease(k8srel string) bool {
@@ -102,7 +101,7 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	doCheckK8sStableRelease(k8srelease)
 
 	if !utils.IsK8sDev(k8srelease) {
-		if err := bootstrap.DownloadK8sBins(k8srelease, "./k8s"); err != nil {
+		if err := bootstrap.DownloadK8sBins(k8srelease, path.Join(kubeSpawnDir, "k8s")); err != nil {
 			log.Fatalf("Error downloading k8s files: %s", err)
 		}
 	}
@@ -111,7 +110,7 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	// Ideally we should solve the port-forward issue by either
 	// creating general add-ons based on torcx, or creating our own
 	// container image, or at least building socat statically on our own.
-	ksExtraDir := ".kube-spawn/extras"
+	ksExtraDir := path.Join(kubeSpawnDir, "extras")
 	if err := os.MkdirAll(ksExtraDir, os.FileMode(0755)); err != nil {
 		log.Fatalf("Unable to create directory %q: %v.", ksExtraDir, err)
 	}
@@ -127,19 +126,23 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 		log.Fatalf("cannot get pool size: %v", err)
 	}
 
-	var nodesToRun []string
+	var nodesToRun []nspawntool.Node
 
 	for i := 0; i < numNodes; i++ {
-		name := bootstrap.GetNodeName(i)
-		if !bootstrap.MachineImageExists(name) {
-			if err := bootstrap.NewNode(baseImage, name); err != nil {
+		var node = nspawntool.Node{
+			Name:       bootstrap.GetNodeName(i),
+			K8sVersion: k8srelease,
+			Runtime:    k8sruntime,
+		}
+		if !bootstrap.MachineImageExists(node.Name) {
+			if err := bootstrap.NewNode(baseImage, node.Name); err != nil {
 				log.Fatalf("Error cloning base image: %s", err)
 			}
 		}
-		if bootstrap.IsNodeRunning(name) {
+		if bootstrap.IsNodeRunning(node.Name) {
 			continue
 		}
-		nodesToRun = append(nodesToRun, name)
+		nodesToRun = append(nodesToRun, node)
 	}
 	if len(nodesToRun) == 0 {
 		log.Printf("No nodes to create. stop")
@@ -150,16 +153,16 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 		log.Printf("Warning: cannot enlarge storage pool: %v", err)
 	}
 
-	for _, name := range nodesToRun {
-		if err := nspawntool.RunNode(k8srelease, name, kubeSpawnDir); err != nil {
+	for _, node := range nodesToRun {
+		if err := node.Run(kubeSpawnDir); err != nil {
 			log.Fatalf("Error running node: %s", err)
 		}
 
-		if err := nspawntool.RunBootstrapScript(name); err != nil {
+		if err := node.Bootstrap(); err != nil {
 			log.Fatalf("Error running bootstrap script: %s", err)
 		}
 
-		log.Printf("Success! %s started.", name)
+		log.Printf("Success! %s started.", node.Name)
 	}
 
 	log.Printf("All nodes are running. Use machinectl to login/stop/etc.")
