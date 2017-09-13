@@ -25,6 +25,7 @@ var (
 		k8sGithubURL + "kubelet.service",
 		k8sGithubURL + "10-kubeadm.conf",
 	}
+	K8sDownloadDir string = ".kube-spawn/k8s"
 )
 
 func Download(url, fpath string) (*os.File, error) {
