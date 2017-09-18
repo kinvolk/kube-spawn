@@ -17,7 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -25,6 +29,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/distribution"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
+	"github.com/kinvolk/kube-spawn/pkg/script"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
@@ -79,8 +84,38 @@ func doInit() {
 
 	log.Println("Note: init on master can take a couple of minutes until every k8s pod came up.")
 
+	os.Remove(filepath.Join(kubeSpawnDir, "default/token"))
+
 	if err := nspawntool.InitializeMaster(k8srelease, nodes[0].Name); err != nil {
 		log.Fatalf("Error initializing master node %s: %s", nodes[0].Name, err)
+	}
+
+	token, err := getToken()
+	if err != nil {
+		log.Fatalf("Error reading token: %v", err)
+	}
+
+	switch k8sruntime {
+	case "", "docker":
+		kubeadmContainerRuntime = "docker"
+	case "rkt":
+		kubeadmContainerRuntime = "rktlet"
+	default:
+		log.Fatalf("runtime %s is not supported", k8sruntime)
+	}
+
+	outbuf := script.GetKubeadmJoin(script.KubeadmJoinOpts{
+		ContainerRuntime: kubeadmContainerRuntime,
+		Token:            token,
+		MasterIP:         nodes[0].IP,
+	})
+	if outbuf == nil {
+		log.Fatalf("Error generating kubeadm join script")
+	}
+
+	joinScript := filepath.Join(kubeSpawnDir, "scripts/join.sh")
+	if err := ioutil.WriteFile(joinScript, outbuf.Bytes(), os.FileMode(0755)); err != nil {
+		stderr.Fatalf("Error writing script file %s: %v", joinScript, err)
 	}
 
 	for i, node := range nodes {
@@ -92,4 +127,13 @@ func doInit() {
 	}
 
 	log.Println("Note: For kubectl to work, please set $KUBECONFIG to " + utils.GetValidKubeConfig())
+}
+
+func getToken() (string, error) {
+	buf, err := ioutil.ReadFile(filepath.Join(kubeSpawnDir, "default/token"))
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(buf)), nil
 }
