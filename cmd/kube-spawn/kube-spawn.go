@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -47,8 +49,15 @@ var (
 	version      string
 	k8srelease   string
 	k8sruntime   string
+	rktBinDir    string
+	rktletBinDir string
 	printVersion bool
 	kubeSpawnDir string
+
+	kubeadmCgroupDriver     string
+	kubeadmRuntimeEndpoint  string
+	kubeadmRequestTimeout   string = "15m"
+	kubeadmContainerRuntime string
 )
 
 func init() {
@@ -56,13 +65,25 @@ func init() {
 	cmdKubeSpawn.PersistentFlags().StringVarP(&k8sruntime, "container-runtime", "r", defaultRuntime, "Runtime to use for the spawned cluster (docker or rkt)")
 	cmdKubeSpawn.PersistentFlags().StringVar(&rktBinDir, "rkt-bin-dir", "", "path to rkt binaries")
 	cmdKubeSpawn.PersistentFlags().StringVar(&rktletBinDir, "rktlet-bin-dir", "", "path to rktlet binaries")
-	cmdKubeSpawn.PersistentFlags().StringVar(&rktBinDir, "rkt-bin-dir", "", "path to rkt binaries")
-	cmdKubeSpawn.PersistentFlags().StringVar(&rktletBinDir, "rktlet-bin-dir", "", "path to rktlet binaries")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", kubeSpawnDirDefault, "path to kube-spawn asset directory")
 }
 
 func main() {
+	var err error
+	var goPath string
+	if goPath, err = utils.GetValidGoPath(); err != nil {
+		log.Fatalf("invalid GOPATH %q: %v", goPath, err)
+	}
+
+	if rktBinDir == "" {
+		rktBinDir = filepath.Join(goPath, "/src/github.com/rkt/rkt/build-rir/target/bin")
+	}
+
+	if rktletBinDir == "" {
+		rktletBinDir = filepath.Join(goPath, "/src/github.com/kubernetes-incubator/rktlet/bin")
+	}
+
 	if err := cmdKubeSpawn.Execute(); err != nil {
 		log.Fatal(err)
 	}

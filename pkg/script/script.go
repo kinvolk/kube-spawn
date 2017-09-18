@@ -9,6 +9,8 @@ import (
 func render(tmpl string, opts interface{}) *bytes.Buffer {
 	var buf = new(bytes.Buffer)
 	t := template.Must(template.New(fmt.Sprintf("%T", opts)).Parse(tmpl))
-	_ := t.Execute(buf, opts)
+	if err := t.Execute(buf, opts); err != nil {
+		return nil
+	}
 	return buf
 }

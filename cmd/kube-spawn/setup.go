@@ -17,15 +17,19 @@ limitations under the License.
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
+	"github.com/kinvolk/kube-spawn/pkg/script"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
@@ -61,6 +65,13 @@ func checkK8sStableRelease(k8srel string) bool {
 	}
 
 	return c.Check(v)
+}
+
+func addVersionPrefix(verstr string) string {
+	if !strings.HasPrefix(verstr, "v") {
+		return "v" + verstr
+	}
+	return verstr
 }
 
 func doCheckK8sStableRelease(k8srel string) {
@@ -105,6 +116,16 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 			log.Fatalf("Error downloading k8s files: %s", err)
 		}
 	}
+
+	// Several kubeadm configs or scripts must be written differently
+	// according to k8s versions or container runtimes.
+	writeKubeadmBootstrapScript()
+	writeKubeadmInitScript()
+	writeKubeadmExtraArgs()
+	writeKubeadmConfig()
+
+	// Copy config files from $PWD/etc to kubeSpawnDir, without change.
+	copyConfigFiles()
 
 	// NOTE: workaround for making kubelet work with port-forward.
 	// Ideally we should solve the port-forward issue by either
@@ -154,16 +175,157 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	}
 
 	for _, node := range nodesToRun {
-		if err := node.Run(kubeSpawnDir); err != nil {
-			log.Fatalf("Error running node: %s", err)
+		if err := node.Run(kubeSpawnDir, rktBinDir, rktletBinDir); err != nil {
+			log.Fatalf("Error running node: %v", err)
 		}
 
 		if err := node.Bootstrap(); err != nil {
-			log.Fatalf("Error running bootstrap script: %s", err)
+			log.Fatalf("Error running bootstrap script: %v", err)
 		}
 
 		log.Printf("Success! %s started.", node.Name)
 	}
 
-	log.Printf("All nodes are running. Use machinectl to login/stop/etc.")
+	log.Print("All nodes are running. Use machinectl to login/stop/etc.")
+	log.Printf("KUBECONFIG is in %v", kubeSpawnDir)
+}
+
+func writeKubeadmBootstrapScript() {
+	outbuf := script.GetKubeadmBootstrap(script.KubeadmBootstrapOpts{
+		K8sRuntime: k8sruntime,
+	})
+	if outbuf == nil {
+		log.Fatalf("Error generating kubeadm bootstrap script")
+	}
+
+	scriptsDir := filepath.Join(kubeSpawnDir, "scripts")
+	if err := os.MkdirAll(scriptsDir, os.FileMode(0755)); err != nil {
+		log.Fatalf("Unable to create directory %q: %v.", kubeSpawnDir, err)
+	}
+	bootstrapScript := filepath.Join(scriptsDir, "bootstrap.sh")
+	if err := ioutil.WriteFile(bootstrapScript, outbuf.Bytes(), os.FileMode(0755)); err != nil {
+		log.Fatalf("Error writing script file %s: %v", bootstrapScript, err)
+	}
+}
+
+func writeKubeadmInitScript() {
+	outbuf := script.GetKubeadmInit(script.KubeadmInitOpts{
+		RuntimeRkt:   (k8sruntime == "rkt"),
+		KubeSpawnDir: kubeSpawnDir,
+	})
+	if outbuf == nil {
+		log.Fatalf("Error generating kubeadm init script")
+	}
+
+	scriptsDir := filepath.Join(kubeSpawnDir, "scripts")
+	if err := os.MkdirAll(scriptsDir, os.FileMode(0755)); err != nil {
+		log.Fatalf("Unable to create directory %q: %v.", kubeSpawnDir, err)
+	}
+	initScript := filepath.Join(scriptsDir, "init.sh")
+	if err := ioutil.WriteFile(initScript, outbuf.Bytes(), os.FileMode(0755)); err != nil {
+		log.Fatalf("Error writing script file %s: %v", initScript, err)
+	}
+}
+
+func writeKubeadmExtraArgs() {
+	// cgroup driver defaults to systemd on most systems, but there's
+	// an issue of runc <=1.0.0-rc2 that conflicts with --cgroup-driver=systemd,
+	// so for docker runtime, we should use legacy driver "cgroupfs".
+	switch k8sruntime {
+	case "", "docker":
+		kubeadmCgroupDriver = "cgroupfs"
+		kubeadmRuntimeEndpoint = "unix:///var/run/docker.sock"
+	case "rkt":
+		kubeadmCgroupDriver = "systemd"
+		kubeadmRuntimeEndpoint = "unix:///var/run/rktlet.sock"
+	default:
+		log.Fatalf("runtime %s is not supported", k8sruntime)
+	}
+
+	// K8s 1.8 or newer fails to run by default when swap is enabled.
+	// So we should disable the feature with an option "--fail-swap-on=false".
+	failSwapOnArgs := ""
+	if utils.IsK8sDev(k8srelease) {
+		failSwapOnArgs = "--fail-swap-on=false"
+	}
+
+	// --cgroups-per-qos should be set to false, so that we can avoid issues with
+	// different formats of cgroup paths between k8s and systemd.
+	// --enforce-node-allocatable= is also necessary.
+	outbuf := script.GetKubeadmExtraArgs(script.KubeadmExtraArgsOpts{
+		CgroupDriver:    kubeadmCgroupDriver,
+		CgroupsPerQOS:   false,
+		FailSwapOnArgs:  failSwapOnArgs,
+		RktRuntime:      (k8sruntime == "rkt"),
+		RuntimeEndpoint: kubeadmRuntimeEndpoint,
+		RequestTimeout:  kubeadmRequestTimeout,
+	})
+	if outbuf == nil {
+		log.Fatalf("Error generating kubeadm init script")
+	}
+
+	etcDir := filepath.Join(kubeSpawnDir, "etc")
+	if err := os.MkdirAll(etcDir, os.FileMode(0755)); err != nil {
+		log.Fatalf("Unable to create directory %q: %v.", kubeSpawnDir, err)
+	}
+	initScript := filepath.Join(etcDir, "kube_20-kubeadm-extra-args.conf")
+	if err := ioutil.WriteFile(initScript, []byte(outbuf.String()), os.FileMode(0644)); err != nil {
+		log.Fatalf("Error writing script file %s: %v", initScript, err)
+	}
+}
+
+func writeKubeadmConfig() {
+	var k8sver string
+	if utils.IsK8sDev(k8srelease) {
+		k8sver = "latest"
+	} else {
+		// In the field of "kubernetesVersion" in kubeadm.yml, a semantic
+		// version must has a prefix "v". For example, it must be "v1.7.0"
+		// instead of "1.7.0". Otherwise "kubeadm init" will fail.
+		k8sver = addVersionPrefix(k8srelease)
+	}
+
+	outbuf := script.GetKubeadmConfig(script.KubeadmYmlOpts{
+		KubernetesVersion: k8sver,
+	})
+	if outbuf == nil {
+		log.Fatalf("Error generating kubeadm init script")
+	}
+
+	kubeadmConfig := filepath.Join(kubeSpawnDir, "etc/kubeadm.yml")
+	if err := ioutil.WriteFile(kubeadmConfig, outbuf.Bytes(), os.FileMode(0644)); err != nil {
+		log.Fatalf("Error writing config %s: %v", kubeadmConfig, err)
+	}
+}
+
+func copyConfigFiles() {
+	etcSrc := utils.LookupPwd("$PWD/etc")
+	etcDst := filepath.Join(kubeSpawnDir, "etc")
+
+	fName := "daemon.json"
+	if _, err := utils.CopyFileToDir(filepath.Join(etcSrc, fName), etcDst); err != nil {
+		log.Fatalf("Error copying file %s: %v", fName, err)
+	}
+
+	fName = "kube_tmpfiles_kubelet.conf"
+	if _, err := utils.CopyFileToDir(filepath.Join(etcSrc, fName), etcDst); err != nil {
+		log.Fatalf("Error copying file %s: %v", fName, err)
+	}
+
+	fName = "weave_50-weave.network"
+	if _, err := utils.CopyFileToDir(filepath.Join(etcSrc, fName), etcDst); err != nil {
+		log.Fatalf("Error copying file %s: %v", fName, err)
+	}
+
+	if k8sruntime == "docker" {
+		fName = "docker_20-kubeadm-extra-args.conf"
+		if _, err := utils.CopyFileToDir(filepath.Join(etcSrc, fName), etcDst); err != nil {
+			log.Fatalf("Error copying file %s: %v", fName, err)
+		}
+	} else if k8sruntime == "rkt" {
+		fName = "rktlet.service"
+		if _, err := utils.CopyFileToDir(filepath.Join(etcSrc, fName), etcDst); err != nil {
+			log.Fatalf("Error copying file %s: %v", fName, err)
+		}
+	}
 }

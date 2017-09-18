@@ -713,11 +713,9 @@ func showCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -821,11 +819,9 @@ func pullRawCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {

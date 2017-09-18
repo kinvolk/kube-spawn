@@ -18,10 +18,12 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -29,14 +31,19 @@ import (
 )
 
 const (
-	kcRelPath string = ".kube-spawn/default/kubeconfig"
-	ksRelPath string = "src/github.com/kinvolk/kube-spawn"
+	kubeSpawnDir string = "/var/lib/kube-spawn"
+	ksHiddenDir  string = ".kube-spawn"
+	kcRelPath    string = "default/kubeconfig"
+	ksRelPath    string = "src/github.com/kinvolk/kube-spawn"
 )
 
 var (
 	homePath string = os.Getenv("HOME")
 	goPath   string = os.Getenv("GOPATH")
 	cniPath  string = os.Getenv("CNI_PATH")
+
+	kcUserPath   string = filepath.Join(ksHiddenDir, kcRelPath)
+	kcSystemPath string = filepath.Join(kubeSpawnDir, kcRelPath)
 )
 
 func CheckValidDir(inPath string) error {
@@ -86,21 +93,15 @@ func GetValidCniPath(inGoPath string) (string, error) {
 }
 
 func GetValidKubeConfig() string {
-	var err error
-	var pwd string
-	if pwd, err = os.Getwd(); err != nil {
-		pwd = os.Getenv("PWD")
-	}
-
-	kcPath := filepath.Join(pwd, kcRelPath)
+	kcPath := kcSystemPath
 	if err := CheckValidFile(kcPath); err != nil {
 		// fall back to $GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
-		kcPath = filepath.Join(goPath, ksRelPath, kcRelPath)
+		kcPath = filepath.Join(goPath, ksRelPath, kcUserPath)
 		log.Printf("fall back to %s...\n", kcPath)
 
 		if err := CheckValidFile(kcPath); err != nil {
 			// fall back to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
-			kcPath = filepath.Join(homePath, "go", ksRelPath, kcRelPath)
+			kcPath = filepath.Join(homePath, "go", ksRelPath, kcUserPath)
 			log.Printf("fall back to %s...\n", kcPath)
 			if err := CheckValidFile(kcPath); err != nil {
 				return ""
@@ -134,4 +135,31 @@ func IsTerminal(fd uintptr) bool {
 
 func IsK8sDev(k8srel string) bool {
 	return k8srel == "" || k8srel == "dev"
+}
+
+func CopyFileToDir(src, dstdir string) (string, error) {
+	dst := filepath.Join(dstdir, filepath.Base(src))
+
+	s, err := os.Open(src)
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+
+	d, err := os.Create(dst)
+	if err != nil {
+		return "", err
+	}
+	defer d.Close()
+
+	_, err = io.Copy(d, s)
+	return dst, err
+}
+
+func LookupPwd(inPath string) string {
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return strings.Replace(inPath, "$PWD", pwd, 1)
 }
