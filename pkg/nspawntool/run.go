@@ -30,6 +30,7 @@ import (
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cniversion "github.com/containernetworking/cni/pkg/version"
+	"github.com/pkg/errors"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
@@ -43,6 +44,7 @@ var (
 	cniPath string
 
 	k8sBinds     []string
+	rktBinds     []string
 	defaultBinds []string
 )
 
@@ -57,17 +59,25 @@ type bindOption struct {
 //   --bind=/src/file:/dst/file
 func (bo *bindOption) composeBindOption() (string, error) {
 	if _, err := os.Stat(bo.srcMount); os.IsNotExist(err) {
-		return "", fmt.Errorf("invalid file %s: %v", bo.srcMount, err)
+		return "", errors.Wrapf(err, "invalid file %s", bo.srcMount)
 	}
 	return fmt.Sprintf("%s%s:%s", bo.bindPrefix, bo.srcMount, bo.dstMount), nil
 }
 
-func getDefaultBindOpts(cniPath string) []bindOption {
+func parseBind(bindstring string) string {
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return strings.Replace(bindstring, "$PWD", pwd, 1)
+}
+
+func getDefaultBindOpts(kubeSpawnDir, cniPath string) []bindOption {
 	return []bindOption{
 		// kube-spawn bins
 		{
 			bindrw,
-			parseBind("$PWD/scripts"),
+			filepath.Join(kubeSpawnDir, "scripts"),
 			"/opt/kube-spawn",
 		},
 		{
@@ -75,36 +85,36 @@ func getDefaultBindOpts(cniPath string) []bindOption {
 			parseBind("$PWD/kube-spawn-runc"),
 			"/opt/kube-spawn-runc",
 		},
-		// shared tmpdir
+		// shared kubeSpawnDir
 		{
 			bindrw,
-			parseBind("$PWD/.kube-spawn/default"),
-			"/tmp/kube-spawn",
+			path.Join(kubeSpawnDir, "default"),
+			kubeSpawnDir,
 		},
 		// extra configs
 		{
 			bindro,
-			parseBind("$PWD/etc/daemon.json"),
+			filepath.Join(kubeSpawnDir, "etc/daemon.json"),
 			"/etc/docker/daemon.json",
 		},
 		{
 			bindro,
-			parseBind("$PWD/etc/kubeadm.yml"),
+			filepath.Join(kubeSpawnDir, "etc/kubeadm.yml"),
 			"/etc/kubeadm/kubeadm.yml",
 		},
 		{
 			bindro,
-			parseBind("$PWD/etc/docker_20-kubeadm-extra-args.conf"),
-			"/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf",
-		},
-		{
-			bindro,
-			parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf"),
+			filepath.Join(kubeSpawnDir, "etc/kube_20-kubeadm-extra-args.conf"),
 			"/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf",
 		},
 		{
 			bindro,
-			parseBind("$PWD/etc/weave_50-weave.network"),
+			filepath.Join(kubeSpawnDir, "etc/kube_tmpfiles_kubelet.conf"),
+			"/usr/lib/tmpfiles.d/kubelet.conf",
+		},
+		{
+			bindro,
+			filepath.Join(kubeSpawnDir, "etc/weave_50-weave.network"),
 			"/etc/systemd/network/50-weave.network",
 		},
 		// cni bins
@@ -116,12 +126,12 @@ func getDefaultBindOpts(cniPath string) []bindOption {
 	}
 }
 
-func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
+func getK8sBindOpts(k8srelease, kubeSpawnDir, goPath string) ([]bindOption, error) {
 	if utils.IsK8sDev(k8srelease) {
 		// self-compiled k8s development tree
 		k8sOutputDir, err := utils.GetK8sBuildOutputDir(filepath.Join(goPath, "/src/k8s.io/kubernetes"))
 		if err != nil {
-			return nil, fmt.Errorf("error getting k8s output directory: %s", err)
+			return nil, errors.Wrap(err, "error getting k8s output directory")
 		}
 
 		return []bindOption{
@@ -152,12 +162,6 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 				path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm.conf"),
 				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
 			},
-			// config
-			{
-				bindro,
-				parseBind("$PWD/etc/kube_20-kubeadm-extra-args-k8s18.conf"),
-				"/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf",
-			},
 		}, nil
 	} else {
 		// k8s releases pre-built and downloaded
@@ -165,150 +169,166 @@ func getK8sBindOpts(k8srelease, goPath string) ([]bindOption, error) {
 			// bins
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubelet"),
+				path.Join(kubeSpawnDir, "/k8s/kubelet"),
 				"/usr/bin/kubelet",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubeadm"),
+				path.Join(kubeSpawnDir, "/k8s/kubeadm"),
 				"/usr/bin/kubeadm",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubectl"),
+				path.Join(kubeSpawnDir, "/k8s/kubectl"),
 				"/usr/bin/kubectl",
 			},
 			// service files
 			{
 				bindro,
-				parseBind("$PWD/k8s/kubelet.service"),
+				path.Join(kubeSpawnDir, "/k8s/kubelet.service"),
 				"/usr/lib/systemd/system/kubelet.service",
 			},
 			{
 				bindro,
-				parseBind("$PWD/k8s/10-kubeadm.conf"),
+				path.Join(kubeSpawnDir, "/k8s/10-kubeadm.conf"),
 				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
-			},
-			// config
-			{
-				bindro,
-				parseBind("$PWD/etc/kube_20-kubeadm-extra-args.conf"),
-				"/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf",
 			},
 		}, nil
 	}
 }
 
-func parseBind(bindstring string) string {
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
+func getRktBindOpts(kubeSpawnDir, rktBinDir, rktletBinDir string) []bindOption {
+	return []bindOption{
+		// rktlet
+		{
+			bindro,
+			filepath.Join(rktBinDir, "rkt"),
+			"/usr/bin/rkt",
+		},
+		{
+			bindro,
+			filepath.Join(rktBinDir, "stage1-coreos.aci"),
+			"/usr/bin/stage1-coreos.aci",
+		},
+		{
+			bindro,
+			filepath.Join(rktletBinDir, "rktlet"),
+			"/usr/bin/rktlet",
+		},
+		{
+			bindro,
+			filepath.Join(kubeSpawnDir, "etc/rktlet.service"),
+			"/usr/lib/systemd/system/rktlet.service",
+		},
 	}
-	return strings.Replace(bindstring, "$PWD", pwd, 1)
 }
 
-func buildDefaultBindsList(name, kubeSpawnDirParent, cniPath string) ([]string, error) {
-	var listBinds []string
-
-	// defaultBindOpts has to be determined after evaluation of cniPath
-	defaultBindOpts := getDefaultBindOpts(cniPath)
-	for _, bo := range defaultBindOpts {
-		outOpt, err := bo.composeBindOption()
-		if err != nil {
-			return nil, err
-		}
-		listBinds = append(listBinds, outOpt)
+func getDockerBindOpts(kubeSpawnDir string) []bindOption {
+	return []bindOption{
+		{
+			bindro,
+			filepath.Join(kubeSpawnDir, "etc/docker_20-kubeadm-extra-args.conf"),
+			"/etc/systemd/system/docker.service.d/20-kubeadm-extra-args.conf",
+		},
 	}
-
-	if kubeSpawnDirParent == "" {
-		kubeSpawnDirParent = parseBind("$PWD")
-	} else if err := utils.CheckValidDir(kubeSpawnDirParent); err != nil {
-		kubeSpawnDirParent = parseBind("$PWD")
-	}
-	kubeSpawnDir := path.Join(kubeSpawnDirParent, ".kube-spawn")
-
-	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
-		return nil, fmt.Errorf("unable to create directory %q: %v.", kubeSpawnDir, err)
-	}
-
-	if err := bootstrap.PathSupportsOverlay(kubeSpawnDir); err != nil {
-		return nil, fmt.Errorf("unable to create overlayfs on %q: %v. Try to pass a directory with a different filesystem (like ext4 or XFS) to --kube-spawn-dir.", kubeSpawnDir, err)
-	}
-
-	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
-	// /var/lib/docker inside the node
-	mountDir := path.Join(kubeSpawnDir, "default", name, "mount")
-	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err == nil {
-		bo := bindOption{
-			bindPrefix: bindrw,
-			srcMount:   mountDir,
-			dstMount:   "/var/lib/docker",
-		}
-		outOpt, err := bo.composeBindOption()
-		if err != nil {
-			return nil, err
-		}
-		listBinds = append(listBinds, outOpt)
-	}
-
-	return listBinds, nil
 }
 
-func buildK8sBindsList(k8srelease, goPath string) ([]string, error) {
-	var listBinds []string
+type Node struct {
+	Name       string
+	K8sVersion string
+	Runtime    string
+	bindOpts   []bindOption
+}
 
-	k8sBindOpts, err := getK8sBindOpts(k8srelease, goPath)
+func (n *Node) buildBindsListKubernetes(kubeSpawnDir, goPath string) error {
+	k8sBindOpts, err := getK8sBindOpts(n.K8sVersion, kubeSpawnDir, goPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	for _, bo := range k8sBindOpts {
-		outOpt, err := bo.composeBindOption()
-		if err != nil {
-			return nil, err
-		}
-		listBinds = append(listBinds, outOpt)
-	}
+	n.bindOpts = append(n.bindOpts, k8sBindOpts...)
 
 	// NOTE: workaround for making kubelet work with port-forward
 	bo := bindOption{
 		bindPrefix: bindro,
-		srcMount:   parseBind("$PWD/.kube-spawn/extras/socat"),
+		srcMount:   path.Join(kubeSpawnDir, "/extras/socat"),
 		dstMount:   "/usr/bin/socat"}
-	outOpt, err := bo.composeBindOption()
-	if err != nil {
-		return nil, err
-	}
-	listBinds = append(listBinds, outOpt)
-
-	return listBinds, nil
+	n.bindOpts = append(n.bindOpts, bo)
+	return nil
 }
 
-func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
+func (n *Node) buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir string) ([]string, error) {
 	var err error
 
 	if goPath, err = utils.GetValidGoPath(); err != nil {
-		return fmt.Errorf("RunNode: invalid GOPATH %q", goPath)
+		return nil, errors.Errorf("invalid GOPATH %q", goPath)
+	}
+	if cniPath, err = utils.GetValidCniPath(goPath); err != nil {
+		return nil, errors.Errorf("invalid CNI_PATH %q", cniPath)
 	}
 
-	if cniPath, err = utils.GetValidCniPath(goPath); err != nil {
-		return fmt.Errorf("RunNode: invalid CNI_PATH %q", cniPath)
+	n.bindOpts = append(n.bindOpts, getDefaultBindOpts(kubeSpawnDir, cniPath)...)
+
+	if err := n.buildBindsListKubernetes(kubeSpawnDir, goPath); err != nil {
+		return nil, errors.Wrap(err, "error getting kubernetes bind mounts list: %v")
+	}
+
+	var runtimeDir string
+	switch n.Runtime {
+	case "docker":
+		runtimeDir = "/var/lib/docker"
+		n.bindOpts = append(n.bindOpts, getDockerBindOpts(kubeSpawnDir)...)
+	case "rkt":
+		runtimeDir = "/var/lib/rktlet"
+		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBinDir, rktletBinDir)...)
+	case "crio":
+		return nil, errors.Errorf("%v runtime not supported", n.Runtime)
+	}
+
+	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
+	// /var/lib/{docker, rktlet} inside the node
+	mountDir := path.Join(kubeSpawnDir, "default", n.Name, "mount")
+	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err != nil {
+		return nil, errors.Wrapf(err, "unable to create dir %q", mountDir)
+	}
+	bo := bindOption{
+		bindPrefix: bindrw,
+		srcMount:   mountDir,
+		dstMount:   runtimeDir,
+	}
+	n.bindOpts = append(n.bindOpts, bo)
+
+	var listopts []string
+	for _, bo := range n.bindOpts {
+		opt, err := bo.composeBindOption()
+		if err != nil {
+			return nil, fmt.Errorf("unable to compose build option: %q: %v", bo.srcMount, err)
+		}
+		listopts = append(listopts, opt)
+	}
+	return listopts, err
+}
+
+func (n *Node) Run(kubeSpawnDir, rktBinDir, rktletBinDir string) error {
+	var err error
+
+	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
+		return errors.Wrapf(err, "unable to create directory %q", kubeSpawnDir)
+	}
+	if err := bootstrap.PathSupportsOverlay(kubeSpawnDir); err != nil {
+		return errors.Wrapf(err, "unable to create overlayfs on %q. Try to pass a directory with a different filesystem (like ext4 or XFS) to --kube-spawn-dir.", kubeSpawnDir)
 	}
 
 	args := []string{
 		"cnispawn",
 		"-d",
-		"--machine", name,
+		"--machine", n.Name,
 	}
 
-	if defaultBinds, err = buildDefaultBindsList(name, kubeSpawnDirParent, cniPath); err != nil {
-		return fmt.Errorf("RunNode: error getting default bind mounts list: %v", err)
+	listopts, err := n.buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir)
+	if err != nil {
+		return errors.Wrap(err, "error processing bind options")
 	}
-	args = append(args, defaultBinds...)
-
-	if k8sBinds, err = buildK8sBindsList(k8srelease, goPath); err != nil {
-		return fmt.Errorf("RunNode: error getting k8s bind mounts list: %v", err)
-	}
-	args = append(args, k8sBinds...)
+	args = append(args, listopts...)
 
 	c := exec.Cmd{
 		Path:   "cnispawn",
@@ -319,44 +339,44 @@ func RunNode(k8srelease, name, kubeSpawnDirParent string) error {
 
 	stdout, err := c.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("error creating stdout pipe: %s", err)
+		return errors.Wrap(err, "error creating stdout pipe")
 	}
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return fmt.Errorf("error running cnispawn: %s", err)
+		return errors.Wrap(err, "error running cnispawn")
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		return fmt.Errorf("error reading cni data from stdin: %s", err)
+		return errors.Wrap(err, "error reading cni data from stdin")
 	}
 
 	if _, err := cniversion.NewResult(cniversion.Current(), cniDataJSON); err != nil {
 		log.Printf("unexpected result output: %s", cniDataJSON)
-		return fmt.Errorf("unable to parse result: %s", err)
+		return errors.Wrap(err, "unable to parse result")
 	}
 
 	if err := c.Wait(); err != nil {
 		var cniError cnitypes.Error
 		if err := json.Unmarshal(cniDataJSON, &cniError); err != nil {
-			return fmt.Errorf("error unmarshaling cni error: %s", err)
+			return errors.Wrap(err, "error unmarshaling cni error")
 		}
-		return fmt.Errorf("error running cnispawn: %s", cniError)
+		return errors.Wrap(err, "error running cnispawn")
 	}
 
-	log.Printf("Waiting for %s to start up", name)
+	log.Printf("Waiting for %s to start up", n.Name)
 	ready := false
 	retries := 0
 	for !ready {
-		check := exec.Command("systemctl", "--machine", name, "status", "basic.target", "--state=running")
+		check := exec.Command("systemctl", "--machine", n.Name, "status", "basic.target", "--state=running")
 		check.Run()
 		if ready = check.ProcessState.Success(); !ready {
 			time.Sleep(2 * time.Second)
 			retries++
 		}
 		if retries >= 10 {
-			return fmt.Errorf("timeout waiting for %s to start", name)
+			return errors.Errorf("timeout waiting for %s to start", n.Name)
 		}
 	}
 

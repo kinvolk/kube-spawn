@@ -42,6 +42,10 @@ const (
 	coreosStableVersion   string = "1478.0.0"
 )
 
+var (
+	stderr *log.Logger
+)
+
 type Node struct {
 	Name string
 	IP   string
@@ -713,11 +717,9 @@ func showCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -821,11 +823,9 @@ func pullRawCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -846,7 +846,7 @@ func PrepareCoreosImage() {
 	// If no coreos image exists, just download it
 	if err := showCoreosImage(); err != nil {
 		if err := pullRawCoreosImage(); err != nil {
-			log.Fatalf("%v\n", err)
+			stderr.Fatalf("%v\n", err)
 		}
 	} else {
 		// If coreos image is not new enough, remove the existing image,
