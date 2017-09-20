@@ -225,6 +225,45 @@ func getDockerBindOpts(kubeSpawnDir string) []bindOption {
 	}
 }
 
+func getCrioBindOpts(kubeSpawnDir, crioBin, runcBin, conmonBin string) []bindOption {
+	return []bindOption{
+		{
+			bindro,
+			path.Join(kubeSpawnDir, "etc/crio/crio.conf"),
+			"/etc/crio/cio.conf",
+		},
+		{
+			bindro,
+			path.Join(kubeSpawnDir, "etc/crio/seccomp.json"),
+			"/etc/crio/seccomp.json",
+		},
+		{
+			bindro,
+			path.Join(kubeSpawnDir, "etc/containers/policy.json"),
+			"/etc/containers/policy.json",
+		},
+		{
+			bindro,
+			crioBin,
+			"/usr/local/bin/crio",
+		},
+		{
+			bindro,
+			runcBin,
+			"/bin/runc",
+		},
+		{
+			bindro,
+			conmonBin,
+			"/usr/local/libexec/crio/conmon",
+		},
+		{
+			bindro,
+			filepath.Join(kubeSpawnDir, "etc/crio.service"),
+			"/usr/lib/systemd/system/crio.service",
+		},
+	}
+}
 func (n *Node) buildBindsListKubernetes(kubeSpawnDir, goPath string) error {
 	k8sBindOpts, err := getK8sBindOpts(n.K8sVersion, kubeSpawnDir, goPath)
 	if err != nil {
@@ -241,7 +280,7 @@ func (n *Node) buildBindsListKubernetes(kubeSpawnDir, goPath string) error {
 	return nil
 }
 
-func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) ([]string, error) {
+func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin string) ([]string, error) {
 	var err error
 
 	if goPath, err = utils.GetValidGoPath(); err != nil {
@@ -266,7 +305,8 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin st
 		runtimeDir = "/var/lib/rktlet"
 		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)...)
 	case "crio":
-		return nil, fmt.Errorf("runtime %q not supported: %v", n.Runtime, err)
+		runtimeDir = "/var/lib/containers"
+		n.bindOpts = append(n.bindOpts, getCrioBindOpts(kubeSpawnDir, crioBin, runcBin, conmonBin)...)
 	}
 
 	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into

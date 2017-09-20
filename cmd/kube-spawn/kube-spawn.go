@@ -57,6 +57,10 @@ var (
 	rktStage1Image string = os.Getenv("KUBE_SPAWN_RKT_STAGE1_IMAGE")
 	rktletBin      string = os.Getenv("KUBE_SPAWN_RKTLET_BIN")
 
+	crioBin   string = os.Getenv("KUBE_SPAWN_CRIO_BIN")
+	runcBin   string = os.Getenv("KUBE_SPAWN_RUNC_BIN")
+	conmonBin string = os.Getenv("KUBE_SPAWN_CONMON_BIN")
+
 	kubeadmCgroupDriver     string
 	kubeadmRuntimeEndpoint  string
 	kubeadmRequestTimeout   string = "15m"
@@ -101,7 +105,24 @@ func init() {
 				}
 			}
 		case "crio":
-			// need crio, runc and conmon binaries
+			if crioBin == "" {
+				crioBin, err = exec.LookPath("crio")
+				if err != nil {
+					log.Fatal("Unable to find crio binary. Put it in your PATH or use KUBE_SPAWN_CRIO_BIN.")
+				}
+			}
+			if runcBin == "" {
+				runcBin, err = exec.LookPath("runc")
+				if err != nil {
+					log.Fatal("Unable to find runc binary. Put it in your PATH or use KUBE_SPAWN_RUNC_BIN.")
+				}
+			}
+			if conmonBin == "" {
+				crioBin, err = exec.LookPath("conmon")
+				if err != nil {
+					log.Fatal("Unable to find conmon binary. Put it in your PATH or use KUBE_SPAWN_CONMON_BIN.")
+				}
+			}
 		}
 	}
 }

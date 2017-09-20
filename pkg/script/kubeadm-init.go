@@ -9,6 +9,7 @@ set -ex
 kubeadm reset
 systemctl start kubelet.service
 {{ if eq .ContainerRuntime "rkt" -}}systemctl start rktlet.service{{- end}}
+{{ if eq .ContainerRuntime "crio" -}}systemctl start crio.service{{- end}}
 
 kubeadm init --skip-preflight-checks --config /etc/kubeadm/kubeadm.yml
 mkdir -p {{.KubeSpawnDir}}

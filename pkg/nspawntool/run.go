@@ -43,7 +43,7 @@ type Node struct {
 	bindOpts   []bindOption
 }
 
-func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) error {
+func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin string) error {
 	var err error
 
 	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
@@ -59,7 +59,7 @@ func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) error
 		"--machine", n.Name,
 	}
 
-	listopts, err := n.buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)
+	listopts, err := n.buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin)
 	if err != nil {
 		return fmt.Errorf("RunNode: error processing bind options: %v", err)
 	}

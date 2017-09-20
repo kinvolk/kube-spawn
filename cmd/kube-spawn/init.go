@@ -100,6 +100,8 @@ func doInit() {
 		kubeadmContainerRuntime = "docker"
 	case "rkt":
 		kubeadmContainerRuntime = "rktlet"
+	case "crio":
+		kubeadmContainerRuntime = "crio"
 	default:
 		log.Fatalf("runtime %s is not supported", k8sruntime)
 	}

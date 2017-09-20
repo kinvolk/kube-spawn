@@ -175,7 +175,7 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	}
 
 	for _, node := range nodesToRun {
-		if err := node.Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin); err != nil {
+		if err := node.Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin); err != nil {
 			log.Fatalf("Error running node: %v", err)
 		}
 
@@ -239,7 +239,8 @@ func writeKubeadmExtraArgs() {
 		kubeadmCgroupDriver = "systemd"
 		kubeadmRuntimeEndpoint = "unix:///var/run/rktlet.sock"
 	default:
-		log.Fatalf("runtime %s is not supported", k8sruntime)
+		kubeadmCgroupDriver = "cgroupfs"
+		kubeadmRuntimeEndpoint = "unix:///var/run/crio.sock"
 	}
 
 	// K8s 1.8 or newer fails to run by default when swap is enabled.
