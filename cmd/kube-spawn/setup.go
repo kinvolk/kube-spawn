@@ -175,7 +175,7 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	}
 
 	for _, node := range nodesToRun {
-		if err := node.Run(kubeSpawnDir, rktBinDir, rktletBinDir); err != nil {
+		if err := node.Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin); err != nil {
 			log.Fatalf("Error running node: %v", err)
 		}
 

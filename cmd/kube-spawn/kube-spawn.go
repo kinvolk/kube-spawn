@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"os/exec"
 
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/spf13/cobra"
@@ -46,13 +46,14 @@ var (
 		},
 	}
 
-	version      string
-	k8srelease   string
-	k8sruntime   string
-	rktBinDir    string
-	rktletBinDir string
-	printVersion bool
-	kubeSpawnDir string
+	version        string
+	k8srelease     string
+	k8sruntime     string
+	rktBin         string = os.Getenv("KUBE_SPAWN_RKT_BIN")
+	rktStage1Image string = os.Getenv("KUBE_SPAWN_RKT_STAGE1_IMAGE")
+	rktletBin      string = os.Getenv("KUBE_SPAWN_RKTLET_BIN")
+	printVersion   bool
+	kubeSpawnDir   string
 
 	kubeadmCgroupDriver     string
 	kubeadmRuntimeEndpoint  string
@@ -63,10 +64,37 @@ var (
 func init() {
 	cmdKubeSpawn.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version information")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&k8sruntime, "container-runtime", "r", defaultRuntime, "Runtime to use for the spawned cluster (docker or rkt)")
-	cmdKubeSpawn.PersistentFlags().StringVar(&rktBinDir, "rkt-bin-dir", "", "path to rkt binaries")
-	cmdKubeSpawn.PersistentFlags().StringVar(&rktletBinDir, "rktlet-bin-dir", "", "path to rktlet binaries")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
 	cmdKubeSpawn.PersistentFlags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", kubeSpawnDirDefault, "path to kube-spawn asset directory")
+
+	cmdKubeSpawn.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		// TODO: we should eventually run extensive env/config checks prior to running any subcommand
+		// That would also benefit from some kind of centralized config
+		var err error
+		switch k8sruntime {
+		case "rkt":
+			if rktBin == "" {
+				rktBin, err = exec.LookPath("rkt")
+				if err != nil {
+					log.Fatal("Unable to find rkt binary. Put it in your PATH or use KUBE_SPAWN_RKT_BIN.")
+				}
+			}
+			if rktStage1Image == "" {
+				rktStage1Image = "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
+				if err := utils.CheckValidFile(rktStage1Image); err != nil {
+					log.Fatal("Unable to find stage1-coreos.aci, use KUBE_SPAWN_RKT_STAGE1_IMAGE.")
+				}
+			}
+			if rktletBin == "" {
+				rktletBin, err = exec.LookPath("rktlet")
+				if err != nil {
+					log.Fatal("Unable to find rktlet binary. Put it in your PATH or use KUBE_SPAWN_RKTLET_BIN.")
+				}
+			}
+		case "crio":
+			// need crio, runc and conmon binaries
+		}
+	}
 }
 
 func main() {
@@ -74,14 +102,6 @@ func main() {
 	var goPath string
 	if goPath, err = utils.GetValidGoPath(); err != nil {
 		log.Fatalf("invalid GOPATH %q: %v", goPath, err)
-	}
-
-	if rktBinDir == "" {
-		rktBinDir = filepath.Join(goPath, "/src/github.com/rkt/rkt/build-rir/target/bin")
-	}
-
-	if rktletBinDir == "" {
-		rktletBinDir = filepath.Join(goPath, "/src/github.com/kubernetes-incubator/rktlet/bin")
 	}
 
 	if err := cmdKubeSpawn.Execute(); err != nil {

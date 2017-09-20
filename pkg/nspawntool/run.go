@@ -196,22 +196,22 @@ func getK8sBindOpts(k8srelease, kubeSpawnDir, goPath string) ([]bindOption, erro
 	}
 }
 
-func getRktBindOpts(kubeSpawnDir, rktBinDir, rktletBinDir string) []bindOption {
+func getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) []bindOption {
 	return []bindOption{
 		// rktlet
 		{
 			bindro,
-			filepath.Join(rktBinDir, "rkt"),
+			rktBin,
 			"/usr/bin/rkt",
 		},
 		{
 			bindro,
-			filepath.Join(rktBinDir, "stage1-coreos.aci"),
+			rktStage1Image,
 			"/usr/bin/stage1-coreos.aci",
 		},
 		{
 			bindro,
-			filepath.Join(rktletBinDir, "rktlet"),
+			rktletBin,
 			"/usr/bin/rktlet",
 		},
 		{
@@ -255,7 +255,7 @@ func (n *Node) buildBindsListKubernetes(kubeSpawnDir, goPath string) error {
 	return nil
 }
 
-func (n *Node) buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir string) ([]string, error) {
+func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) ([]string, error) {
 	var err error
 
 	if goPath, err = utils.GetValidGoPath(); err != nil {
@@ -278,7 +278,7 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir string) ([]s
 		n.bindOpts = append(n.bindOpts, getDockerBindOpts(kubeSpawnDir)...)
 	case "rkt":
 		runtimeDir = "/var/lib/rktlet"
-		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBinDir, rktletBinDir)...)
+		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)...)
 	case "crio":
 		return nil, fmt.Errorf("%v runtime not supported", n.Runtime)
 	}
@@ -307,7 +307,7 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir string) ([]s
 	return listopts, err
 }
 
-func (n *Node) Run(kubeSpawnDir, rktBinDir, rktletBinDir string) error {
+func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) error {
 	var err error
 
 	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
@@ -323,7 +323,7 @@ func (n *Node) Run(kubeSpawnDir, rktBinDir, rktletBinDir string) error {
 		"--machine", n.Name,
 	}
 
-	listopts, err := n.buildBindsList(kubeSpawnDir, rktBinDir, rktletBinDir)
+	listopts, err := n.buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)
 	if err != nil {
 		return fmt.Errorf("RunNode: error processing bind options: %v", err)
 	}
