@@ -219,6 +219,11 @@ func getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) []bi
 			filepath.Join(kubeSpawnDir, "etc/rktlet.service"),
 			"/usr/lib/systemd/system/rktlet.service",
 		},
+		{
+			bindro,
+			parseBind(cniPath),
+			"/usr/lib/rkt/plugins/net",
+		},
 	}
 }
 
