@@ -20,6 +20,6 @@ type KubeadmExtraRuntimeOpts struct {
 	RequestTimeout  string
 }
 
-func GetKubeadmExtraRuntime(opts KubeadmExtraRuntimeOpts) *bytes.Buffer {
+func GetKubeadmExtraRuntime(opts KubeadmExtraRuntimeOpts) (*bytes.Buffer, error) {
 	return render(kubeadmExtraRuntimeTmpl, opts)
 }
