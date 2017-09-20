@@ -11,7 +11,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 {{ printf "--cgroups-per-qos=%t \\" .CgroupsPerQOS }}
 {{.FailSwapOnArgs}} \
 --authentication-token-webhook \
-{{ if .RktRuntime -}}--container-runtime=remote \
+{{ if ne .ContainerRuntime "docker" -}}--container-runtime=remote \
 --container-runtime-endpoint={{.RuntimeEndpoint}}{{- end}} \
 --runtime-request-timeout={{.RequestTimeout}}"
 `
@@ -25,12 +25,12 @@ Environment="KUBELET_EXTRA_ARGS=\
 // which rktlet listens on.
 
 type KubeadmExtraArgsOpts struct {
-	CgroupDriver    string
-	CgroupsPerQOS   bool
-	FailSwapOnArgs  string
-	RktRuntime      bool
-	RuntimeEndpoint string
-	RequestTimeout  string
+	CgroupDriver     string
+	CgroupsPerQOS    bool
+	FailSwapOnArgs   string
+	ContainerRuntime string
+	RuntimeEndpoint  string
+	RequestTimeout   string
 }
 
 func GetKubeadmExtraArgs(opts KubeadmExtraArgsOpts) *bytes.Buffer {

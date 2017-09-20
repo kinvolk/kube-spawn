@@ -192,7 +192,7 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 
 func writeKubeadmBootstrapScript() {
 	outbuf := script.GetKubeadmBootstrap(script.KubeadmBootstrapOpts{
-		K8sRuntime: k8sruntime,
+		ContainerRuntime: k8sruntime,
 	})
 	if outbuf == nil {
 		log.Fatalf("Error generating kubeadm bootstrap script")
@@ -210,8 +210,8 @@ func writeKubeadmBootstrapScript() {
 
 func writeKubeadmInitScript() {
 	outbuf := script.GetKubeadmInit(script.KubeadmInitOpts{
-		RuntimeRkt:   (k8sruntime == "rkt"),
-		KubeSpawnDir: kubeSpawnDir,
+		ContainerRuntime: k8sruntime,
+		KubeSpawnDir:     kubeSpawnDir,
 	})
 	if outbuf == nil {
 		log.Fatalf("Error generating kubeadm init script")
@@ -253,12 +253,12 @@ func writeKubeadmExtraArgs() {
 	// different formats of cgroup paths between k8s and systemd.
 	// --enforce-node-allocatable= is also necessary.
 	outbuf := script.GetKubeadmExtraArgs(script.KubeadmExtraArgsOpts{
-		CgroupDriver:    kubeadmCgroupDriver,
-		CgroupsPerQOS:   false,
-		FailSwapOnArgs:  failSwapOnArgs,
-		RktRuntime:      (k8sruntime == "rkt"),
-		RuntimeEndpoint: kubeadmRuntimeEndpoint,
-		RequestTimeout:  kubeadmRequestTimeout,
+		CgroupDriver:     kubeadmCgroupDriver,
+		CgroupsPerQOS:    false,
+		FailSwapOnArgs:   failSwapOnArgs,
+		ContainerRuntime: k8sruntime,
+		RuntimeEndpoint:  kubeadmRuntimeEndpoint,
+		RequestTimeout:   kubeadmRequestTimeout,
 	})
 	if outbuf == nil {
 		log.Fatalf("Error generating kubeadm init script")

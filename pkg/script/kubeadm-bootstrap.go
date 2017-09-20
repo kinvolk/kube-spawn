@@ -9,7 +9,7 @@ set -ex
 echo "root:k8s" | chpasswd
 echo "core:core" | chpasswd
 
-systemctl enable {{.K8sRuntime}}.service
+systemctl enable {{.ContainerRuntime}}.service
 systemctl enable kubelet.service
 systemctl enable sshd.service
 
@@ -19,7 +19,7 @@ systemctl mask systemd-networkd-wait-online.service
 `
 
 type KubeadmBootstrapOpts struct {
-	K8sRuntime string
+	ContainerRuntime string
 }
 
 func GetKubeadmBootstrap(opts KubeadmBootstrapOpts) *bytes.Buffer {
