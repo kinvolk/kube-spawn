@@ -25,11 +25,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/Masterminds/semver"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 const (
@@ -713,11 +715,9 @@ func showCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -821,11 +821,9 @@ func pullRawCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: cmdPath,
+		Args: args,
+		Env:  os.Environ(),
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -842,15 +840,28 @@ func ensureCoreosVersion() {
 	}
 }
 
-func PrepareCoreosImage() {
+func PrepareCoreosImage() error {
 	// If no coreos image exists, just download it
 	if err := showCoreosImage(); err != nil {
 		if err := pullRawCoreosImage(); err != nil {
-			log.Fatalf("%v\n", err)
+			return err
 		}
 	} else {
 		// If coreos image is not new enough, remove the existing image,
 		// then next time `kube-spawn up` will download a new image again.
 		ensureCoreosVersion()
 	}
+	return nil
+}
+
+func CleanupRunDir(kubeSpawnDir, nodeName string) error {
+	mountDir := filepath.Join(kubeSpawnDir, "default", nodeName, "mount")
+	if err := utils.CheckValidDir(mountDir); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("cannot read directory %s: %v", mountDir, err)
+	}
+
+	return os.RemoveAll(filepath.Join(mountDir, "run"))
 }
