@@ -11,7 +11,7 @@ systemctl start {{.ContainerRuntime}}.service
 systemctl start kubelet.service
 
 mkdir -p /var/lib/weave
-{{- if eq .ContainerRuntime "rkt"}}ln -sfT /etc/cni/net.d /etc/rkt/net.d{{end -}}
+{{if eq .ContainerRuntime "rkt" -}}ln -sfT /etc/cni/net.d /etc/rkt/net.d{{- end}}
 KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64" kubeadm join --skip-preflight-checks --token {{.Token}} {{.MasterIP}}:6443
 `
 
