@@ -309,9 +309,9 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, c
 		n.bindOpts = append(n.bindOpts, getCrioBindOpts(kubeSpawnDir, crioBin, runcBin, conmonBin)...)
 	}
 
-	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
-	// /var/lib/{docker, rktlet} inside the node
-	mountDir := path.Join(kubeSpawnDir, "default", n.Name, "mount")
+	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount/var/lib/RUNTIME_DIR into
+	// /var/lib/{docker,rktlet,containers} inside the node
+	mountDir := path.Join(kubeSpawnDir, "default", n.Name, "mount", runtimeDir)
 	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err != nil {
 		return nil, fmt.Errorf("unable to create dir %q: %v", mountDir, err)
 	}
@@ -321,6 +321,17 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, c
 		dstMount:   runtimeDir,
 	}
 	n.bindOpts = append(n.bindOpts, bo)
+
+	runDir := path.Join(kubeSpawnDir, "default", n.Name, "mount/run")
+	if err := os.MkdirAll(runDir, os.FileMode(0755)); err != nil {
+		return nil, fmt.Errorf("unable to create dir %q: %v", runDir, err)
+	}
+	boRun := bindOption{
+		bindPrefix: bindrw,
+		srcMount:   runDir,
+		dstMount:   "/run",
+	}
+	n.bindOpts = append(n.bindOpts, boRun)
 
 	var listopts []string
 	for _, bo := range n.bindOpts {

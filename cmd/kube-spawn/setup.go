@@ -156,6 +156,12 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 			Runtime:    k8sruntime,
 		}
 		if !bootstrap.MachineImageExists(node.Name) {
+			if err := bootstrap.CleanupRunDir(kubeSpawnDir, node.Name); err != nil {
+				log.Printf("Warning: Cannot clean up run directory of %s: %v", node.Name, err)
+				// not a critical error, as it's still possible to launch a container.
+				// so just continue creating the new node. It's up to users, whether
+				// to rely on running a new node with existing files under /run.
+			}
 			if err := bootstrap.NewNode(baseImage, node.Name); err != nil {
 				log.Fatalf("Error cloning base image: %s", err)
 			}

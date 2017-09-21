@@ -25,11 +25,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/Masterminds/semver"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 const (
@@ -850,4 +852,16 @@ func PrepareCoreosImage() error {
 		ensureCoreosVersion()
 	}
 	return nil
+}
+
+func CleanupRunDir(kubeSpawnDir, nodeName string) error {
+	mountDir := filepath.Join(kubeSpawnDir, "default", nodeName, "mount")
+	if err := utils.CheckValidDir(mountDir); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("cannot read directory %s: %v", mountDir, err)
+	}
+
+	return os.RemoveAll(filepath.Join(mountDir, "run"))
 }
