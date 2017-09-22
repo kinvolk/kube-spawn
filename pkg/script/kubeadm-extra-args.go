@@ -7,6 +7,7 @@ import (
 const kubeadmExtraArgsTmpl string = `[Service]
 Environment="KUBELET_EXTRA_ARGS=\
 --cgroup-driver={{.CgroupDriver}} \
+--cgroup-root={{.CgroupRoot}} \
 --enforce-node-allocatable= \
 {{ printf "--cgroups-per-qos=%t \\" .CgroupsPerQOS }}
 {{.FailSwapOnArgs}} \
@@ -26,6 +27,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 
 type KubeadmExtraArgsOpts struct {
 	CgroupDriver     string
+	CgroupRoot       string
 	CgroupsPerQOS    bool
 	FailSwapOnArgs   string
 	ContainerRuntime string

@@ -228,6 +228,7 @@ func writeKubeadmInitScript() {
 }
 
 func writeKubeadmExtraArgs() {
+	cgroupRoot := `/machine.slice/machine-kubespawn0.scope`
 	// cgroup driver defaults to systemd on most systems, but there's
 	// an issue of runc <=1.0.0-rc2 that conflicts with --cgroup-driver=systemd,
 	// so for docker runtime, we should use legacy driver "cgroupfs".
@@ -255,7 +256,8 @@ func writeKubeadmExtraArgs() {
 	// --enforce-node-allocatable= is also necessary.
 	outbuf := script.GetKubeadmExtraArgs(script.KubeadmExtraArgsOpts{
 		CgroupDriver:     kubeadmCgroupDriver,
-		CgroupsPerQOS:    false,
+		CgroupRoot:       cgroupRoot,
+		CgroupsPerQOS:    true,
 		FailSwapOnArgs:   failSwapOnArgs,
 		ContainerRuntime: k8sruntime,
 		RuntimeEndpoint:  kubeadmRuntimeEndpoint,
