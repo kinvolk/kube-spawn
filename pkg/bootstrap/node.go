@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	containerNameTemplate string = "kube-spawn-%d"
+	containerNameTemplate string = "kubespawn%d"
 	ctHashsizeModparam    string = "/sys/module/nf_conntrack/parameters/hashsize"
 	ctHashsizeValue       string = "131072"
 	ctMaxSysctl           string = "/proc/sys/net/nf_conntrack_max"
@@ -107,14 +107,14 @@ func GetRunningNodes() ([]Node, error) {
 		}
 
 		// an example line from systemd v232 or newer:
-		//  kube-spawn-0 container systemd-nspawn coreos 1478.0.0 10.22.0.130...
+		//  kubespawn0 container systemd-nspawn coreos 1478.0.0 10.22.0.130...
 		//
 		// systemd v231 or older:
-		//  kube-spawn-0 container systemd-nspawn
+		//  kubespawn0 container systemd-nspawn
 
 		var ipaddr string
 		machineName := strings.TrimSpace(line[0])
-		if !strings.HasPrefix(machineName, "kube-spawn-") {
+		if !strings.HasPrefix(machineName, "kubespawn") {
 			continue
 		}
 
@@ -137,7 +137,7 @@ func GetRunningNodes() ([]Node, error) {
 }
 
 func GetIPAddressLegacy(mach string) (string, error) {
-	// machinectl status kube-spawn-0 --no-pager | grep Address
+	// machinectl status kubespawn0 --no-pager | grep Address
 	args := []string{
 		"status",
 		mach,

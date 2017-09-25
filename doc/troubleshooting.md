@@ -25,7 +25,7 @@ However, it is also true that disabling security framework is not always desirab
 If your `start` (or `setup`) command fails upon restarting machines without any reason, please try to removing existing images like:
 
 ```
-$ for i in $(seq 0 2); do sudo machinectl remove kube-spawn-$i; done
+$ for i in $(seq 0 2); do sudo machinectl remove kubespawn$i; done
 ```
 
 That could make the setup process do the job again. Ideally the remaining images should be handled automatically. For that it is planned to implement storing node infos persistently. (See https://github.com/kinvolk/kube-spawn/issues/37)

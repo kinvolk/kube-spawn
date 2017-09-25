@@ -103,7 +103,7 @@ $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev
 All nodes can be seen with `machinectl list`, `machinectl shell` can be used to access a node, for example:
 
 ```
-sudo machinectl shell root@kube-spawn-0
+sudo machinectl shell root@kubespawn0
 ```
 
 The password is `k8s`.
