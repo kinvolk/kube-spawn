@@ -59,6 +59,8 @@ $ kubectl get pods --all-namespaces
 $ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
+It is possible to run `rktlet` on `kube-spawn`. See [doc/rktlet](doc/rktlet.md).
+
 ### Run local Kubernetes builds
 
 One of the main use cases of `kube-spawn` is to be able to easily test patches to
