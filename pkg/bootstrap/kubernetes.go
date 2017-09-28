@@ -13,8 +13,8 @@ import (
 
 const (
 	k8sURL         string = "https://dl.k8s.io/v$VERSION/bin/linux/amd64/"
-	k8sGithubURL   string = "https://raw.githubusercontent.com/kubernetes/release/master/rpm/"
-	staticSocatUrl string = "https://raw.githubusercontent.com/andrew-d/static-binaries/master/binaries/linux/x86_64/socat"
+	k8sGithubURL   string = "https://raw.githubusercontent.com/kubernetes/release/706c64874faa5653cf963fb30de390969e25f175/rpm/"
+	staticSocatUrl string = "https://raw.githubusercontent.com/andrew-d/static-binaries/530df977dd38ba3b4197878b34466d49fce69d8e/binaries/linux/x86_64/socat"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 		k8sURL + "kubeadm",
 		k8sURL + "kubectl",
 		k8sGithubURL + "kubelet.service",
-		k8sGithubURL + "10-kubeadm.conf",
+		k8sGithubURL + "10-kubeadm-pre-1.8.conf",
 	}
 )
 

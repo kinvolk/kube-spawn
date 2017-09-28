@@ -146,8 +146,8 @@ func getK8sBindOpts(k8srelease, kubeSpawnDir, goPath string) ([]bindOption, erro
 			},
 			{
 				bindro,
-				path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm.conf"),
-				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
+				path.Join(goPath, "/src/k8s.io/kubernetes/build/rpms/10-kubeadm-pre-1.8.conf"),
+				"/etc/systemd/system/kubelet.service.d/10-kubeadm-pre-1.8.conf",
 			},
 		}, nil
 	} else {
@@ -177,8 +177,8 @@ func getK8sBindOpts(k8srelease, kubeSpawnDir, goPath string) ([]bindOption, erro
 			},
 			{
 				bindro,
-				path.Join(kubeSpawnDir, "/k8s/10-kubeadm.conf"),
-				"/etc/systemd/system/kubelet.service.d/10-kubeadm.conf",
+				path.Join(kubeSpawnDir, "/k8s/10-kubeadm-pre-1.8.conf"),
+				"/etc/systemd/system/kubelet.service.d/10-kubeadm-pre-1.8.conf",
 			},
 		}, nil
 	}
