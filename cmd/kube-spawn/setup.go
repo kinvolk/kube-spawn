@@ -85,6 +85,24 @@ func doCheckK8sStableRelease(k8srel string) {
 	}
 }
 
+// The kubelet option --fail-swap-on=false is needed for 2 cases:
+//  - "dev" version, which is a self-built K8s cluster
+//  - release "1.8.0" or newer
+func isFailSwapOnFalseNeeded(k8srel string) bool {
+	if utils.IsK8sDev(k8srel) {
+		return true
+	}
+
+	v, err := semver.NewVersion(k8srel)
+	if err != nil {
+		return false
+	}
+
+	c, _ := semver.NewConstraint(">=1.8.0")
+
+	return c.Check(v)
+}
+
 func runSetup(cmd *cobra.Command, args []string) {
 	doSetup(numNodes, baseImage, kubeSpawnDir)
 }
@@ -191,8 +209,17 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 }
 
 func writeKubeadmBootstrapScript() {
+	switch k8sruntime {
+	case "rkt":
+		kubeadmContainerRuntime = "rktlet"
+	case "", "docker":
+		fallthrough
+	default:
+		kubeadmContainerRuntime = "docker"
+	}
+
 	outbuf := script.GetKubeadmBootstrap(script.KubeadmBootstrapOpts{
-		ContainerRuntime: k8sruntime,
+		ContainerRuntime: kubeadmContainerRuntime,
 	})
 	if outbuf == nil {
 		log.Fatalf("Error generating kubeadm bootstrap script")
@@ -246,7 +273,7 @@ func writeKubeadmExtraArgs() {
 	// K8s 1.8 or newer fails to run by default when swap is enabled.
 	// So we should disable the feature with an option "--fail-swap-on=false".
 	failSwapOnArgs := ""
-	if utils.IsK8sDev(k8srelease) {
+	if isFailSwapOnFalseNeeded(k8srelease) {
 		failSwapOnArgs = "--fail-swap-on=false"
 	}
 
