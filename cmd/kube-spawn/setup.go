@@ -191,8 +191,17 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 }
 
 func writeKubeadmBootstrapScript() {
+	switch k8sruntime {
+	case "rkt":
+		kubeadmContainerRuntime = "rktlet"
+	case "", "docker":
+		fallthrough
+	default:
+		kubeadmContainerRuntime = "docker"
+	}
+
 	outbuf := script.GetKubeadmBootstrap(script.KubeadmBootstrapOpts{
-		ContainerRuntime: k8sruntime,
+		ContainerRuntime: kubeadmContainerRuntime,
 	})
 	if outbuf == nil {
 		log.Fatalf("Error generating kubeadm bootstrap script")
