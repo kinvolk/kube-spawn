@@ -47,13 +47,11 @@ Now that you're up and running, you can start using it.
 
 ### Deploy to your local cluster
 
-`kube-spawn` creates `.kube-spawn/default/` inside the directory you run it in.
-There you can find the `kubeconfig` for the cluster and a `token` file with
-a `kubeadm` token, that can be used to join more nodes.
+`kube-spawn` creates the config at `/var/lib/kube-spawn/default`. There you can find the `kubeconfig` for the cluster and a `token` file with a `kubeadm` token, that can be used to join more nodes.
 
 To verify everything worked you can run:
 ```
-$ export KUBECONFIG=$GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+$ export KUBECONFIG=/var/lib/kube-spawn/default/kubeconfig
 $ kubectl get nodes
 $ kubectl get pods --all-namespaces
 $ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
