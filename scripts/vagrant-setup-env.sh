@@ -24,7 +24,7 @@ cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
 go get -u github.com/containernetworking/plugins/plugins/...
 
-make vendor all
+make all
 
 sudo machinectl show-image coreos || sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
 

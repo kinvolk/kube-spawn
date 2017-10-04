@@ -34,7 +34,7 @@ $ go get -d github.com/kinvolk/kube-spawn
 ```
 # Build the tool
 $ cd $GOPATH/src/github.com/kinvolk/kube-spawn
-$ make vendor all
+$ make all
 
 $ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
 ```
