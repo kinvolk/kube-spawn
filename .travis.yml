@@ -1,0 +1,17 @@
+language: go
+
+services:
+  - docker
+
+install: true
+
+go:
+  - 1.9.x
+
+script:
+  - DOCKERIZED=y make
+
+notifications:
+  email: false
+
+sudo: false
