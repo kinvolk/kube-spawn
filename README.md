@@ -54,7 +54,7 @@ To verify everything worked you can run:
 $ export KUBECONFIG=/var/lib/kube-spawn/default/kubeconfig
 $ kubectl get nodes
 $ kubectl get pods --all-namespaces
-$ kubectl create -f 'https://github.com/kubernetes/kubernetes/blob/master/examples/guestbook/all-in-one/frontend.yaml'
+$ kubectl create -f 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
 It is possible to run `rktlet` on `kube-spawn`. See [doc/rktlet](doc/rktlet.md).
