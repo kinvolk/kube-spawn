@@ -1,0 +1,19 @@
+FROM fedora:26
+
+ENV GOPATH /go
+ENV PATH "/go/bin:${PATH}"
+
+RUN dnf install -y \
+		git \
+		go \
+		make \
+		which \
+	&& dnf clean all
+
+RUN go get -u github.com/golang/dep/...
+
+RUN mkdir -p /go/src/github.com/kinvolk/kube-spawn
+
+WORKDIR /go/src/github.com/kinvolk/kube-spawn
+
+ENTRYPOINT ["make", "DOCKERIZED=n"]
