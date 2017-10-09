@@ -73,6 +73,17 @@ You may see the following error:
 Then you will need to include your Docker API version in an
 environment variable: `DOCKER_API_VERSION=1.24 `
 
+## Running with Kubernetes 1.7.3 or newer
+
+When running kube-spawn with an Kubernetes release, by specifying a
+command-line option `--kubernetes-version=`, you should specify
+version 1.7.3 or newer. That's because of the following issues:
+
+* token creation issue during cluster init, with k8s version 1.7.0 or older:
+  - (https://github.com/kubernetes/kubeadm/issues/335)
+
+* issue of mixing options `--skip-preflight-checks` and `--config=`, when running k8s version 1.7.2 or older:
+  - (https://github.com/kubernetes/kubernetes/pull/49498)
 
 ## Getting the Kubernetes repositories
 
