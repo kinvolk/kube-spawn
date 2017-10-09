@@ -17,8 +17,5 @@ $ sudo -E \
 
 ### Notes:
 
-* we had issues with k8s version lower than `1.7.1`:
-  - token creation during cluster init (https://github.com/kubernetes/kubeadm/issues/335)
-
 * rkt needs `stage1-coreos.aci`, we default to `/usr/lib/rkt/stage1-images/stage1-coreos.aci`, if this location differs
   please use the environment variable above
