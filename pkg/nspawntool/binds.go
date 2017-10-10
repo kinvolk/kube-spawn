@@ -296,31 +296,68 @@ func (n *Node) buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, c
 		return nil, fmt.Errorf("error getting kubernetes bind mounts list: %v", err)
 	}
 
-	var runtimeDir string
-	switch n.Runtime {
-	case "docker":
-		runtimeDir = "/var/lib/docker"
-		n.bindOpts = append(n.bindOpts, getDockerBindOpts(kubeSpawnDir)...)
-	case "rkt":
-		runtimeDir = "/var/lib/rktlet"
-		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)...)
-	case "crio":
-		runtimeDir = "/var/lib/containers"
-		n.bindOpts = append(n.bindOpts, getCrioBindOpts(kubeSpawnDir, crioBin, runcBin, conmonBin)...)
+	makeDir := func(dirName string) error {
+		if err := os.MkdirAll(dirName, os.FileMode(0755)); err != nil {
+			return fmt.Errorf("unable to create dir %q: %v", dirName, err)
+		}
+		return nil
 	}
+
+	mountDir := path.Join(kubeSpawnDir, "default", n.Name, "mount")
+	if err := makeDir(mountDir); err != nil {
+		return nil, err
+	}
+
+	bOpts := []bindOption{}
 
 	// mount directory ./.kube-spawn/default/MACHINE_NAME/mount into
 	// /var/lib/{docker, rktlet} inside the node
-	mountDir := path.Join(kubeSpawnDir, "default", n.Name, "mount")
-	if err := os.MkdirAll(mountDir, os.FileMode(0755)); err != nil {
-		return nil, fmt.Errorf("unable to create dir %q: %v", mountDir, err)
+
+	switch n.Runtime {
+	case "docker":
+		n.bindOpts = append(n.bindOpts, getDockerBindOpts(kubeSpawnDir)...)
+
+		bOpts = append(bOpts, bindOption{
+			bindPrefix: bindrw,
+			srcMount:   mountDir,
+			dstMount:   "/var/lib/docker",
+		})
+	case "rkt":
+		n.bindOpts = append(n.bindOpts, getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin)...)
+
+		// rktlet needs to store data into both directories, "/var/lib/rkt"
+		// and "/var/lib/rktlet". We need to mount both into nspawn containers,
+		// to avoid potential issues of no free space.
+		rktMountDir := filepath.Join(mountDir, "rkt")
+		if err := makeDir(rktMountDir); err != nil {
+			return nil, err
+		}
+		bOpts = append(bOpts, bindOption{
+			bindPrefix: bindrw,
+			srcMount:   rktMountDir,
+			dstMount:   "/var/lib/rkt",
+		})
+
+		rktletMountDir := filepath.Join(mountDir, "rktlet")
+		if err := makeDir(rktletMountDir); err != nil {
+			return nil, err
+		}
+		bOpts = append(bOpts, bindOption{
+			bindPrefix: bindrw,
+			srcMount:   rktletMountDir,
+			dstMount:   "/var/lib/rktlet",
+		})
+	case "crio":
+		n.bindOpts = append(n.bindOpts, getCrioBindOpts(kubeSpawnDir, crioBin, runcBin, conmonBin)...)
+
+		bOpts = append(bOpts, bindOption{
+			bindPrefix: bindrw,
+			srcMount:   mountDir,
+			dstMount:   "/var/lib/containers",
+		})
 	}
-	bo := bindOption{
-		bindPrefix: bindrw,
-		srcMount:   mountDir,
-		dstMount:   runtimeDir,
-	}
-	n.bindOpts = append(n.bindOpts, bo)
+
+	n.bindOpts = append(n.bindOpts, bOpts...)
 
 	var listopts []string
 	for _, bo := range n.bindOpts {
