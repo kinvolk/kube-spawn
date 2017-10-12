@@ -22,7 +22,7 @@ However, it is also true that disabling security framework is not always desirab
 
 ## Restarting machines fails without removing machine images
 
-If your `start` (or `setup`) command fails upon restarting machines without any reason, please try to removing existing images like:
+If your `start` command fails upon restarting machines without any reason, please try to removing existing images like:
 
 ```
 $ for i in $(seq 0 2); do sudo machinectl remove kubespawn$i; done

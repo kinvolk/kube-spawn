@@ -36,12 +36,20 @@ $ go get -d github.com/kinvolk/kube-spawn
 $ cd $GOPATH/src/github.com/kinvolk/kube-spawn
 $ make all
 
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn up --image=coreos --nodes=3
+$ export CNI_PATH=$GOPATH/bin
+
+# This generated a default 3 nodes cluster configuration
+$ sudo -E ./kube-spawn create --nodes=3
+$ sudo -E ./kube-spawn start
 ```
 
-The `up` subcommand pulls the image, sets up the nodes and then configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
-
+The `create` subcommand sets up a cluster environment in `/var/lib/kube-spawn`, and puts all the neccessary
+scripts/configs into place for running the cluster.
+Via `start` you bring up the nodes and `kube-spawn` configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
 Now that you're up and running, you can start using it.
+
+After stopping the cluster with `stop` you don't have to run `create` again, unless you want to change the cluster config in
+`/var/lib/kube-spawn/CLUSTER_NAME/kspawn.toml`.
 
 ## How to..
 
@@ -92,10 +100,8 @@ Assuming you have built `kube-spawn` and pulled the CoreOS image, do:
 
 ```
 # Spawn and provision nodes for the cluster
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev setup --image=coreos --nodes=3
-
-# Setup Kubernetes
-$ sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn --kubernetes-version=dev init
+$ sudo -E ./kube-spawn create --dev
+$ sudo -E ./kube-spawn start
 ```
 
 ### Access a kube-spawn node
