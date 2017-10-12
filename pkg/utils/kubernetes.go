@@ -67,9 +67,7 @@ func CheckValidFile(inPath string) error {
 func GetValidGoPath() (string, error) {
 	if err := CheckValidDir(goPath); err != nil {
 		// fall back to $HOME/go
-		goPathOrig := goPath
 		goPath = path.Join(homePath, "go")
-		log.Printf("invalid GOPATH %q, fall back to %s...\n", goPathOrig, goPath)
 		if err := CheckValidDir(goPath); err != nil {
 			return "", err
 		}
@@ -81,9 +79,7 @@ func GetValidGoPath() (string, error) {
 func GetValidCniPath(inGoPath string) (string, error) {
 	if err := CheckValidDir(cniPath); err != nil {
 		// fall back to $GOPATH/bin
-		cniPathOrig := cniPath
 		cniPath = path.Join(inGoPath, "bin")
-		log.Printf("invalid CNI_PATH %q, fall back to %s...\n", cniPathOrig, cniPath)
 		if err := CheckValidDir(cniPath); err != nil {
 			return "", err
 		}
@@ -112,7 +108,12 @@ func GetValidKubeConfig() string {
 	return kcPath
 }
 
-func GetK8sBuildOutputDir(k8sRepoPath string) (string, error) {
+func GetK8sBuildOutputDir() (string, error) {
+	goPath, err := GetValidGoPath()
+	if err != nil {
+		return "", err
+	}
+	k8sRepoPath := filepath.Join(goPath, "/src/k8s.io/kubernetes")
 	// first try to use "_output/dockerized/bin/linux/amd64"
 	outputPath := filepath.Join(k8sRepoPath, "_output/dockerized/bin/linux/amd64")
 	if err := CheckValidDir(outputPath); err != nil {
@@ -124,6 +125,18 @@ func GetK8sBuildOutputDir(k8sRepoPath string) (string, error) {
 	}
 
 	return outputPath, nil
+}
+
+func GetK8sBuildAssetDir() (string, error) {
+	goPath, err := GetValidGoPath()
+	if err != nil {
+		return "", err
+	}
+	k8sAssetPath := filepath.Join(goPath, "/src/k8s.io/kubernetes/build")
+	if err := CheckValidDir(k8sAssetPath); err != nil {
+		return "", err
+	}
+	return k8sAssetPath, nil
 }
 
 // IsTerminal returns true if the given file descriptor is a terminal.
