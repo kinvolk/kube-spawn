@@ -195,7 +195,7 @@ func getRktBindOpts(kubeSpawnDir, rktBin, rktStage1Image, rktletBin string) []bi
 		{
 			bindro,
 			rktStage1Image,
-			"/usr/bin/stage1-coreos.aci",
+			filepath.Join("/usr/bin", filepath.Base(rktStage1Image)),
 		},
 		{
 			bindro,
