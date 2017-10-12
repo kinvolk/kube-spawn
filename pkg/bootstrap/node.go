@@ -30,6 +30,8 @@ import (
 	"syscall"
 
 	"github.com/Masterminds/semver"
+	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -398,7 +400,19 @@ func runBtrfsDisableQuota() error {
 	return nil
 }
 
-func EnsureRequirements() {
+func EnsureRequirements(cfg *config.ClusterConfiguration) error {
+	if err := EnsureBridge(); err != nil {
+		return errors.Wrap(err, "error checking CNI bridge")
+	}
+	// TODO: should be moved to pkg/config/defaults.go
+	if err := WriteNetConf(); err != nil {
+		errors.Wrap(err, "error writing CNI configuration")
+	}
+	// check if container linux base image exists
+	log.Printf("checking base image")
+	if !MachineImageExists(cfg.Image) {
+		return fmt.Errorf("base image %q not found", cfg.Image)
+	}
 	// Ensure that the system requirements are satisfied for starting
 	// kube-spawn. It's just like running the commands below:
 	//
@@ -413,7 +427,9 @@ func EnsureRequirements() {
 	// check for SELinux enforcing mode
 	ensureSelinux()
 	// check for Container Linux version
+	// TODO: this hardcodes usage of coreos
 	ensureCoreosVersion()
+	return nil
 }
 
 func isOverlayfsAvailable() bool {
@@ -805,6 +821,7 @@ func pullRawCoreosImage() error {
 	var cmdPath string
 	var err error
 
+	// TODO: use machinetool pkg
 	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
 		// fall back to an ordinary abspath to machinectl
 		cmdPath = "/usr/bin/machinectl"
