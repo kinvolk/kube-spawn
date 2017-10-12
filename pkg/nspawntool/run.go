@@ -29,6 +29,7 @@ import (
 	cniversion "github.com/containernetworking/cni/pkg/version"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 )
 
 var (
@@ -104,9 +105,7 @@ func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, run
 	ready := false
 	retries := 0
 	for !ready {
-		check := exec.Command("systemctl", "--machine", n.Name, "status", "basic.target", "--state=running")
-		check.Run()
-		if ready = check.ProcessState.Success(); !ready {
+		if !machinetool.IsRunning(n.Name) {
 			time.Sleep(2 * time.Second)
 			retries++
 		}
