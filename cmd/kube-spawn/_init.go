@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -24,9 +25,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/distribution"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
 	"github.com/kinvolk/kube-spawn/pkg/script"
@@ -48,13 +52,18 @@ func init() {
 }
 
 func runInit(cmd *cobra.Command, args []string) {
-	doInit()
+	cfg, err := config.ReadConfigFromFile(viper.GetString("kube-spawn-dir"), viper.GetString("cluster-name"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "unable to read config file"))
+	}
+
+	doInit(cfg)
 }
 
-func doInit() {
-	doCheckK8sStableRelease(k8srelease)
+func doInit(cfg *config.ClusterConfiguration) {
+	doCheckK8sStableRelease(cfg.KubernetesVersion)
 
-	if utils.IsK8sDev(k8srelease) {
+	if utils.IsK8sDev(cfg.KubernetesVersion) {
 		// we don't need to run a docker registry
 		if err := distribution.StartRegistry(); err != nil {
 			log.Fatalf("Error starting registry: %s", err)
@@ -72,11 +81,7 @@ func doInit() {
 		}
 	}
 
-	nodes, err := bootstrap.GetRunningNodes()
-	if err != nil {
-		log.Fatalf("Error listing running nodes: %s", err)
-	}
-	if len(nodes) == 0 {
+	if len(cfg.Machines) == 0 {
 		log.Fatal("No node running. Is systemd-nspawn running correctly?")
 	}
 
@@ -84,40 +89,15 @@ func doInit() {
 
 	log.Println("Note: init on master can take a couple of minutes until every k8s pod came up.")
 
-	os.Remove(filepath.Join(kubeSpawnDir, "default/token"))
+	os.Remove(filepath.Join(cfg.KubeSpawnDir, cfg.Name, "token"))
 
-	if err := nspawntool.InitializeMaster(k8srelease, nodes[0].Name); err != nil {
-		log.Fatalf("Error initializing master node %s: %s", nodes[0].Name, err)
+	if err := nspawntool.InitializeMaster(cfg.KubernetesVersion, cfg.Machines[0].Name); err != nil {
+		log.Fatalf("Error initializing master node %s: %s", cfg.Machines[0].Name, err)
 	}
 
 	token, err := getToken()
 	if err != nil {
 		log.Fatalf("Error reading token: %v", err)
-	}
-
-	switch k8sruntime {
-	case "", "docker":
-		kubeadmContainerRuntime = "docker"
-	case "rkt":
-		kubeadmContainerRuntime = "rktlet"
-	case "crio":
-		kubeadmContainerRuntime = "crio"
-	default:
-		log.Fatalf("runtime %s is not supported", k8sruntime)
-	}
-
-	outbuf := script.GetKubeadmJoin(script.KubeadmJoinOpts{
-		ContainerRuntime: kubeadmContainerRuntime,
-		Token:            token,
-		MasterIP:         nodes[0].IP,
-	})
-	if outbuf == nil {
-		log.Fatalf("Error generating kubeadm join script")
-	}
-
-	joinScript := filepath.Join(kubeSpawnDir, "scripts/join.sh")
-	if err := ioutil.WriteFile(joinScript, outbuf.Bytes(), os.FileMode(0755)); err != nil {
-		log.Fatalf("Error writing script file %s: %v", joinScript, err)
 	}
 
 	for i, node := range nodes {
@@ -138,4 +118,32 @@ func getToken() (string, error) {
 	}
 
 	return strings.TrimSpace(string(buf)), nil
+}
+
+func writeKubeadmJoin(cfg *config.ClusterConfiguration) error {
+	switch cfg.ContainerRuntime {
+	case "", "docker":
+		kubeadmContainerRuntime = "docker"
+	case "rkt":
+		kubeadmContainerRuntime = "rktlet"
+	case "crio":
+		kubeadmContainerRuntime = "crio"
+	default:
+		return fmt.Errorf("runtime %s is not supported", k8sruntime)
+	}
+
+	outbuf, err := script.GetKubeadmJoin(script.KubeadmJoinOpts{
+		ContainerRuntime: kubeadmContainerRuntime,
+		Token:            cfg.Token,
+		MasterIP:         cfg.Machines[0].IP,
+	})
+	if err != nil {
+		errors.Wrap(err, "error generating kubeadm join script")
+	}
+
+	joinScript := filepath.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs/opt/kube-spawn/join.sh")
+	if err := ioutil.WriteFile(joinScript, outbuf.Bytes(), os.FileMode(0755)); err != nil {
+		return errors.Wrapf(err, "error writing script file %q", joinScript)
+	}
+	return nil
 }
