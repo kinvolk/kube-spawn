@@ -103,12 +103,12 @@ func runCreate(cmd *cobra.Command, args []string) {
 		log.Fatal(errors.Wrap(err, "error settting kubernetes defaults"))
 	}
 
-	if err := config.SetDefaults_RuntimeConfiguration(cfg); err != nil {
-		log.Fatal(errors.Wrap(err, "error setting container runtime defaults"))
-	}
-
 	if err := config.SetDefaults_BindmountConfiguration(cfg); err != nil {
 		log.Fatal(errors.Wrap(err, "error setting bindmount defaults"))
+	}
+
+	if err := config.SetDefaults_RuntimeConfiguration(cfg); err != nil {
+		log.Fatal(errors.Wrap(err, "error setting container runtime defaults"))
 	}
 
 	// note: this is a workaround the keyctl issue with runc
