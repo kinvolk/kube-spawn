@@ -60,13 +60,14 @@ type ClusterConfiguration struct {
 // running the cluster with a container runtime
 //
 type RuntimeConfiguration struct {
-	Endpoint              string                   `toml:"endpoint,omitempty" mapstructure:"endpoint"`
-	Timeout               string                   `toml:"timeout" mapstructure:"timeout"`
-	UseLegacyCgroupDriver bool                     `toml:"use-legacy-cgroup-driver" mapstructure:"use-legacy-cgroup-driver"`
-	CgroupPerQos          bool                     `toml:"cgroup-per-qos" mapstructure:"cgroup-per-qos"`
-	FailSwapOn            bool                     `toml:"fail-swap-on" mapstructure:"fail-swap-on"`
-	Rkt                   RuntimeConfigurationRkt  `toml:"rkt,omitempty" mapstructure:"rkt"`
-	Crio                  RuntimeConfigurationCrio `toml:"crio,omitempty" mapstructure:"crio"`
+	Endpoint              string `toml:"endpoint,omitempty" mapstructure:"endpoint"`
+	Timeout               string `toml:"timeout" mapstructure:"timeout"`
+	UseLegacyCgroupDriver bool   `toml:"use-legacy-cgroup-driver" mapstructure:"use-legacy-cgroup-driver"`
+	CgroupPerQos          bool   `toml:"cgroup-per-qos" mapstructure:"cgroup-per-qos"`
+	FailSwapOn            bool   `toml:"fail-swap-on" mapstructure:"fail-swap-on"`
+
+	Rkt  RuntimeConfigurationRkt  `toml:"-" mapstructure:"rkt"`
+	Crio RuntimeConfigurationCrio `toml:"-" mapstructure:"crio"`
 }
 
 type RuntimeConfigurationRkt struct {

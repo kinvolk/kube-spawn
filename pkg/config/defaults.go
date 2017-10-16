@@ -179,25 +179,32 @@ func SetDefaults_RktRuntime(cfg *ClusterConfiguration) error {
 		if err != nil {
 			return err
 		}
-		cfg.Bindmount.ReadOnly["/usr/bin/rkt"] = cfg.RuntimeConfiguration.Rkt.RktBin
 	}
 	if cfg.RuntimeConfiguration.Rkt.RktletBin == "" {
 		cfg.RuntimeConfiguration.Rkt.RktletBin, err = exec.LookPath("rktlet")
 		if err != nil {
 			return err
 		}
-		cfg.Bindmount.ReadOnly["/usr/bin/rktlet"] = cfg.RuntimeConfiguration.Rkt.RktletBin
 	}
 	if cfg.RuntimeConfiguration.Rkt.Stage1Image == "" {
 		cfg.RuntimeConfiguration.Rkt.Stage1Image = DefaultRktStage1ImagePath
-		cfg.Bindmount.ReadOnly["/usr/bin/stage1-coreos.aci"] = cfg.RuntimeConfiguration.Rkt.Stage1Image
 	}
 
-	cfg.Bindmount.ReadOnly["/usr/lib/rkt/plugins/net"] = os.Getenv("CNI_PATH")
+	cfg.Bindmount.ReadOnly = map[string]string{
+		"/usr/bin/rkt":               cfg.RuntimeConfiguration.Rkt.RktBin,
+		"/usr/bin/rktlet":            cfg.RuntimeConfiguration.Rkt.RktletBin,
+		"/usr/bin/stage1-coreos.aci": cfg.RuntimeConfiguration.Rkt.Stage1Image,
+		"/usr/lib/rkt/plugins/net":   os.Getenv("CNI_PATH"),
+	}
 	return err
 }
 
 func SetDefaults_CrioRuntime(cfg *ClusterConfiguration) error {
+	// note: This lays the groundwork for supporting cri-o
+	// in the future.
+	// As of now it is not expected to work.
+	// https://github.com/kubernetes-incubator/cri-o/blob/master/kubernetes.md
+	//
 	var err error
 	cfg.RuntimeConfiguration.Endpoint = DefaultCrioRuntimeEndpoint
 	// cgroup driver defaults to systemd on most systems, but there's
@@ -224,6 +231,11 @@ func SetDefaults_CrioRuntime(cfg *ClusterConfiguration) error {
 		}
 	}
 
+	cfg.Bindmount.ReadOnly = map[string]string{
+		"/usr/bin/crio":   cfg.RuntimeConfiguration.Crio.CrioBin,
+		"/usr/bin/runc":   cfg.RuntimeConfiguration.Crio.RuncBin,
+		"/usr/bin/conmon": cfg.RuntimeConfiguration.Crio.ConmonBin,
+	}
 	return err
 }
 
