@@ -40,6 +40,9 @@ func Download(url, fpath string) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		return errors.Errorf("server returned [%d] %q", resp.StatusCode, resp.Status)
+	}
 	return fs.Create(fpath, resp.Body)
 }
 
