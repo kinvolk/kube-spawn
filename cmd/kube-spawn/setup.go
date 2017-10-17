@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
@@ -51,22 +50,6 @@ func init() {
 	cmdSetup.Flags().StringVarP(&baseImage, "image", "i", "coreos", "base image for nodes")
 }
 
-func checkK8sStableRelease(k8srel string) bool {
-	v, err := semver.NewVersion(k8srel)
-	if err != nil {
-		// fallback to default version
-		v, _ = semver.NewVersion(k8sStableVersion)
-	}
-
-	c, err := semver.NewConstraint(">=" + k8sStableVersion)
-	if err != nil {
-		log.Printf("Cannot get constraint for >= %s: %v", k8sStableVersion, err)
-		return false
-	}
-
-	return c.Check(v)
-}
-
 func addVersionPrefix(verstr string) string {
 	if !strings.HasPrefix(verstr, "v") {
 		return "v" + verstr
@@ -75,7 +58,7 @@ func addVersionPrefix(verstr string) string {
 }
 
 func doCheckK8sStableRelease(k8srel string) {
-	if !checkK8sStableRelease(k8srelease) {
+	if !utils.IsSemVerOrNewer(k8srel, k8sStableVersion) {
 		log.Printf("WARNING: K8s with version <%s is not compatible with kube-spawn.",
 			k8sStableVersion)
 		log.Printf("It's highly recommended to upgrade K8s to 1.7 or newer.")
@@ -93,14 +76,7 @@ func isFailSwapOnFalseNeeded(k8srel string) bool {
 		return true
 	}
 
-	v, err := semver.NewVersion(k8srel)
-	if err != nil {
-		return false
-	}
-
-	c, _ := semver.NewConstraint(">=1.8.0")
-
-	return c.Check(v)
+	return utils.IsSemVerOrNewer(k8srel, "1.8.0")
 }
 
 func runSetup(cmd *cobra.Command, args []string) {
