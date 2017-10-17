@@ -13,7 +13,7 @@ func CopyFiles(cfg *config.ClusterConfiguration) error {
 	var err error
 	var wg sync.WaitGroup
 	wg.Add(len(cfg.Copymap))
-	for dst, src := range cfg.Copymap {
+	for _, pm := range cfg.Copymap {
 		go func(dst, src string) {
 			defer wg.Done()
 			// dst is relative to the machine rootfs
@@ -27,7 +27,7 @@ func CopyFiles(cfg *config.ClusterConfiguration) error {
 					err = copyErr
 				}
 			}
-		}(dst, src)
+		}(pm.Dst, pm.Src)
 	}
 	wg.Wait()
 	return err

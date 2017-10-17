@@ -88,16 +88,16 @@ func SetDefaults_Kubernetes(cfg *ClusterConfiguration) error {
 		kubeadmDropinPath = path.Join(cacheDir, cfg.KubernetesVersion, "10-kubeadm-pre-1.8.conf")
 	}
 
-	cfg.Copymap = map[string]string{
-		"/usr/bin/kubelet":                                              kubeletPath,
-		"/usr/bin/kubeadm":                                              kubeadmPath,
-		"/usr/bin/kubectl":                                              kubectlPath,
-		"/etc/systemd/system/kubelet.service":                           kubeletServicePath,
-		"/etc/systemd/system/kubelet.service.d/10-kubeadm-pre-1.8.conf": kubeadmDropinPath,
+	cfg.Copymap = []Pathmap{
+		{Dst: "/usr/bin/kubelet", Src: kubeletPath},
+		{Dst: "/usr/bin/kubeadm", Src: kubeadmPath},
+		{Dst: "/usr/bin/kubectl", Src: kubectlPath},
+		{Dst: "/etc/systemd/system/kubelet.service", Src: kubeletServicePath},
+		{Dst: "/etc/systemd/system/kubelet.service.d/10-kubeadm-pre-1.8.conf", Src: kubeadmDropinPath},
+		// NOTE: workaround for making kubelet work with port-forward
+		{Dst: "/usr/bin/socat", Src: path.Join(cacheDir, "socat")},
 	}
 
-	// NOTE: workaround for making kubelet work with port-forward
-	cfg.Copymap["/usr/bin/socat"] = path.Join(cacheDir, "socat")
 	return nil
 }
 
@@ -106,7 +106,7 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 		cfg.RuntimeConfiguration.Timeout = DefaultRuntimeTimeout
 	}
 
-	// K8s 1.8 or newer fails to run by default when swap is enabled.
+	// NOTE: K8s 1.8 or newer fails to run by default when swap is enabled.
 	// So we should disable the feature with an option "--fail-swap-on=false".
 	if cfg.DevCluster || utils.CheckVersionConstraint(cfg.KubernetesVersion, ">=1.8.0") {
 		cfg.RuntimeConfiguration.FailSwapOn = true
@@ -125,32 +125,29 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 		return err
 	}
 
-	// note: using docker/rkt in our nodes we run out of space quick
+	// NOTE: using docker/rkt in our nodes we run out of space quick
 	// TODO: can this be moved to the runtime functions below?
 	cfg.Machines = make([]MachineConfiguration, cfg.Nodes)
 	for i := 0; i < cfg.Nodes; i++ {
 		cfg.Machines[i].Name = MachineName(i)
 		mountPath := path.Join(cfg.KubeSpawnDir, cfg.Name, cfg.Machines[i].Name, "mount")
+
+		var pm Pathmap
 		switch cfg.ContainerRuntime {
 		case RuntimeDocker:
-			cfg.Machines[i].Bindmount.ReadWrite = map[string]string{
-				"/var/lib/docker": mountPath,
-			}
+			pm = Pathmap{Dst: "/var/lib/docker", Src: mountPath}
 		case RuntimeRkt:
-			cfg.Machines[i].Bindmount.ReadWrite = map[string]string{
-				"/var/lib/rktlet": mountPath,
-			}
+			pm = Pathmap{Dst: "/var/lib/rktlet", Src: mountPath}
 		case RuntimeCrio:
-			cfg.Machines[i].Bindmount.ReadWrite = map[string]string{
-				"/var/lib/containers": mountPath,
-			}
+			pm = Pathmap{Dst: "/var/lib/containers", Src: mountPath}
 		}
+		cfg.Machines[i].Bindmount.ReadWrite = append(cfg.Machines[i].Bindmount.ReadWrite, pm)
 
 		// create dirs from above if they don't exist already
 		// TODO: should we create the dirs from here or move this to the check pkg
-		for _, dir := range cfg.Machines[i].Bindmount.ReadWrite {
-			if !fs.Exists(dir) {
-				if err := fs.CreateDir(dir); err != nil {
+		for _, pm := range cfg.Machines[i].Bindmount.ReadWrite {
+			if !fs.Exists(pm.Src) {
+				if err := fs.CreateDir(pm.Src); err != nil {
 					return err
 				}
 			}
@@ -190,12 +187,17 @@ func SetDefaults_RktRuntime(cfg *ClusterConfiguration) error {
 		cfg.RuntimeConfiguration.Rkt.Stage1Image = DefaultRktStage1ImagePath
 	}
 
-	cfg.Bindmount.ReadOnly = map[string]string{
-		"/usr/bin/rkt":               cfg.RuntimeConfiguration.Rkt.RktBin,
-		"/usr/bin/rktlet":            cfg.RuntimeConfiguration.Rkt.RktletBin,
-		"/usr/bin/stage1-coreos.aci": cfg.RuntimeConfiguration.Rkt.Stage1Image,
-		"/usr/lib/rkt/plugins/net":   os.Getenv("CNI_PATH"),
+	cniPath := os.Getenv("CNI_PATH")
+	if cniPath == "" {
+		return errors.New("CNI_PATH was not set")
 	}
+	pms := []Pathmap{
+		{Dst: "/usr/bin/rkt", Src: cfg.RuntimeConfiguration.Rkt.RktBin},
+		{Dst: "/usr/bin/rktlet", Src: cfg.RuntimeConfiguration.Rkt.RktletBin},
+		{Dst: "/usr/bin/stage1-coreos.aci", Src: cfg.RuntimeConfiguration.Rkt.Stage1Image},
+		{Dst: "/usr/lib/rkt/plugins/net", Src: cniPath},
+	}
+	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, pms...)
 	return err
 }
 
@@ -231,11 +233,12 @@ func SetDefaults_CrioRuntime(cfg *ClusterConfiguration) error {
 		}
 	}
 
-	cfg.Bindmount.ReadOnly = map[string]string{
-		"/usr/bin/crio":   cfg.RuntimeConfiguration.Crio.CrioBin,
-		"/usr/bin/runc":   cfg.RuntimeConfiguration.Crio.RuncBin,
-		"/usr/bin/conmon": cfg.RuntimeConfiguration.Crio.ConmonBin,
+	pms := []Pathmap{
+		{Dst: "/usr/bin/crio", Src: cfg.RuntimeConfiguration.Crio.CrioBin},
+		{Dst: "/usr/bin/runc", Src: cfg.RuntimeConfiguration.Crio.RuncBin},
+		{Dst: "/usr/bin/conmon", Src: cfg.RuntimeConfiguration.Crio.ConmonBin},
 	}
+	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, pms...)
 	return err
 }
 
@@ -245,9 +248,7 @@ func SetDefaults_BindmountConfiguration(cfg *ClusterConfiguration) error {
 		return errors.New("CNI_PATH was not set")
 	}
 
-	cfg.Bindmount.ReadOnly = map[string]string{
-		"/opt/cni/bin": cniPath,
-	}
-	cfg.Bindmount.ReadWrite = map[string]string{}
+	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, Pathmap{Dst: "/opt/cni/bin", Src: cniPath})
+	// cfg.Bindmount.ReadWrite = append(cfg.Bindmount.ReadWrite, Pathmap{Dst: "", Src: ""})
 	return nil
 }

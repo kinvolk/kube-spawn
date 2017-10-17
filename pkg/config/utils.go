@@ -21,8 +21,8 @@ import (
 	"os"
 	"path"
 
+	toml "github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
-	toml "github.com/robertgzr/go-toml"
 	"github.com/spf13/viper"
 
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"

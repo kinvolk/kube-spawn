@@ -27,9 +27,5 @@
   name = "github.com/spf13/viper"
 
 [[constraint]]
-  name = "github.com/robertgzr/go-toml"
-  branch = "marshal-map-quoted-key"
-
-[[constraint]]
   branch = "master"
   name = "github.com/vishvananda/netlink"

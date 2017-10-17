@@ -34,10 +34,10 @@ func optionsFromBindmountConfig(bm config.BindmountConfiguration) []string {
 	return opts
 }
 
-func generateBinds(prefix string, binds map[string]string) []string {
+func generateBinds(prefix string, binds []config.Pathmap) []string {
 	var opts []string
-	for dst, src := range binds {
-		opts = append(opts, fmt.Sprintf("%s%s:%s", prefix, src, dst))
+	for _, pm := range binds {
+		opts = append(opts, fmt.Sprintf("%s%s:%s", prefix, pm.Src, pm.Dst))
 	}
 	return opts
 }

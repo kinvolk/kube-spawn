@@ -104,12 +104,6 @@
   version = "v0.8.0"
 
 [[projects]]
-  branch = "marshal-map-quoted-key"
-  name = "github.com/robertgzr/go-toml"
-  packages = ["."]
-  revision = "69fa80f09b354474dc3c51e212340e2ce0cd012e"
-
-[[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
   packages = [".","mem"]
@@ -190,6 +184,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "754f0e49e674d989488b771a4e2f7d3c0415afde4d1d96b1b7df5e90c8071ca5"
+  inputs-digest = "8ffa83389287bb0bbab699a3b69157d9b21ea8b6ff2d9a08fbf8842dad277af3"
   solver-name = "gps-cdcl"
   solver-version = 1

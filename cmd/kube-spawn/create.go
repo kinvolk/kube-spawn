@@ -118,7 +118,10 @@ func runCreate(cmd *cobra.Command, args []string) {
 	if goPath == "" {
 		log.Fatal("GOPATH was not set")
 	}
-	cfg.Copymap["/usr/bin/kube-spawn-runc"] = path.Join(goPath, "src/github.com/kinvolk/kube-spawn/kube-spawn-runc")
+	cfg.Copymap = append(cfg.Copymap, config.Pathmap{
+		Dst: "/usr/bin/kube-spawn-runc",
+		Src: path.Join(goPath, "src/github.com/kinvolk/kube-spawn/kube-spawn-runc"),
+	})
 
 	if cfg.Image == config.DefaultBaseImage {
 		if err := bootstrap.PrepareCoreosImage(); err != nil {
