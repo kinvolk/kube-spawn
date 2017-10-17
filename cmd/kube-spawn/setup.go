@@ -106,7 +106,12 @@ func doSetup(numNodes int, baseImage, kubeSpawnDir string) {
 	doCheckK8sStableRelease(k8srelease)
 
 	if !utils.IsK8sDev(k8srelease) {
-		if err := bootstrap.DownloadK8sBins(k8srelease, path.Join(kubeSpawnDir, "k8s")); err != nil {
+		k8sDir := path.Join(kubeSpawnDir, "k8s")
+		if err := bootstrap.CheckForK8sBinVersions(k8srelease, k8sDir); err != nil {
+			log.Fatalf("Version mismatch with existing binaries. Please clean up %s: %v", k8sDir, err)
+		}
+
+		if err := bootstrap.DownloadK8sBins(k8srelease, k8sDir); err != nil {
 			log.Fatalf("Error downloading k8s files: %s", err)
 		}
 	}
