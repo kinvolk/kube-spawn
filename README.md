@@ -29,7 +29,7 @@ $ go get -u github.com/containernetworking/plugins/plugins/...
 $ go get -d github.com/kinvolk/kube-spawn
 ```
 
-`kube-nspawn` will configure the networks it needs in `/etc/cni/net.d`.
+`kube-spawn` will configure the networks it needs in `/etc/cni/net.d`.
 
 ```
 # Build the tool
