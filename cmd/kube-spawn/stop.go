@@ -60,12 +60,7 @@ func doStop(cfg *config.ClusterConfiguration, force bool) {
 	}
 
 	stopMachines(cfg, force)
-
-	// TODO: choosing the delay to short will cause
-	// `machinectl remove IMAGE` to error with "resource busy"
-	time.Sleep(800 * time.Millisecond)
-
-	removeImages(cfg, force)
+	removeImages(cfg)
 
 	// clear cluster config
 	cfg.Token = ""
@@ -102,20 +97,36 @@ func stopMachines(cfg *config.ClusterConfiguration, force bool) {
 	wg.Wait()
 }
 
-func removeImages(cfg *config.ClusterConfiguration, force bool) {
+func removeImages(cfg *config.ClusterConfiguration) {
 	var wg sync.WaitGroup
 	wg.Add(len(cfg.Machines))
 	for i := 0; i < len(cfg.Machines); i++ {
 		go func(i int) {
 			defer wg.Done()
 			// clean up image
-			if err := machinetool.RemoveImage(cfg.Machines[i].Name); err != nil {
-				if !machinetool.IsNotKnown(err) {
-					log.Print(errors.Wrapf(err, "error removing machine image for %q", cfg.Machines[i].Name))
-				}
-				return
+			if err := removeImage(cfg.Machines[i].Name); err != nil {
+				log.Print(err)
 			}
 		}(i)
 	}
 	wg.Wait()
+}
+
+func removeImage(machineName string) error {
+	done := false
+	retries := 0
+	for !done {
+		err := machinetool.RemoveImage(machineName)
+		if err != nil {
+			time.Sleep(500 * time.Millisecond)
+			retries++
+		} else {
+			done = true
+		}
+
+		if retries >= 5 {
+			return errors.Wrapf(err, "error removing machine image for %q", machineName)
+		}
+	}
+	return nil
 }
