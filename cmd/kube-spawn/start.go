@@ -75,7 +75,7 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 			log.Printf("machine %q started", cfg.Machines[i].Name)
 
 			log.Printf("bootstrapping %q", cfg.Machines[i].Name)
-			if err := machinetool.Shell(cfg.Machines[i].Name, "/opt/kube-spawn/bootstrap.sh"); err != nil {
+			if err := machinetool.Exec(cfg.Machines[i].Name, "/opt/kube-spawn/bootstrap.sh"); err != nil {
 				log.Fatal(errors.Wrap(err, "failed to bootstrap"))
 			}
 		}(i)
