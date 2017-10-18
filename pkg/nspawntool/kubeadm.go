@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const weaveNet = "https://git.io/weave-kube-1.6"
+const weaveNet = "https://github.com/weaveworks/weave/releases/download/v2.0.5/weave-daemonset-k8s-1.7.yaml"
 
 func InitializeMaster(cfg *config.ClusterConfiguration) error {
 	// TODO: do we need a switch to turn off printing to stdout?
