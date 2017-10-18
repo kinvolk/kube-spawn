@@ -110,7 +110,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 			time.Sleep(2 * time.Second)
 			retries++
 		}
-		if retries >= 10 {
+		if retries >= 15 {
 			return fmt.Errorf("timeout waiting for %q to start", machineName)
 		}
 	}
