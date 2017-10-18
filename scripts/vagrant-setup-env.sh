@@ -5,6 +5,7 @@ set -eo pipefail
 echo 'Setting up correct env. variables'
 echo "export GOPATH=$GOPATH" >> "$HOME/.bash_profile"
 echo "export PATH=$PATH:$GOPATH/bin:/usr/local/go/bin" >> "$HOME/.bash_profile"
+echo "export KUBECONFIG=/var/lib/kube-spawn/default/kubeconfig" >> "$HOME/.bash_profile"
 
 # shellcheck disable=SC1090
 source ~/.bash_profile
