@@ -25,7 +25,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 --runtime-request-timeout={{.RequestTimeout}} {{- end}} \
 --enforce-node-allocatable= \
 {{ printf "--cgroups-per-qos=%t" .CgroupsPerQOS }} \
-{{ if .FailSwapOn -}}--fail-swap-on {{- end}} \
+{{ if not .FailSwapOn -}}--fail-swap-on=false {{- end}} \
 --authentication-token-webhook"
 `
 

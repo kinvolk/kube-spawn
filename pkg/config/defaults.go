@@ -108,7 +108,7 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 
 	// NOTE: K8s 1.8 or newer fails to run by default when swap is enabled.
 	// So we should disable the feature with an option "--fail-swap-on=false".
-	if cfg.DevCluster || utils.CheckVersionConstraint(cfg.KubernetesVersion, ">=1.8.0") {
+	if !cfg.DevCluster && utils.CheckVersionConstraint(cfg.KubernetesVersion, "<1.8.0") {
 		cfg.RuntimeConfiguration.FailSwapOn = true
 	}
 
