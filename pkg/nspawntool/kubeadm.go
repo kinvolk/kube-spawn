@@ -38,7 +38,7 @@ func InitializeMaster(cfg *config.ClusterConfiguration) error {
 		return errors.Wrap(err, "failed generating token")
 	}
 	cfg.Token = strings.TrimSpace(string(tok))
-	if err := machinetool.Exec(cfg.Machines[0].Name, "/usr/bin/kubeadm", "token", "create", cfg.Token, "--ttl=0"); err != nil {
+	if err := machinetool.Exec(cfg.Machines[0].Name, "/usr/bin/kubeadm", "token", "create", cfg.Token, "--ttl=0", cfg.TokenGroupsOption); err != nil {
 		cfg.Token = "" // clear unregistered token before exit
 		return errors.Wrap(err, "failed registering token")
 	}
