@@ -248,7 +248,6 @@ func SetDefaults_BindmountConfiguration(cfg *ClusterConfiguration) error {
 		return errors.New("CNI_PATH was not set")
 	}
 
-	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, Pathmap{Dst: "/opt/cni/bin", Src: cniPath})
-	// cfg.Bindmount.ReadWrite = append(cfg.Bindmount.ReadWrite, Pathmap{Dst: "", Src: ""})
+	cfg.Bindmount.ReadWrite = append(cfg.Bindmount.ReadWrite, Pathmap{Dst: "/opt/cni/bin", Src: cniPath})
 	return nil
 }
