@@ -78,14 +78,14 @@ func SetDefaults_Kubernetes(cfg *ClusterConfiguration) error {
 			return errors.Wrap(err, "error getting k8s build asset directory")
 		}
 		kubeletServicePath = path.Join(k8sBuildAssetDir, "debs/kubelet.service")
-		kubeadmDropinPath = path.Join(k8sBuildAssetDir, "rpms/10-kubeadm-pre-1.8.conf")
+		kubeadmDropinPath = path.Join(k8sBuildAssetDir, "rpms/10-kubeadm.conf")
 	} else {
 		// from download cache
 		kubeletPath = path.Join(cacheDir, cfg.KubernetesVersion, "kubelet")
 		kubeadmPath = path.Join(cacheDir, cfg.KubernetesVersion, "kubeadm")
 		kubectlPath = path.Join(cacheDir, cfg.KubernetesVersion, "kubectl")
 		kubeletServicePath = path.Join(cacheDir, cfg.KubernetesVersion, "kubelet.service")
-		kubeadmDropinPath = path.Join(cacheDir, cfg.KubernetesVersion, "10-kubeadm-pre-1.8.conf")
+		kubeadmDropinPath = path.Join(cacheDir, cfg.KubernetesVersion, "10-kubeadm.conf")
 	}
 
 	cfg.Copymap = []Pathmap{
@@ -93,7 +93,7 @@ func SetDefaults_Kubernetes(cfg *ClusterConfiguration) error {
 		{Dst: "/usr/bin/kubeadm", Src: kubeadmPath},
 		{Dst: "/usr/bin/kubectl", Src: kubectlPath},
 		{Dst: "/etc/systemd/system/kubelet.service", Src: kubeletServicePath},
-		{Dst: "/etc/systemd/system/kubelet.service.d/10-kubeadm-pre-1.8.conf", Src: kubeadmDropinPath},
+		{Dst: "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf", Src: kubeadmDropinPath},
 		// NOTE: workaround for making kubelet work with port-forward
 		{Dst: "/usr/bin/socat", Src: path.Join(cacheDir, "socat")},
 	}
