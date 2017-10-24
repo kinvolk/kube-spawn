@@ -16,19 +16,19 @@ const weaveNet = "https://github.com/weaveworks/weave/releases/download/v2.0.5/w
 func InitializeMaster(cfg *config.ClusterConfiguration) error {
 	// TODO: do we need a switch to turn off printing to stdout?
 	var initCmd []string
+	var shellOpts string
 	if cfg.DevCluster {
 		// TODO: remove this or implement config for it
-		initCmd = append(initCmd, `KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`)
-
+		shellOpts = `--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`
 	}
 	initCmd = append(initCmd, []string{
 		"/usr/bin/kubeadm", "init", "--skip-preflight-checks",
 		"--config=/etc/kubeadm/kubeadm.yml"}...)
 
-	if err := machinetool.Shell(cfg.Machines[0].Name, initCmd...); err != nil {
+	if err := machinetool.Shell(shellOpts, cfg.Machines[0].Name, initCmd...); err != nil {
 		return err
 	}
-	if err := machinetool.Shell(cfg.Machines[0].Name, "/usr/bin/kubectl", "apply", "-f", weaveNet); err != nil {
+	if err := machinetool.Shell(shellOpts, cfg.Machines[0].Name, "/usr/bin/kubectl", "apply", "-f", weaveNet); err != nil {
 		return err
 	}
 
@@ -81,14 +81,14 @@ func JoinNode(cfg *config.ClusterConfiguration, mNo int) error {
 	}
 
 	var joinCmd []string
+	var shellOpts string
 	if cfg.DevCluster {
 		// TODO: remove this or implement config for it
-		joinCmd = append(joinCmd, `KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`)
-
+		shellOpts = `--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`
 	}
 	joinCmd = append(joinCmd, []string{
 		"/usr/bin/kubeadm", "join", "--skip-preflight-checks",
 		"--token", cfg.Token,
 		cfg.Machines[0].IP + ":6443"}...)
-	return machinetool.Shell(cfg.Machines[mNo].Name, joinCmd...)
+	return machinetool.Shell(shellOpts, cfg.Machines[mNo].Name, joinCmd...)
 }

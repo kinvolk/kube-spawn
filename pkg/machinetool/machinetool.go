@@ -11,14 +11,21 @@ import (
 
 const machineDir = "/var/lib/machines"
 
-func machinectl(stdout, stderr io.Writer, cmd, machine string, args ...string) ([]byte, error) {
+func machinectl(stdout, stderr io.Writer, opts, cmd, machine string, args ...string) ([]byte, error) {
 	mPath, err := exec.LookPath("machinectl")
 	if err != nil {
 		return nil, err
 	}
+	cmdArgs := []string{mPath}
+	if opts != "" {
+		cmdArgs = append(cmdArgs, opts)
+	}
+	cmdArgs = append(cmdArgs, cmd)
+	cmdArgs = append(cmdArgs, machine)
+
 	run := exec.Cmd{
 		Path:   mPath,
-		Args:   []string{"machinectl", cmd, machine},
+		Args:   cmdArgs,
 		Stdout: stdout,
 		Stderr: stderr,
 	}
@@ -40,37 +47,37 @@ func machinectl(stdout, stderr io.Writer, cmd, machine string, args ...string) (
 	return buf, nil
 }
 
-func Shell(machine string, cmd ...string) error {
-	_, err := machinectl(os.Stdout, os.Stderr, "shell", machine, cmd...)
+func Shell(opts, machine string, cmd ...string) error {
+	_, err := machinectl(os.Stdout, os.Stderr, opts, "shell", machine, cmd...)
 	return err
 }
 
 func Output(cmd, machine string, args ...string) ([]byte, error) {
-	return machinectl(nil, nil, cmd, machine, args...)
+	return machinectl(nil, nil, "", cmd, machine, args...)
 }
 
 func Exec(machine string, cmd ...string) error {
-	_, err := machinectl(nil, nil, "shell", machine, cmd...)
+	_, err := machinectl(nil, nil, "", "shell", machine, cmd...)
 	return err
 }
 
 func Clone(base, dest string) error {
-	_, err := machinectl(nil, nil, "clone", base, dest)
+	_, err := machinectl(nil, nil, "", "clone", base, dest)
 	return err
 }
 
 func Poweroff(machine string) error {
-	_, err := machinectl(nil, nil, "poweroff", machine)
+	_, err := machinectl(nil, nil, "", "poweroff", machine)
 	return err
 }
 
 func Terminate(machine string) error {
-	_, err := machinectl(nil, nil, "terminate", machine)
+	_, err := machinectl(nil, nil, "", "terminate", machine)
 	return err
 }
 
 func RemoveImage(image string) error {
-	_, err := machinectl(nil, nil, "remove", image)
+	_, err := machinectl(nil, nil, "", "remove", image)
 	return err
 }
 

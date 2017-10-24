@@ -103,11 +103,6 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 }
 
 func initMasterNode(cfg *config.ClusterConfiguration) error {
-	if cfg.DevCluster {
-		// TODO: dev cluster prereq
-		log.Fatal("not implemented")
-	}
-
 	log.Println("[!] note: init on master can take a couple of minutes until all pods are up")
 	if err := nspawntool.InitializeMaster(cfg); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to initialize master node"))
