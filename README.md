@@ -83,9 +83,17 @@ The following steps assume you have a local checkout of the Kubernetes source.
 $ cd $GOPATH/src/k8s.io/kubernetes
 $ build/run.sh make
 
-# Build a Hyperkube image
+# Build a Hyperkube Docker image
 $ cd cluster/images/hyperkube
 $ make VERSION=latest
+```
+
+This will create a Docker image with a name `gcr.io/google-containers/hyperkube-amd64`.
+To check if it is created correctly, do so:
+
+```
+$ docker images | grep hyperkube-amd64
+gcr.io/google-containers/hyperkube-amd64               latest                        179a38ef4d78        45 hours ago        506 MB
 ```
 
 Assuming you have built `kube-spawn` and pulled the CoreOS image, do:
