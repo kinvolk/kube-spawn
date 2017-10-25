@@ -20,7 +20,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,7 +27,6 @@ import (
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
-	"github.com/kinvolk/kube-spawn/pkg/distribution"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
@@ -160,25 +158,6 @@ func runCreate(cmd *cobra.Command, args []string) {
 	log.Print("ensuring environment")
 	if err := bootstrap.EnsureRequirements(cfg); err != nil {
 		log.Fatal(err)
-	}
-
-	if cfg.DevCluster {
-		// bring up the docker registry
-		// needed for supplying the hyperkube to kubeadm in the machines
-		if err := distribution.StartRegistry(); err != nil {
-			log.Fatal(errors.Wrap(err, "error starting registry"))
-		}
-		var err error
-		for i := 0; i < distribution.PushImageRetries; i++ {
-			err = distribution.PushImage()
-			if err == nil {
-				break
-			}
-			time.Sleep(1 * time.Second)
-		}
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "error pushing hyperkube image"))
-		}
 	}
 
 	saveConfig(cfg)
