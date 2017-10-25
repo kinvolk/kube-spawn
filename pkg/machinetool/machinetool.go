@@ -87,6 +87,11 @@ func IsRunning(machine string) bool {
 	return check.ProcessState.Success()
 }
 
+func ImageExists(image string) bool {
+	_, err := machinectl(nil, nil, "", "show-image", image)
+	return err == nil
+}
+
 func IsNotKnown(err error) bool {
 	re := regexp.MustCompile(`(.*)No (machine|image) '(.*)' known`)
 	return re.MatchString(err.Error())

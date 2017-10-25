@@ -104,8 +104,10 @@ func removeImages(cfg *config.ClusterConfiguration) {
 		go func(i int) {
 			defer wg.Done()
 			// clean up image
-			if err := removeImage(cfg.Machines[i].Name); err != nil {
-				log.Print(err)
+			if machinetool.ImageExists(cfg.Machines[i].Name) {
+				if err := removeImage(cfg.Machines[i].Name); err != nil {
+					log.Print(err)
+				}
 			}
 		}(i)
 	}

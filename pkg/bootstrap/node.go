@@ -31,6 +31,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 	"github.com/pkg/errors"
 )
 
@@ -70,18 +71,6 @@ func NewNode(baseImage, machine string) error {
 		return fmt.Errorf("error running machinectl: %s", buf.String())
 	}
 	return nil
-}
-
-func MachineImageExists(machine string) bool {
-	// TODO: we could also parse machinectl list-images to find that
-	if _, err := os.Stat(path.Join(machinesDir, machine+".raw")); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-		log.Printf("error checking for image: %s", err)
-		return false
-	}
-	return true
 }
 
 func GetRunningNodes() ([]Node, error) {
@@ -410,7 +399,7 @@ func EnsureRequirements(cfg *config.ClusterConfiguration) error {
 	}
 	// check if container linux base image exists
 	log.Printf("checking base image")
-	if !MachineImageExists(cfg.Image) {
+	if !machinetool.ImageExists(cfg.Image) {
 		return fmt.Errorf("base image %q not found", cfg.Image)
 	}
 	// Ensure that the system requirements are satisfied for starting
@@ -713,34 +702,6 @@ func ensureSelinux() {
 	}
 }
 
-func showCoreosImage() error {
-	var cmdPath string
-	var err error
-
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
-	}
-
-	args := []string{
-		cmdPath,
-		"show-image",
-		"coreos",
-	}
-
-	cmd := exec.Cmd{
-		Path: cmdPath,
-		Args: args,
-		Env:  os.Environ(),
-	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running machinectl show-image: %s", err)
-	}
-
-	return nil
-}
-
 func checkCoreosSemver(coreosVer string) error {
 	v, err := semver.NewVersion(coreosVer)
 	if err != nil {
@@ -857,7 +818,8 @@ func ensureCoreosVersion() {
 
 func PrepareCoreosImage() error {
 	// If no coreos image exists, just download it
-	if err := showCoreosImage(); err != nil {
+	if !machinetool.ImageExists("coreos") {
+		log.Printf("pulling coreos image...")
 		if err := pullRawCoreosImage(); err != nil {
 			return err
 		}
