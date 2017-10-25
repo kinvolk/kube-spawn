@@ -73,21 +73,8 @@ func stopMachines(cfg *config.ClusterConfiguration, force bool) {
 	for i := 0; i < len(cfg.Machines); i++ {
 		go func(i int) {
 			defer wg.Done()
-			if !force {
-				// graceful stop
-				if err := machinetool.Poweroff(cfg.Machines[i].Name); err != nil {
-					if !machinetool.IsNotKnown(err) {
-						log.Print(errors.Wrapf(err, "error powering off machine %q, maybe try with `kube-spawn stop -f`", cfg.Machines[i].Name))
-						return
-					}
-				}
-			} else {
-				if err := machinetool.Terminate(cfg.Machines[i].Name); err != nil {
-					if !machinetool.IsNotKnown(err) {
-						log.Print(errors.Wrapf(err, "error terminating machine %q", cfg.Machines[i].Name))
-						return
-					}
-				}
+			if err := doGracefulStop(cfg.Machines[i].Name, force); err != nil {
+				return
 			}
 			cfg.Machines[i].Running = false
 			cfg.Machines[i].IP = ""
@@ -95,6 +82,36 @@ func stopMachines(cfg *config.ClusterConfiguration, force bool) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func doGracefulStop(machineName string, force bool) error {
+	if !force {
+		for retries := 0; retries < 5; retries++ {
+			// graceful stop
+			if err := machinetool.Poweroff(machineName); err != nil {
+				if !machinetool.IsNotKnown(err) {
+					log.Print(errors.Wrapf(err, "error powering off machine %q, maybe try with `kube-spawn stop -f`", machineName))
+					return err
+				}
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
+			return nil
+		}
+		log.Printf("Tried to stop %s 5 times, but it didn't work, terminating.", machineName)
+		// fall back to force shutdown
+	}
+
+	// Either it's force mode from the beginning,
+	// or it's a fallback from a retry loop of a graceful stop.
+	if err := machinetool.Terminate(machineName); err != nil {
+		if !machinetool.IsNotKnown(err) {
+			log.Print(errors.Wrapf(err, "error terminating machine %q", machineName))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func removeImages(cfg *config.ClusterConfiguration) {
@@ -118,9 +135,10 @@ func removeImage(machineName string) error {
 	var err error
 	for retries := 0; retries < 5; retries++ {
 		if err = machinetool.RemoveImage(machineName); err != nil {
-			return nil
-		} else {
 			time.Sleep(500 * time.Millisecond)
+			continue
+		} else {
+			return nil
 		}
 	}
 	return errors.Wrapf(err, "error removing machine image for %q", machineName)
