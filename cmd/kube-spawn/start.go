@@ -61,8 +61,7 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 	log.Printf("using %q base image from /var/lib/machines", cfg.Image)
 	log.Printf("spawning cluster %q (%d machines)", cfg.Name, cfg.Nodes)
 
-	// TODO: find a place for these calls
-	tmp(cfg)
+	resizeMachineDir(cfg.Image, cfg.Nodes)
 
 	var wg sync.WaitGroup
 	wg.Add(cfg.Nodes)
@@ -146,11 +145,11 @@ func joinWorkerNodes(cfg *config.ClusterConfiguration) {
 	wg.Wait()
 }
 
-func tmp(cfg *config.ClusterConfiguration) {
+func resizeMachineDir(baseImage string, nodesN int) {
 	// estimate get pool size based on sum of virtual image sizes.
 	var poolSize int64
 	var err error
-	if poolSize, err = bootstrap.GetPoolSize(cfg.Image, cfg.Nodes); err != nil {
+	if poolSize, err = bootstrap.GetPoolSize(baseImage, nodesN); err != nil {
 		// fail hard in case of error, to avoid running unnecessary nodes
 		log.Fatalf("cannot get pool size: %v", err)
 	}
