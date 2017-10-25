@@ -73,6 +73,38 @@ You may see the following error:
 Then you will need to include your Docker API version in an
 environment variable: `DOCKER_API_VERSION=1.24 `
 
+## kubeadm init looks like it is hanging
+
+Usually it takes several minutes until `kubeadm init` initialized
+cluster nodes and finished bootstrapping on the master node. While waiting
+for it to finish, it shows the following message (in case of k8s 1.7):
+
+```
+[apiclient] Created API client, waiting for the control plane to become ready
+```
+
+Even when in these phase something fundamental is broken inside nspawn
+containers, kubeadm does not give many hints to users. Possible reasons are:
+
+* container runtime (docker or rktlet) is not running or running incorrectly
+* kubelet is not running or running incorrectly
+* any other fundamental errors like filesystem being full
+
+So in that case, users should find out the underlying reasons by doing e.g.:
+
+```
+$ sudo machinectl shell kubespawn0
+```
+
+Then inside kubespawn0, do debugging like:
+
+```
+# systemctl status docker
+# systemctl status kubelet
+# journalctl -u docker -xe --no-pager | less
+# journalctl -u kubelet -xe --no-pager | less
+```
+
 ## Running with Kubernetes 1.7.3 or newer
 
 When running kube-spawn with an Kubernetes release, by specifying a
