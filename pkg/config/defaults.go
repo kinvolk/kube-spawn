@@ -198,7 +198,7 @@ func SetDefaults_RktRuntime(cfg *ClusterConfiguration) error {
 	pms := []Pathmap{
 		{Dst: "/usr/bin/rkt", Src: cfg.RuntimeConfiguration.Rkt.RktBin},
 		{Dst: "/usr/bin/rktlet", Src: cfg.RuntimeConfiguration.Rkt.RktletBin},
-		{Dst: "/usr/bin/stage1-coreos.aci", Src: cfg.RuntimeConfiguration.Rkt.Stage1Image},
+		{Dst: path.Join("/usr/bin/", path.Base(cfg.RuntimeConfiguration.Rkt.Stage1Image)), Src: cfg.RuntimeConfiguration.Rkt.Stage1Image},
 		{Dst: "/usr/lib/rkt/plugins/net", Src: cniPath},
 	}
 	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, pms...)
