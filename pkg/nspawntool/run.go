@@ -40,22 +40,21 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 		return nil
 	}
 
-	machineName := cfg.Machines[mNo].Name
-	if err := machinetool.Clone(cfg.Image, machineName); err != nil {
+	if err := machinetool.Clone(cfg.Image, cfg.Machines[mNo].Name); err != nil {
 		return errors.Wrap(err, "error cloning image")
 	}
 
 	args := []string{
 		"cnispawn",
 		"-d",
-		"--machine", machineName,
+		"--machine", cfg.Machines[mNo].Name,
 	}
 
 	lowerRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs"))
 	if err != nil {
 		return err
 	}
-	upperRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, machineName, "rootfs"))
+	upperRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, cfg.Machines[mNo].Name, "rootfs"))
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 		return errors.Wrap(&cniError, "error running cnispawn")
 	}
 
-	if err := waitMachinesRunning(machineName); err != nil {
+	if err := waitMachinesRunning(cfg.Machines[mNo].Name); err != nil {
 		return err
 	}
 	cfg.Machines[mNo].Running = true
