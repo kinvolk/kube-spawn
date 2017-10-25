@@ -141,6 +141,55 @@ cd ../release
 git remote add upstream git@github.com:kubernetes/release.git
 ```
 
+## Setting up an insecure registry
+
+To be able to run a self-built Kubernetes `dev` cluster, we need to be able to
+start an insecure registry on localhost, before launching nodes with
+`kube-spawn start`. In general, the IP address & port number of the registry
+server need to be specified in `/etc/docker/daemon.json`, like:
+
+```
+    "insecure-registries": [
+        "10.22.0.1:5000"
+    ]
+```
+
+On some distros, however, the approach above might not work. For example on
+Fedora, the insecure registry needs to be configured in
+`/etc/sysconfig/docker`:
+
+```
+INSECURE_REGISTRY='--insecure-registry=10.22.0.1:5000'
+```
+
+Even when docker runs with the configs above, kube-spawn could fail with the
+following message:
+
+```
+Error pushing hyperkube image: Error response from daemon: no such id: gcr.io/google-containers/hyperkube-amd64
+```
+
+In that case, try to rebuild a hyperkube image, as described in (https://github.com/kinvolk/kube-spawn/blob/master/README.md#run-local-kubernetes-builds).
+
+If you see the error even after rebuilding the image, then the image ID might
+be wrong, probably because the public registry `gcr.io` has changed its naming
+scheme. As a workaround, you can override the name like this:
+
+```
+sudo docker tag gcr.io/google-containers/hyperkube-amd64 SOME_CORRECT_NAME
+```
+
+You could also see the message below.
+
+```
+Error pushing hyperkube image: Get http://10.22.0.1:5000/v2/: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)
+```
+
+In that case, there are several approaches you could try out.
+
+* Check if the network interface `cni0` is available, by running `ip link | grep cni0`.
+* Check if the port 5000 is open, by running `ss | grep 5000`.
+
 ## Debugging `kube-spawn-runc`
 
 see [here](../cmd/kube-spawn-runc/README.md)
