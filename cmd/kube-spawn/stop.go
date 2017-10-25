@@ -115,20 +115,13 @@ func removeImages(cfg *config.ClusterConfiguration) {
 }
 
 func removeImage(machineName string) error {
-	done := false
-	retries := 0
-	for !done {
-		err := machinetool.RemoveImage(machineName)
-		if err != nil {
-			time.Sleep(500 * time.Millisecond)
-			retries++
+	var err error
+	for retries := 0; retries < 5; retries++ {
+		if err = machinetool.RemoveImage(machineName); err != nil {
+			return nil
 		} else {
-			done = true
-		}
-
-		if retries >= 5 {
-			return errors.Wrapf(err, "error removing machine image for %q", machineName)
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
-	return nil
+	return errors.Wrapf(err, "error removing machine image for %q", machineName)
 }

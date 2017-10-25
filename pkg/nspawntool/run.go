@@ -103,20 +103,21 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 		return errors.Wrap(&cniError, "error running cnispawn")
 	}
 
-	ready := false
-	retries := 0
-	for !ready {
-		if ready = machinetool.IsRunning(machineName); !ready {
-			time.Sleep(2 * time.Second)
-			retries++
-		}
-		if retries >= 15 {
-			return fmt.Errorf("timeout waiting for %q to start", machineName)
-		}
+	if err := waitMachinesRunning(machineName); err != nil {
+		return err
 	}
-
 	cfg.Machines[mNo].Running = true
 	return nil
+}
+
+func waitMachinesRunning(machineName string) error {
+	for retries := 0; retries <= 15; retries++ {
+		if machinetool.IsRunning(machineName) {
+			return nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return errors.Errorf("timeout waiting for %q to start", machineName)
 }
 
 func optionsOverlay(prefix, targetDir, lower, upper string) string {
