@@ -65,6 +65,10 @@ func init() {
 }
 
 func runCreate(cmd *cobra.Command, args []string) {
+	doCreate()
+}
+
+func doCreate() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		// ignore if config not found
