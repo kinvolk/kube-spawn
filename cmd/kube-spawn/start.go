@@ -149,6 +149,11 @@ func resizeMachineDir(baseImage string, nodesN int) {
 	// estimate get pool size based on sum of virtual image sizes.
 	var poolSize int64
 	var err error
+
+	if !bootstrap.PoolImageExists() {
+		return
+	}
+
 	if poolSize, err = bootstrap.GetPoolSize(baseImage, nodesN); err != nil {
 		// fail hard in case of error, to avoid running unnecessary nodes
 		log.Fatalf("cannot get pool size: %v", err)

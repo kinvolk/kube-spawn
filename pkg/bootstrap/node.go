@@ -32,6 +32,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
+	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 	"github.com/pkg/errors"
 )
 
@@ -174,6 +175,10 @@ func IsNodeRunning(nodeName string) bool {
 		}
 	}
 	return false
+}
+
+func PoolImageExists() bool {
+	return fs.Exists(machinesImage)
 }
 
 func GetPoolSize(baseImage string, nodes int) (int64, error) {
