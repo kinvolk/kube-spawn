@@ -33,8 +33,10 @@ import (
 var (
 	createCmd = &cobra.Command{
 		Use:   "create",
-		Short: "Generates the environment for a cluster. If you change 'kspawn.toml' this needs to be run again.",
-		Run:   runCreate,
+		Short: "Generate the environment for a cluster",
+		Long: `Generate the environment for a cluster.
+If you change 'kspawn.toml' this needs to be run again.`,
+		Run: runCreate,
 	}
 )
 

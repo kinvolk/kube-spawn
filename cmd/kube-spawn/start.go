@@ -35,7 +35,7 @@ var (
 	startCmd = &cobra.Command{
 		Use: "start",
 		// Aliases: []string{"setup, up"},
-		Short: "Start the nodes of a generated cluster. You should have run `kube-spawn create` before this",
+		Short: "Start the cluster. You should have run 'kube-spawn create' before this",
 		Run:   runStart,
 	}
 
@@ -44,7 +44,7 @@ var (
 
 func init() {
 	kubespawnCmd.AddCommand(startCmd)
-	startCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "Skips the initialization of a Kubernetes-Cluster with kubeadm")
+	startCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "skips the initialization of a Kubernetes-Cluster with kubeadm")
 }
 
 func runStart(cmd *cobra.Command, args []string) {

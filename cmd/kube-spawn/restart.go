@@ -23,14 +23,20 @@ import (
 var (
 	restartCmd = &cobra.Command{
 		Use:   "restart",
-		Short: "runs stop and start for you",
-		Run:   runRestart,
+		Short: "Stop and start the cluster",
+		Long: `Stop and start the cluster.
+Shortcut for running
+	kube-spawn stop
+	kube-spawn start
+
+You should have run 'kube-spawn create' before this.`,
+		Run: runRestart,
 	}
 )
 
 func init() {
 	kubespawnCmd.AddCommand(restartCmd)
-	restartCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "Skips the initialization of a Kubernetes-Cluster with kubeadm")
+	restartCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "skips the initialization of a Kubernetes-Cluster with kubeadm")
 	restartCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "terminate machines instead of trying graceful shutdown")
 }
 
