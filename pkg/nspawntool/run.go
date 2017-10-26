@@ -23,47 +23,47 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"time"
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cniversion "github.com/containernetworking/cni/pkg/version"
+	"github.com/pkg/errors"
 
-	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
+	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 )
 
-var (
-	goPath  string
-	cniPath string
-)
-
-type Node struct {
-	Name       string
-	K8sVersion string
-	Runtime    string
-	bindOpts   []bindOption
-}
-
-func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin string) error {
-	var err error
-
-	if err := os.MkdirAll(kubeSpawnDir, os.FileMode(0755)); err != nil {
-		return fmt.Errorf("unable to create directory %q: %v.", kubeSpawnDir, err)
+func Run(cfg *config.ClusterConfiguration, mNo int) error {
+	if cfg.Machines[mNo].Running {
+		return nil
 	}
-	if err := bootstrap.PathSupportsOverlay(kubeSpawnDir); err != nil {
-		return fmt.Errorf("RunNode: unable to create overlayfs on %q: %v. Try to pass a directory with a different filesystem (like ext4 or XFS) to --kube-spawn-dir.", kubeSpawnDir, err)
+
+	if err := machinetool.Clone(cfg.Image, cfg.Machines[mNo].Name); err != nil {
+		return errors.Wrap(err, "error cloning image")
 	}
 
 	args := []string{
 		"cnispawn",
 		"-d",
-		"--machine", n.Name,
+		"--machine", cfg.Machines[mNo].Name,
 	}
 
-	listopts, err := n.buildBindsList(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, runcBin, conmonBin)
+	lowerRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs"))
 	if err != nil {
-		return fmt.Errorf("RunNode: error processing bind options: %v", err)
+		return err
 	}
-	args = append(args, listopts...)
+	upperRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, cfg.Machines[mNo].Name, "rootfs"))
+	if err != nil {
+		return err
+	}
+
+	args = append(args, optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot))
+	args = append(args, optionsOverlay("--overlay", "/opt", lowerRoot, upperRoot))
+	args = append(args, optionsOverlay("--overlay", "/usr/bin", lowerRoot, upperRoot))
+	args = append(args, optionsFromBindmountConfig(cfg.Bindmount)...)
+	args = append(args, optionsFromBindmountConfig(cfg.Machines[mNo].Bindmount)...)
 
 	c := exec.Cmd{
 		Path:   "cnispawn",
@@ -72,48 +72,53 @@ func (n *Node) Run(kubeSpawnDir, rktBin, rktStage1Image, rktletBin, crioBin, run
 		Stderr: os.Stderr,
 	}
 
+	// log.Printf(">>> runnning: %q", strings.Join(c.Args, " "))
+
 	stdout, err := c.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("error creating stdout pipe: %s", err)
+		return errors.Wrap(err, "error creating stdout pipe")
 	}
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return fmt.Errorf("error running cnispawn: %s", err)
+		return errors.Wrap(err, "error running cnispawn")
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		return fmt.Errorf("error reading cni data from stdin: %s", err)
+		return errors.Wrap(err, "error reading cni data from stdin")
 	}
 
 	if _, err := cniversion.NewResult(cniversion.Current(), cniDataJSON); err != nil {
 		log.Printf("unexpected result output: %s", cniDataJSON)
-		return fmt.Errorf("unable to parse result: %s", err)
+		return errors.Wrap(err, "unable to parse result")
 	}
 
 	if err := c.Wait(); err != nil {
 		var cniError cnitypes.Error
 		if err := json.Unmarshal(cniDataJSON, &cniError); err != nil {
-			return fmt.Errorf("error unmarshaling cni error: %s", err)
+			return errors.Wrap(err, "error unmarshaling cni error")
 		}
-		return fmt.Errorf("error running cnispawn: %s", cniError)
+		return errors.Wrap(&cniError, "error running cnispawn")
 	}
 
-	log.Printf("Waiting for %s to start up", n.Name)
-	ready := false
-	retries := 0
-	for !ready {
-		check := exec.Command("systemctl", "--machine", n.Name, "status", "basic.target", "--state=running")
-		check.Run()
-		if ready = check.ProcessState.Success(); !ready {
-			time.Sleep(2 * time.Second)
-			retries++
-		}
-		if retries >= 10 {
-			return fmt.Errorf("timeout waiting for %s to start", n.Name)
-		}
+	if err := waitMachinesRunning(cfg.Machines[mNo].Name); err != nil {
+		return err
 	}
-
+	cfg.Machines[mNo].Running = true
 	return nil
+}
+
+func waitMachinesRunning(machineName string) error {
+	for retries := 0; retries <= 15; retries++ {
+		if machinetool.IsRunning(machineName) {
+			return nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return errors.Errorf("timeout waiting for %q to start", machineName)
+}
+
+func optionsOverlay(prefix, targetDir, lower, upper string) string {
+	return fmt.Sprintf("%s=+%s:%s:%s:%s", prefix, targetDir, path.Join(lower, targetDir), path.Join(upper, targetDir), targetDir)
 }

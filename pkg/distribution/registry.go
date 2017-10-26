@@ -32,6 +32,8 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+const PushImageRetries = 10
+
 func dockerProgress(rc io.ReadCloser) error {
 	var status string
 

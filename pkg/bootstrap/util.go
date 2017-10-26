@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"syscall"
 	"unsafe"
+
+	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 )
 
 const (
@@ -46,6 +48,9 @@ func CreateSharedTmpdir() {
 // It returns error if OverlayFS is not supported.
 //  - taken from https://github.com/rkt/rkt/blob/master/common/common.go
 func PathSupportsOverlay(path string) error {
+	if !fs.Exists(path) {
+		return PathSupportsOverlay(filepath.Dir(filepath.Clean(path)))
+	}
 	if !isOverlayfsAvailable() {
 		return fmt.Errorf("overlayfs is not available")
 	}

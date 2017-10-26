@@ -18,88 +18,128 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/exec"
+	"sync"
+	"time"
 
+	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/kinvolk/kube-spawn/pkg/machinetool"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 )
 
 var (
-	cmdStop = &cobra.Command{
+	stopCmd = &cobra.Command{
 		Use:   "stop",
 		Short: "Stop nodes by turning off machines",
 		Run:   runStop,
 	}
 
-	isForce bool
+	flagForce bool
 )
 
 func init() {
-	cmdKubeSpawn.AddCommand(cmdStop)
-	cmdStop.Flags().BoolVarP(&isForce, "force", "f", false, "force the machine to be terminated")
+	kubespawnCmd.AddCommand(stopCmd)
+	stopCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "terminate machines instead of trying graceful shutdown")
 }
 
 func runStop(cmd *cobra.Command, args []string) {
-	if len(args) != 0 {
-		cmd.Usage()
-		os.Exit(1)
-	}
-
-	var machs []string
-
-	nodes, err := bootstrap.GetRunningNodes()
-	if err != nil {
-		log.Printf("%v", err)
-	}
-	if len(nodes) > 0 {
-		for _, n := range nodes {
-			machs = append(machs, n.Name)
-		}
-
-		log.Printf("turning off machines %v...\n", machs)
-		if err := stopMachines(machs); err != nil {
-			log.Printf("%v\n", err)
-		}
-	}
-	log.Printf("All nodes are stopped.")
+	cfg := loadConfig()
+	doStop(cfg, flagForce)
 }
 
-func stopMachines(machs []string) error {
-	var cmdPath string
-	var err error
+func doStop(cfg *config.ClusterConfiguration, force bool) {
+	var forceTxt = ""
+	if force {
+		forceTxt = "force "
+	}
+	log.Printf("%sstopping %d machines", forceTxt, len(cfg.Machines))
 
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
+	if !force && config.RunningMachines(cfg) == 0 {
+		log.Print("nothing to stop")
+		return
 	}
 
-	argsOff := []string{
-		cmdPath,
+	stopMachines(cfg, force)
+	removeImages(cfg)
+
+	// clear cluster config
+	cfg.Token = ""
+	saveConfig(cfg)
+}
+
+func stopMachines(cfg *config.ClusterConfiguration, force bool) {
+	var wg sync.WaitGroup
+	wg.Add(len(cfg.Machines))
+	for i := 0; i < len(cfg.Machines); i++ {
+		go func(i int) {
+			defer wg.Done()
+			if err := doGracefulStop(cfg.Machines[i].Name, force); err != nil {
+				return
+			}
+			cfg.Machines[i].Running = false
+			cfg.Machines[i].IP = ""
+			log.Printf("%q stopped", cfg.Machines[i].Name)
+		}(i)
 	}
+	wg.Wait()
+}
 
-	if isForce {
-		argsOff = append(argsOff, "terminate")
-	} else {
-		argsOff = append(argsOff, "poweroff")
-	}
-
-	for _, m := range machs {
-		args := append(argsOff, m)
-
-		cmd := exec.Cmd{
-			Path:   cmdPath,
-			Args:   args,
-			Env:    os.Environ(),
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
+func doGracefulStop(machineName string, force bool) error {
+	if !force {
+		for retries := 0; retries < 5; retries++ {
+			// graceful stop
+			if err := machinetool.Poweroff(machineName); err != nil {
+				if !machinetool.IsNotKnown(err) {
+					log.Print(errors.Wrapf(err, "error powering off machine %q, maybe try with `kube-spawn stop -f`", machineName))
+					return err
+				}
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
+			return nil
 		}
+		log.Printf("Tried to stop %s 5 times, but it didn't work, terminating.", machineName)
+		// fall back to force shutdown
+	}
 
-		if err := cmd.Run(); err != nil {
-			log.Printf("error running %v: %s", args, err)
+	// Either it's force mode from the beginning,
+	// or it's a fallback from a retry loop of a graceful stop.
+	if err := machinetool.Terminate(machineName); err != nil {
+		if !machinetool.IsNotKnown(err) {
+			log.Print(errors.Wrapf(err, "error terminating machine %q", machineName))
+			return err
 		}
 	}
 
 	return nil
+}
+
+func removeImages(cfg *config.ClusterConfiguration) {
+	var wg sync.WaitGroup
+	wg.Add(len(cfg.Machines))
+	for i := 0; i < len(cfg.Machines); i++ {
+		go func(i int) {
+			defer wg.Done()
+			// clean up image
+			if machinetool.ImageExists(cfg.Machines[i].Name) {
+				if err := removeImage(cfg.Machines[i].Name); err != nil {
+					log.Print(err)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func removeImage(machineName string) error {
+	var err error
+	for retries := 0; retries < 5; retries++ {
+		if err = machinetool.RemoveImage(machineName); err != nil {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		} else {
+			return nil
+		}
+	}
+	return errors.Wrapf(err, "error removing machine image for %q", machineName)
 }

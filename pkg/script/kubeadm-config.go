@@ -4,7 +4,9 @@ import (
 	"bytes"
 )
 
-const kubeadmConfigTmpl string = `apiVersion: kubeadm.k8s.io/v1alpha1
+const KubeadmConfigPath = "/etc/kubeadm/kubeadm.yml"
+
+const kubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/v1alpha1
 authorizationMode: AlwaysAllow
 apiServerExtraArgs:
   insecure-port: "8080"
@@ -17,6 +19,6 @@ type KubeadmYmlOpts struct {
 	KubernetesVersion string
 }
 
-func GetKubeadmConfig(opts KubeadmYmlOpts) *bytes.Buffer {
+func GetKubeadmConfig(opts KubeadmYmlOpts) (*bytes.Buffer, error) {
 	return render(kubeadmConfigTmpl, opts)
 }

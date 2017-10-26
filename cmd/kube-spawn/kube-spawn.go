@@ -20,21 +20,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
-	"github.com/kinvolk/kube-spawn/pkg/utils"
+	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-const k8sStableVersion string = "1.7.0"
-const defaultRuntime string = "docker"
-const kubeSpawnDirDefault string = "/var/lib/kube-spawn"
-
 var (
-	cmdKubeSpawn = &cobra.Command{
+	kubespawnCmd = &cobra.Command{
 		Use:   "kube-spawn",
 		Short: "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster",
-		Long:  "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster, by using the local source code and systemd-nspawn containers",
+		Long:  "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster.\nYou can run a release-version cluster or spawn one from your local Kubernetes repository.",
 		Run: func(cmd *cobra.Command, args []string) {
 			if printVersion {
 				fmt.Printf("kube-spawn %s\n", version)
@@ -46,95 +43,40 @@ var (
 		},
 	}
 
-	version      string
-	k8srelease   string
-	k8sruntime   string
+	version string
+
 	printVersion bool
-	debugOutput  bool
-	kubeSpawnDir string
-
-	rktBin         string = os.Getenv("KUBE_SPAWN_RKT_BIN")
-	rktStage1Image string = os.Getenv("KUBE_SPAWN_RKT_STAGE1_IMAGE")
-	rktletBin      string = os.Getenv("KUBE_SPAWN_RKTLET_BIN")
-
-	crioBin   string = os.Getenv("KUBE_SPAWN_CRIO_BIN")
-	runcBin   string = os.Getenv("KUBE_SPAWN_RUNC_BIN")
-	conmonBin string = os.Getenv("KUBE_SPAWN_CONMON_BIN")
-
-	kubeadmCgroupDriver     string
-	kubeadmRuntimeEndpoint  string
-	kubeadmRequestTimeout   string = "15m"
-	kubeadmContainerRuntime string
 )
 
 func init() {
-	cmdKubeSpawn.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version information")
-	cmdKubeSpawn.PersistentFlags().BoolVar(&debugOutput, "debug", false, "Print logs with log.Llongfile")
-	cmdKubeSpawn.PersistentFlags().StringVarP(&k8sruntime, "container-runtime", "r", defaultRuntime, "Runtime to use for the spawned cluster (docker or rkt)")
-	cmdKubeSpawn.PersistentFlags().StringVarP(&k8srelease, "kubernetes-version", "k", k8sStableVersion, "Kubernetes version to spawn, \"\" or \"dev\" for self-building upstream K8s.")
-	cmdKubeSpawn.PersistentFlags().StringVarP(&kubeSpawnDir, "kube-spawn-dir", "d", kubeSpawnDirDefault, "path to kube-spawn asset directory")
+	kubespawnCmd.PersistentFlags().StringP("dir", "d", "", "Path to kube-spawn asset directory")
+	kubespawnCmd.PersistentFlags().StringP("cluster-name", "c", "", "Name for the cluster")
+	viper.BindPFlags(kubespawnCmd.PersistentFlags())
 
-	cmdKubeSpawn.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if debugOutput {
-			log.SetFlags(log.Llongfile)
-		} else {
-			log.SetFlags(0)
-		}
+	kubespawnCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version information")
 
-		// TODO: we should eventually run extensive env/config checks prior to running any subcommand
-		// That would also benefit from some kind of centralized config
-		var err error
-		switch k8sruntime {
-		case "rkt":
-			if rktBin == "" {
-				rktBin, err = exec.LookPath("rkt")
-				if err != nil {
-					log.Fatal("Unable to find rkt binary. Put it in your PATH or use KUBE_SPAWN_RKT_BIN.")
-				}
-			}
-			if rktStage1Image == "" {
-				rktStage1Image = "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
-				if err := utils.CheckValidFile(rktStage1Image); err != nil {
-					log.Fatal("Unable to find stage1-coreos.aci, use KUBE_SPAWN_RKT_STAGE1_IMAGE.")
-				}
-			}
-			if rktletBin == "" {
-				rktletBin, err = exec.LookPath("rktlet")
-				if err != nil {
-					log.Fatal("Unable to find rktlet binary. Put it in your PATH or use KUBE_SPAWN_RKTLET_BIN.")
-				}
-			}
-		case "crio":
-			if crioBin == "" {
-				crioBin, err = exec.LookPath("crio")
-				if err != nil {
-					log.Fatal("Unable to find crio binary. Put it in your PATH or use KUBE_SPAWN_CRIO_BIN.")
-				}
-			}
-			if runcBin == "" {
-				runcBin, err = exec.LookPath("runc")
-				if err != nil {
-					log.Fatal("Unable to find runc binary. Put it in your PATH or use KUBE_SPAWN_RUNC_BIN.")
-				}
-			}
-			if conmonBin == "" {
-				crioBin, err = exec.LookPath("conmon")
-				if err != nil {
-					log.Fatal("Unable to find conmon binary. Put it in your PATH or use KUBE_SPAWN_CONMON_BIN.")
-				}
-			}
-		}
+	kubespawnCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		log.SetFlags(0)
 	}
 }
 
 func main() {
-	var err error
-	var goPath string
-	if goPath, err = utils.GetValidGoPath(); err != nil {
-		log.Fatalf("invalid GOPATH %q: %v", goPath, err)
-	}
-
-	if err := cmdKubeSpawn.Execute(); err != nil {
+	if err := kubespawnCmd.Execute(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func loadConfig() *config.ClusterConfiguration {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "error loading config"))
+	}
+	log.Printf("using config from %s/%s", cfg.KubeSpawnDir, cfg.Name)
+	return cfg
+}
+
+func saveConfig(cfg *config.ClusterConfiguration) {
+	if err := config.WriteConfigToFile(cfg); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to write to config file"))
 	}
 }

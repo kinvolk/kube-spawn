@@ -4,17 +4,7 @@ import (
 	"bytes"
 )
 
-const kubeadmExtraArgsTmpl string = `[Service]
-Environment="KUBELET_EXTRA_ARGS=\
---cgroup-driver={{.CgroupDriver}} \
---enforce-node-allocatable= \
-{{ printf "--cgroups-per-qos=%t \\" .CgroupsPerQOS }}
-{{.FailSwapOnArgs}} \
---authentication-token-webhook \
-{{ if ne .ContainerRuntime "docker" -}}--container-runtime=remote \
---container-runtime-endpoint={{.RuntimeEndpoint}}{{- end}} \
---runtime-request-timeout={{.RequestTimeout}}"
-`
+const KubeadmExtraArgsPath = "/etc/systemd/system/kubelet.service.d/20-kubeadm-extra-args.conf"
 
 // NOTE: --fail-swap-on=false is necessary for k8s 1.8 or newer,
 // and the option is not available at all in k8s 1.7 or older.
@@ -24,15 +14,30 @@ Environment="KUBELET_EXTRA_ARGS=\
 // --container-runtime-endpoint needs to point to the unix socket,
 // which rktlet listens on.
 
+// --cgroups-per-qos should be set to false, so that we can avoid issues with
+// different formats of cgroup paths between k8s and systemd.
+// --enforce-node-allocatable= is also necessary.
+const kubeadmExtraArgsTmpl string = `[Service]
+Environment="KUBELET_CGROUP_ARGS=--cgroup-driver={{ if .UseLegacyCgroupDriver }}cgroupfs{{else}}systemd{{end}}"
+Environment="KUBELET_EXTRA_ARGS=\
+{{ if ne .ContainerRuntime "docker" -}}--container-runtime=remote \
+--container-runtime-endpoint={{.RuntimeEndpoint}} \
+--runtime-request-timeout={{.RequestTimeout}} {{- end}} \
+--enforce-node-allocatable= \
+{{ printf "--cgroups-per-qos=%t" .CgroupsPerQOS }} \
+{{ if not .FailSwapOn -}}--fail-swap-on=false {{- end}} \
+--authentication-token-webhook"
+`
+
 type KubeadmExtraArgsOpts struct {
-	CgroupDriver     string
-	CgroupsPerQOS    bool
-	FailSwapOnArgs   string
-	ContainerRuntime string
-	RuntimeEndpoint  string
-	RequestTimeout   string
+	ContainerRuntime      string
+	UseLegacyCgroupDriver bool
+	CgroupsPerQOS         bool
+	FailSwapOn            bool
+	RuntimeEndpoint       string
+	RequestTimeout        string
 }
 
-func GetKubeadmExtraArgs(opts KubeadmExtraArgsOpts) *bytes.Buffer {
+func GetKubeadmExtraArgs(opts KubeadmExtraArgsOpts) (*bytes.Buffer, error) {
 	return render(kubeadmExtraArgsTmpl, opts)
 }

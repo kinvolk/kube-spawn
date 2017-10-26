@@ -26,12 +26,6 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
-	"github.com/kinvolk/kube-spawn/pkg/utils"
-)
-
-var (
-	goPath  string
-	cniPath string
 )
 
 type CniNetns struct {
@@ -40,14 +34,6 @@ type CniNetns struct {
 
 func NewCniNetns() (*CniNetns, error) {
 	var err error
-
-	if goPath, err = utils.GetValidGoPath(); err != nil {
-		return nil, fmt.Errorf("cnispawn: invalid GOPATH %q", goPath)
-	}
-
-	if cniPath, err = utils.GetValidCniPath(goPath); err != nil {
-		return nil, fmt.Errorf("cnispawn: invalid CNI_PATH %q", cniPath)
-	}
 
 	netns, err := ns.NewNS()
 	if err != nil {

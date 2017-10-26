@@ -30,6 +30,9 @@ import (
 	"syscall"
 
 	"github.com/Masterminds/semver"
+	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/kinvolk/kube-spawn/pkg/machinetool"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -68,18 +71,6 @@ func NewNode(baseImage, machine string) error {
 		return fmt.Errorf("error running machinectl: %s", buf.String())
 	}
 	return nil
-}
-
-func MachineImageExists(machine string) bool {
-	// TODO: we could also parse machinectl list-images to find that
-	if _, err := os.Stat(path.Join(machinesDir, machine+".raw")); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-		log.Printf("error checking for image: %s", err)
-		return false
-	}
-	return true
 }
 
 func GetRunningNodes() ([]Node, error) {
@@ -398,7 +389,19 @@ func runBtrfsDisableQuota() error {
 	return nil
 }
 
-func EnsureRequirements() {
+func EnsureRequirements(cfg *config.ClusterConfiguration) error {
+	if err := EnsureBridge(); err != nil {
+		return errors.Wrap(err, "error checking CNI bridge")
+	}
+	// TODO: should be moved to pkg/config/defaults.go
+	if err := WriteNetConf(); err != nil {
+		errors.Wrap(err, "error writing CNI configuration")
+	}
+	// check if container linux base image exists
+	log.Printf("checking base image")
+	if !machinetool.ImageExists(cfg.Image) {
+		return fmt.Errorf("base image %q not found", cfg.Image)
+	}
 	// Ensure that the system requirements are satisfied for starting
 	// kube-spawn. It's just like running the commands below:
 	//
@@ -413,7 +416,9 @@ func EnsureRequirements() {
 	// check for SELinux enforcing mode
 	ensureSelinux()
 	// check for Container Linux version
+	// TODO: this hardcodes usage of coreos
 	ensureCoreosVersion()
+	return nil
 }
 
 func isOverlayfsAvailable() bool {
@@ -697,34 +702,6 @@ func ensureSelinux() {
 	}
 }
 
-func showCoreosImage() error {
-	var cmdPath string
-	var err error
-
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
-	}
-
-	args := []string{
-		cmdPath,
-		"show-image",
-		"coreos",
-	}
-
-	cmd := exec.Cmd{
-		Path: cmdPath,
-		Args: args,
-		Env:  os.Environ(),
-	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running machinectl show-image: %s", err)
-	}
-
-	return nil
-}
-
 func checkCoreosSemver(coreosVer string) error {
 	v, err := semver.NewVersion(coreosVer)
 	if err != nil {
@@ -805,6 +782,7 @@ func pullRawCoreosImage() error {
 	var cmdPath string
 	var err error
 
+	// TODO: use machinetool pkg
 	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
 		// fall back to an ordinary abspath to machinectl
 		cmdPath = "/usr/bin/machinectl"
@@ -840,7 +818,8 @@ func ensureCoreosVersion() {
 
 func PrepareCoreosImage() error {
 	// If no coreos image exists, just download it
-	if err := showCoreosImage(); err != nil {
+	if !machinetool.ImageExists("coreos") {
+		log.Printf("pulling coreos image...")
 		if err := pullRawCoreosImage(); err != nil {
 			return err
 		}
