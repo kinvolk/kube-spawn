@@ -33,8 +33,21 @@ import (
 var (
 	createCmd = &cobra.Command{
 		Use:   "create",
-		Short: "Generates the environment for a cluster. If you change 'kspawn.toml' this needs to be run again.",
-		Run:   runCreate,
+		Short: "Generate the environment for a cluster",
+		Long: `Generate the environment for a cluster.
+If you change 'kspawn.toml' this needs to be run again.`,
+		Example: `
+# Create an environment to run a 3 node cluster initialized with components from $GOPATH/k8s.io/kubernetes
+$ sudo -E kube-spawn create --nodes 3 --dev
+
+# Create a cluster environment using rkt as the container runtime
+# You can specify paths to the binaries necessary using environment variables (in case they are not in your PATH)
+$ sudo -E \
+	KUBE_SPAWN_RKT_BIN=/opt/bin/rkt \
+	KUBE_SPAWN_RKTLET_BIN=/opt/bin/rktlet \
+	KUBE_SPAWN_RKT_STAGE1_IMAGE=/opt/bin/stage1-coreos.aci \
+	kube-spawn create --container-runtime rkt`,
+		Run: runCreate,
 	}
 )
 
@@ -65,6 +78,10 @@ func init() {
 }
 
 func runCreate(cmd *cobra.Command, args []string) {
+	doCreate()
+}
+
+func doCreate() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		// ignore if config not found

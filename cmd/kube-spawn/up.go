@@ -21,27 +21,28 @@ import (
 )
 
 var (
-	restartCmd = &cobra.Command{
-		Use:   "restart",
-		Short: "Stop and start the cluster",
-		Long: `Stop and start the cluster.
+	upCmd = &cobra.Command{
+		Use:   "up",
+		Short: "Create a default cluster and start it",
+		Long: `Create a default cluster and start it.
 Shortcut for running
-	kube-spawn stop
-	kube-spawn start
-
-You should have run 'kube-spawn create' before this.`,
-		Run: runRestart,
+	kube-spawn create
+	kube-spawn start`,
+		Run: runUp,
 	}
 )
 
 func init() {
-	kubespawnCmd.AddCommand(restartCmd)
-	restartCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "skips the initialization of a Kubernetes-Cluster with kubeadm")
-	restartCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "terminate machines instead of trying graceful shutdown")
+	kubespawnCmd.AddCommand(upCmd)
 }
 
-func runRestart(cmd *cobra.Command, args []string) {
+func runUp(cmd *cobra.Command, args []string) {
+	doUp()
+}
+
+func doUp() {
+	doCreate()
+
 	cfg := loadConfig()
-	doStop(cfg, flagForce)
-	doStart(cfg, flagSkipInit)
+	doStart(cfg, false)
 }

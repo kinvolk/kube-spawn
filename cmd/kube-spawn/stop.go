@@ -30,7 +30,7 @@ import (
 var (
 	stopCmd = &cobra.Command{
 		Use:   "stop",
-		Short: "Stop nodes by turning off machines",
+		Short: "Stop the running cluster",
 		Run:   runStop,
 	}
 

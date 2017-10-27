@@ -29,10 +29,11 @@ import (
 
 var (
 	destroyCmd = &cobra.Command{
-		Use: "destroy",
-		// Aliases: []string{"setup, up"},
-		Short: "Start the nodes of a generated cluster. You should have run `kube-spawn create` before this",
-		Run:   runDestroy,
+		Use:   "destroy",
+		Short: "Remove the cluster environment",
+		Long: `Remove the cluster environment.
+Stops the cluster if it it running`,
+		Run: runDestroy,
 	}
 )
 
