@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
 
   # Fedora 26
   config.vm.define "fedora", primary: true do |fedora|
-    config.vm.provision "shell", inline: "dnf install -y btrfs-progs docker git go kubernetes qemu-img strace tmux"
+    config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils polkit qemu-img systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -42,10 +42,10 @@ Vagrant.configure("2") do |config|
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
   end
 
-  # Ubuntu 17.04 (Zesty)
+  # Ubuntu 17.10 (Artful)
   config.vm.define "ubuntu", autostart: false do |ubuntu|
-    config.vm.box = "generic/ubuntu1704"
-    config.vm.provision "shell", inline: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -; echo \"deb http://apt.kubernetes.io/ kubernetes-xenial main\" > /etc/apt/sources.list.d/kubernetes.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io golang git qemu-utils selinux-utils systemd-container kubectl tmux"
+    config.vm.box = "generic/ubuntu1710"
+    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -63,7 +63,7 @@ Vagrant.configure("2") do |config|
   # Debian testing
   config.vm.define "debian", autostart: false do |debian|
     config.vm.box = "debian/testing64"
-    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; echo deb http://apt.dockerproject.org/repo debian-stretch main > /etc/apt/sources.list.d/docker.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated docker-engine; DEBIAN_FRONTEND=noninteractive apt-get install -y golang git qemu-utils selinux-utils systemd-container tmux; DEBIAN_FRONTEND=noninteractive apt-get install -y -t unstable kubernetes-client"
+    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
