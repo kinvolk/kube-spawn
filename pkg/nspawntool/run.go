@@ -36,6 +36,11 @@ import (
 )
 
 func Run(cfg *config.ClusterConfiguration, mNo int) error {
+	// This check is necessary to avoid panic with "index out of range".
+	if mNo > len(cfg.Machines)-1 {
+		return fmt.Errorf("cannot get a machine kubespawn%d", mNo)
+	}
+
 	if cfg.Machines[mNo].Running {
 		return nil
 	}
