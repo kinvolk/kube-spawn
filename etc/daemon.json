@@ -1,8 +1,0 @@
-{
-    "insecure-registries": ["10.22.0.1:5000"],
-    "default-runtime": "custom",
-    "runtimes": {
-        "custom": { "path": "/opt/kube-spawn-runc" }
-    },
-    "storage-driver": "overlay"
-}
