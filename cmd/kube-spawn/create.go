@@ -158,6 +158,11 @@ func doCreate() {
 	// 	log.Fatal(errors.Wrap(err, "check failed"))
 	// }
 
+	log.Print("ensuring environment")
+	if err := bootstrap.EnsureRequirements(cfg); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := bootstrap.PathSupportsOverlay(cfg.KubeSpawnDir); err != nil {
 		log.Fatalf("unable to use overlayfs on %q: %v. Try to pass a directory with a different filesystem (like ext4 or XFS) to --dir.", cfg.KubeSpawnDir, err)
 	}
@@ -170,11 +175,6 @@ func doCreate() {
 	log.Print("copy files into environment")
 	if err := bootstrap.CopyFiles(cfg); err != nil {
 		log.Fatal(errors.Wrap(err, "error copying files"))
-	}
-
-	log.Print("ensuring environment")
-	if err := bootstrap.EnsureRequirements(cfg); err != nil {
-		log.Fatal(err)
 	}
 
 	saveConfig(cfg)
