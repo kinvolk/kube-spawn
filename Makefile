@@ -32,7 +32,7 @@ dep:
 	@which dep || go get -u github.com/golang/dep/cmd/dep
 
 clean:
-	rm -rf \
+	rm -f \
 		cni-noop \
 		cnispawn \
 		kube-spawn \

@@ -6,9 +6,7 @@
 # Folders
 _obj
 _test
-.kube-spawn
 .vagrant
-k8s
 
 # Architecture specific extensions/prefixes
 *.[568vq]
