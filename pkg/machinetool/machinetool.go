@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-const machineDir = "/var/lib/machines"
-
 func machinectl(stdout, stderr io.Writer, opts, cmd, machine string, args ...string) ([]byte, error) {
 	mPath, err := exec.LookPath("machinectl")
 	if err != nil {
