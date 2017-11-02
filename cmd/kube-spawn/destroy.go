@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 )
 
@@ -55,5 +56,15 @@ func doDestroy(cfg *config.ClusterConfiguration) {
 	if err := os.RemoveAll(cDir); err != nil {
 		log.Fatal(errors.Wrapf(err, "error removing cluster dir at %q", cDir))
 	}
+	RemoveCniConfig()
 	log.Printf("%q destroyed", cfg.Name)
+}
+
+func RemoveCniConfig() {
+	if err := os.RemoveAll(bootstrap.VarLibCniDir); err != nil {
+		log.Printf("cannot remove %q: %v", bootstrap.VarLibCniDir, err)
+	}
+	if err := os.RemoveAll(bootstrap.NspawnNetPath); err != nil {
+		log.Printf("cannot remove %q: %v", bootstrap.NspawnNetPath, err)
+	}
 }
