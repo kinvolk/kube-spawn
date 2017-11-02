@@ -68,7 +68,7 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 	for i := 0; i < cfg.Nodes; i++ {
 		go func(i int) {
 			defer wg.Done()
-			log.Printf("waiting for machine %q to start up", config.MachineName(i))
+			log.Printf("waiting for machine %q to start up", config.MachineName(cfg.Name, i))
 			if err := nspawntool.Run(cfg, i); err != nil {
 				log.Print(errors.Wrap(err, "failed to start machine"))
 				return
