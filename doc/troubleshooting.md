@@ -1,5 +1,5 @@
 Here are some common issues that we encountered and how we work around or
-fix the. If you discover more, please create an issue or submit a PR.
+fix them. If you discover more, please create an issue or submit a PR.
 
 ## Missing GOPATH environment variable
 
@@ -32,7 +32,7 @@ That could make the setup process do the job again. Ideally the remaining images
 
 ## Running on a version of systemd < 233
 
-You can build systemd-nspawn yourself and include these patches:
+You can build `systemd-nspawn` yourself and include these patches:
 
 * `SYSTEMD_NSPAWN_USE_CGNS` https://github.com/systemd/systemd/pull/3809
 * `SYSTEMD_NSPAWN_MOUNT_RW` and `SYSTEMD_NSPAWN_USE_NETNS` https://github.com/systemd/systemd/pull/4395
