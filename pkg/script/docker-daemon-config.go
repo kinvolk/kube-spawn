@@ -8,6 +8,6 @@ const DockerDaemonConfig = `{
     "runtimes": {
         "custom": { "path": "/usr/bin/kube-spawn-runc" }
     },
-    "storage-driver": "overlay"
+    "storage-driver": "overlay2"
 }
 `
