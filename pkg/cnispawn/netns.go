@@ -43,6 +43,10 @@ func NewCniNetns() (*CniNetns, error) {
 	sNetnsPath := strings.Split(netns.Path(), "/")
 	containerId := sNetnsPath[len(sNetnsPath)-1]
 
+	cniPath, err := getCniPath()
+	if err != nil {
+		return nil, err
+	}
 	cniPluginPath := path.Join(cniPath, "bridge")
 
 	// CNI-specific environment variables must appear before other ones
