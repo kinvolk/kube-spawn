@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -32,6 +33,7 @@ const (
 	Filename = "kspawn.toml"
 
 	machineNameTemplate = "kubespawn%d"
+	envFilename         = "current-env"
 )
 
 func MachineName(no int) string {
@@ -51,10 +53,14 @@ func RunningMachines(cfg *ClusterConfiguration) int {
 }
 
 func LoadConfig() (*ClusterConfiguration, error) {
-	cfgFile := path.Join(viper.GetString("dir"), viper.GetString("cluster-name"), Filename)
+	env, err := GetCurrentEnv()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to read current env")
+	}
+
+	cfgFile := path.Join(viper.GetString("dir"), env, Filename)
 	viper.SetConfigFile(cfgFile)
 
-	var err error
 	var cfg = &ClusterConfiguration{}
 	err = viper.ReadInConfig()
 	if err := viper.Unmarshal(cfg); err != nil {
@@ -79,4 +85,22 @@ func WriteConfigToFile(cfg *ClusterConfiguration) error {
 		return errors.Wrap(err, "unable to encode cluster config")
 	}
 	return fs.CreateBytes(cfgFilepath, raw)
+}
+
+func SetCurrentEnv(name string) error {
+	envFile := path.Join(viper.GetString("dir"), envFilename)
+	return fs.CreateBytes(envFile, []byte(name))
+}
+
+func GetCurrentEnv() (string, error) {
+	envFile := path.Join(viper.GetString("dir"), envFilename)
+	b, err := ioutil.ReadFile(envFile)
+	if IsNotFound(err) {
+		cName := viper.GetString("cluster-name")
+		err = SetCurrentEnv(cName)
+		if err == nil {
+			return cName, nil
+		}
+	}
+	return string(b), err
 }
