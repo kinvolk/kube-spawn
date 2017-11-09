@@ -5,7 +5,7 @@ PREFIX ?= /usr
 BINDIR ?= ${PREFIX}/bin
 UID=$(shell id -u)
 
-.PHONY: all clean dep
+.PHONY: all clean dep install
 
 VERSION=$(shell git describe --tags --always --dirty)
 
@@ -37,3 +37,6 @@ clean:
 		cnispawn \
 		kube-spawn \
 		kube-spawn-runc
+
+install:
+	install cni-noop cnispawn kube-spawn kube-spawn-runc "$(BINDIR)"
