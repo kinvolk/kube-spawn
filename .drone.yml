@@ -1,0 +1,11 @@
+workspace:
+  base: /go
+  path: src/github.com/kinvolk/kube-spawn
+
+pipeline:
+  build:
+    image: fedora:26
+    commands:
+      - dnf install -y git go make which
+      - export GOPATH=/go ; go get -u github.com/golang/dep/...
+      - export GOPATH=/go ; export PATH=/go/bin:$PATH ; make DOCKERIZED=n
