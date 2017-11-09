@@ -133,7 +133,7 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 	// TODO: can this be moved to the runtime functions below?
 	cfg.Machines = make([]MachineConfiguration, cfg.Nodes)
 	for i := 0; i < cfg.Nodes; i++ {
-		cfg.Machines[i].Name = MachineName(i)
+		cfg.Machines[i].Name = MachineName(cfg.Name, i)
 		mountPath := path.Join(cfg.KubeSpawnDir, cfg.Name, cfg.Machines[i].Name, "mount")
 
 		var pm Pathmap

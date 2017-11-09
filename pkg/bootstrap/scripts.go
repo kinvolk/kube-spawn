@@ -51,7 +51,7 @@ func GenerateScripts(cfg *config.ClusterConfiguration) error {
 
 	// create empty config dirs for all nodes
 	for i := 0; i < cfg.Nodes; i++ {
-		rootDir := path.Join(cfg.KubeSpawnDir, cfg.Name, config.MachineName(i), "rootfs")
+		rootDir := path.Join(cfg.KubeSpawnDir, cfg.Name, config.MachineName(cfg.Name, i), "rootfs")
 		if err := fs.CreateDir(path.Join(rootDir, "etc")); err != nil {
 			return err
 		}

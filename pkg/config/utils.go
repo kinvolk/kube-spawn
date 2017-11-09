@@ -31,11 +31,11 @@ import (
 const (
 	Filename = "kspawn.toml"
 
-	machineNameTemplate = "kubespawn%d"
+	machineNameTemplate = "kubespawn%s%d"
 )
 
-func MachineName(no int) string {
-	return fmt.Sprintf(machineNameTemplate, no)
+func MachineName(clusterName string, no int) string {
+	return fmt.Sprintf(machineNameTemplate, clusterName, no)
 }
 
 // TODO: this is not enough.
