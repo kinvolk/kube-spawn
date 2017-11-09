@@ -28,9 +28,11 @@ import (
 )
 
 const (
-	tmpDir      string = ".kube-spawn/default"
-	FsMagicAUFS        = 0x61756673 // https://goo.gl/CBwx43
-	FsMagicZFS         = 0x2FC12FC1 // https://goo.gl/xTvzO5
+	tmpDir string = ".kube-spawn/default"
+
+	FsMagicAUFS     = 0x61756673 // https://goo.gl/CBwx43
+	FsMagicECRYPTFS = 0xF15F     // https://goo.gl/4akUXJ
+	FsMagicZFS      = 0x2FC12FC1 // https://goo.gl/xTvzO5
 )
 
 func CreateSharedTmpdir() {
@@ -63,6 +65,8 @@ func PathSupportsOverlay(path string) error {
 	switch data.Type {
 	case FsMagicAUFS:
 		return fmt.Errorf("unsupported filesystem: aufs")
+	case FsMagicECRYPTFS:
+		return fmt.Errorf("unsupported filesystem: ecryptfs")
 	case FsMagicZFS:
 		return fmt.Errorf("unsupported filesystem: zfs")
 	}
