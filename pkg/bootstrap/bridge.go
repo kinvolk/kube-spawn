@@ -18,7 +18,7 @@ package bootstrap
 
 import (
 	"os"
-	"syscall"
+	"os/exec"
 
 	"github.com/vishvananda/netlink"
 )
@@ -32,21 +32,8 @@ func EnsureBridge() error {
 		return nil
 	}
 
-	pid, err := syscall.ForkExec("cni-noop", nil, &syscall.ProcAttr{
-		Dir:   "",
-		Env:   os.Environ(),
-		Files: []uintptr{uintptr(syscall.Stdout), uintptr(syscall.Stderr)},
-		Sys:   &syscall.SysProcAttr{},
-	})
-	if err != nil {
-		return err
-	}
-
-	var status syscall.WaitStatus
-	var rusage syscall.Rusage
-	if _, err := syscall.Wait4(pid, &status, 0, &rusage); err != nil {
-		return err
-	}
-
-	return nil
+	cmd := exec.Command("cni-noop")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

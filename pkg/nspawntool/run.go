@@ -49,12 +49,6 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 		return errors.Wrap(err, "error cloning image")
 	}
 
-	args := []string{
-		"cnispawn",
-		"-d",
-		"--machine", cfg.Machines[mNo].Name,
-	}
-
 	lowerRoot, err := filepath.Abs(path.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs"))
 	if err != nil {
 		return err
@@ -64,18 +58,19 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 		return err
 	}
 
-	args = append(args, optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot))
-	args = append(args, optionsOverlay("--overlay", "/opt", lowerRoot, upperRoot))
-	args = append(args, optionsOverlay("--overlay", "/usr/bin", lowerRoot, upperRoot))
+	args := []string{
+		"-d",
+		"--machine", cfg.Machines[mNo].Name,
+		optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot),
+		optionsOverlay("--overlay", "/opt", lowerRoot, upperRoot),
+		optionsOverlay("--overlay", "/usr/bin", lowerRoot, upperRoot),
+	}
+
 	args = append(args, optionsFromBindmountConfig(cfg.Bindmount)...)
 	args = append(args, optionsFromBindmountConfig(cfg.Machines[mNo].Bindmount)...)
 
-	c := exec.Cmd{
-		Path:   "cnispawn",
-		Args:   args,
-		Env:    os.Environ(),
-		Stderr: os.Stderr,
-	}
+	c := exec.Command("cnispawn", args...)
+	c.Stderr = os.Stderr
 
 	// log.Printf(">>> runnning: %q", strings.Join(c.Args, " "))
 
