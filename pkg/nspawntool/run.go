@@ -110,7 +110,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 }
 
 func waitMachinesRunning(machineName string) error {
-	for retries := 0; retries <= 15; retries++ {
+	for retries := 0; retries <= 30; retries++ {
 		if machinetool.IsRunning(machineName) {
 			return nil
 		}
