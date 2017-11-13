@@ -18,12 +18,9 @@ package utils
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"unsafe"
 
@@ -55,15 +52,6 @@ func CheckValidDir(inPath string) error {
 	return nil
 }
 
-func CheckValidFile(inPath string) error {
-	if fi, err := os.Stat(inPath); os.IsNotExist(err) {
-		return err
-	} else if !fi.Mode().IsRegular() {
-		return fmt.Errorf("%q is not a file.", inPath)
-	}
-	return nil
-}
-
 func GetValidGoPath() (string, error) {
 	if err := CheckValidDir(goPath); err != nil {
 		// fall back to $HOME/go
@@ -74,38 +62,6 @@ func GetValidGoPath() (string, error) {
 	}
 
 	return goPath, nil
-}
-
-func GetValidCniPath(inGoPath string) (string, error) {
-	if err := CheckValidDir(cniPath); err != nil {
-		// fall back to $GOPATH/bin
-		cniPath = path.Join(inGoPath, "bin")
-		if err := CheckValidDir(cniPath); err != nil {
-			return "", err
-		}
-	}
-
-	return cniPath, nil
-}
-
-func GetValidKubeConfig() string {
-	kcPath := kcSystemPath
-	if err := CheckValidFile(kcPath); err != nil {
-		// fall back to $GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
-		kcPath = filepath.Join(goPath, ksRelPath, kcUserPath)
-		log.Printf("fall back to %s...\n", kcPath)
-
-		if err := CheckValidFile(kcPath); err != nil {
-			// fall back to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
-			kcPath = filepath.Join(homePath, "go", ksRelPath, kcUserPath)
-			log.Printf("fall back to %s...\n", kcPath)
-			if err := CheckValidFile(kcPath); err != nil {
-				return ""
-			}
-		}
-	}
-
-	return kcPath
 }
 
 func GetK8sBuildOutputDir() (string, error) {
@@ -144,35 +100,4 @@ func IsTerminal(fd uintptr) bool {
 	var termios syscall.Termios
 	_, _, err := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(&termios)))
 	return err == 0
-}
-
-func IsK8sDev(k8srel string) bool {
-	return k8srel == "" || k8srel == "dev"
-}
-
-func CopyFileToDir(src, dstdir string) (string, error) {
-	dst := filepath.Join(dstdir, filepath.Base(src))
-
-	s, err := os.Open(src)
-	if err != nil {
-		return "", err
-	}
-	defer s.Close()
-
-	d, err := os.Create(dst)
-	if err != nil {
-		return "", err
-	}
-	defer d.Close()
-
-	_, err = io.Copy(d, s)
-	return dst, err
-}
-
-func LookupPwd(inPath string) string {
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	return strings.Replace(inPath, "$PWD", pwd, 1)
 }

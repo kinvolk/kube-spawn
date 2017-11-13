@@ -18,7 +18,6 @@ package bootstrap
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -49,29 +48,6 @@ const (
 type Node struct {
 	Name string
 	IP   string
-}
-
-func GetNodeName(no int) string {
-	return fmt.Sprintf(containerNameTemplate, no)
-}
-
-func NewNode(baseImage, machine string) error {
-	var buf bytes.Buffer
-
-	machinectlPath, err := exec.LookPath("machinectl")
-	if err != nil {
-		return err
-	}
-
-	clone := exec.Cmd{
-		Path:   machinectlPath,
-		Args:   []string{"machinectl", "clone", baseImage, machine},
-		Stderr: &buf,
-	}
-	if err := clone.Run(); err != nil {
-		return fmt.Errorf("error running machinectl: %s", buf.String())
-	}
-	return nil
 }
 
 func GetRunningNodes() ([]Node, error) {
@@ -161,20 +137,6 @@ func GetIPAddressLegacy(mach string) (string, error) {
 	}
 
 	return "", err
-}
-
-func IsNodeRunning(nodeName string) bool {
-	var err error
-	var runNodes []Node
-	if runNodes, err = GetRunningNodes(); err != nil {
-		return false
-	}
-	for _, n := range runNodes {
-		if strings.TrimSpace(nodeName) == strings.TrimSpace(n.Name) {
-			return true
-		}
-	}
-	return false
 }
 
 func PoolImageExists() bool {

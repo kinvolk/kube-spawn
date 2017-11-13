@@ -1,9 +1,5 @@
 package script
 
-import (
-	"bytes"
-)
-
 const kubeadmExtraRuntimeTmpl string = `
 {{ if .RktRuntime -}}--container-runtime=remote \
 --container-runtime-endpoint={{.RuntimeEndpoint}}{{- end}} \
@@ -18,8 +14,4 @@ type KubeadmExtraRuntimeOpts struct {
 	RktRuntime      bool
 	RuntimeEndpoint string
 	RequestTimeout  string
-}
-
-func GetKubeadmExtraRuntime(opts KubeadmExtraRuntimeOpts) (*bytes.Buffer, error) {
-	return render(kubeadmExtraRuntimeTmpl, opts)
 }

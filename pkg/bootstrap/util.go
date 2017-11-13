@@ -28,22 +28,10 @@ import (
 )
 
 const (
-	tmpDir string = ".kube-spawn/default"
-
 	FsMagicAUFS     = 0x61756673 // https://goo.gl/CBwx43
 	FsMagicECRYPTFS = 0xF15F     // https://goo.gl/4akUXJ
 	FsMagicZFS      = 0x2FC12FC1 // https://goo.gl/xTvzO5
 )
-
-func CreateSharedTmpdir() {
-	if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
-		os.MkdirAll(tmpDir, os.ModePerm)
-		// optional tmpfs
-		// if err := syscall.Mount("tmpfs", tmpDir, "tmpfs", syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV, "size=10m"); err != nil {
-		// 	return err
-		// }
-	}
-}
 
 // PathSupportsOverlay checks whether the given path is compatible with OverlayFS.
 // This method also calls isOverlayfsAvailable().
