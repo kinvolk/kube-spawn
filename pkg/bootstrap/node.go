@@ -357,12 +357,12 @@ func runBtrfsDisableQuota() error {
 }
 
 func EnsureRequirements(cfg *config.ClusterConfiguration) error {
-	if err := EnsureBridge(); err != nil {
-		return errors.Wrap(err, "error checking CNI bridge")
-	}
 	// TODO: should be moved to pkg/config/defaults.go
 	if err := WriteNetConf(); err != nil {
 		errors.Wrap(err, "error writing CNI configuration")
+	}
+	if err := EnsureBridge(); err != nil {
+		return errors.Wrap(err, "error checking CNI bridge")
 	}
 	// check if container linux base image exists
 	log.Printf("checking base image")
