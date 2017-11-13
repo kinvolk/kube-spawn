@@ -36,6 +36,11 @@ $ go get -d github.com/kinvolk/kube-spawn
 $ cd $GOPATH/src/github.com/kinvolk/kube-spawn
 $ make all
 
+# (optional) Install binaries under a system directory.
+# The install prefix defaults to /usr, which you can override with an env
+# variable $PREFIX, like "make PREFIX=/usr/local install".
+$ sudo make install
+
 $ export CNI_PATH=$GOPATH/bin
 
 # This generated a default 3 nodes cluster configuration
