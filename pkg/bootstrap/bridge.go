@@ -18,8 +18,8 @@ package bootstrap
 
 import (
 	"os"
-	"os/exec"
 
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/vishvananda/netlink"
 )
 
@@ -32,7 +32,7 @@ func EnsureBridge() error {
 		return nil
 	}
 
-	cmd := exec.Command("cni-noop")
+	cmd := utils.Command("cni-noop")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

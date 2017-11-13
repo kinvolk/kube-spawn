@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"time"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 func Run(cfg *config.ClusterConfiguration, mNo int) error {
@@ -69,7 +69,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 	args = append(args, optionsFromBindmountConfig(cfg.Bindmount)...)
 	args = append(args, optionsFromBindmountConfig(cfg.Machines[mNo].Bindmount)...)
 
-	c := exec.Command("cnispawn", args...)
+	c := utils.Command("cnispawn", args...)
 	c.Stderr = os.Stderr
 
 	// log.Printf(">>> runnning: %q", strings.Join(c.Args, " "))
