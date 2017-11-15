@@ -764,9 +764,11 @@ func pullRawCoreosImage() error {
 	}
 
 	cmd := exec.Cmd{
-		Path: cmdPath,
-		Args: args,
-		Env:  os.Environ(),
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 
 	if err := cmd.Run(); err != nil {
