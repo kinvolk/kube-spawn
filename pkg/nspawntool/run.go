@@ -17,17 +17,12 @@ limitations under the License.
 package nspawntool
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
 
-	cnitypes "github.com/containernetworking/cni/pkg/types"
-	cniversion "github.com/containernetworking/cni/pkg/version"
 	"github.com/pkg/errors"
 
 	"github.com/kinvolk/kube-spawn/pkg/config"
@@ -59,7 +54,10 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 	}
 
 	args := []string{
-		"-d",
+		// TODO: v
+		"-E", fmt.Sprintf("CNI_PATH=%s", os.Getenv("CNI_PATH")),
+		"cnispawn",
+		"-i",
 		"--machine", cfg.Machines[mNo].Name,
 		optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot),
 		optionsOverlay("--overlay", "/opt", lowerRoot, upperRoot),
@@ -69,37 +67,38 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 	args = append(args, optionsFromBindmountConfig(cfg.Bindmount)...)
 	args = append(args, optionsFromBindmountConfig(cfg.Machines[mNo].Bindmount)...)
 
-	c := utils.Command("cnispawn", args...)
+	c := utils.Command("systemd-run", args...)
 	c.Stderr = os.Stderr
 
 	// log.Printf(">>> runnning: %q", strings.Join(c.Args, " "))
 
-	stdout, err := c.StdoutPipe()
-	if err != nil {
-		return errors.Wrap(err, "error creating stdout pipe")
-	}
-	defer stdout.Close()
+	// stdout, err := c.StdoutPipe()
+	// if err != nil {
+	// 	return errors.Wrap(err, "error creating stdout pipe")
+	// }
+	// defer stdout.Close()
 
 	if err := c.Start(); err != nil {
 		return errors.Wrap(err, "error running cnispawn")
 	}
 
-	cniDataJSON, err := ioutil.ReadAll(stdout)
-	if err != nil {
-		return errors.Wrap(err, "error reading cni data from stdin")
-	}
+	// cniDataJSON, err := ioutil.ReadAll(stdout)
+	// if err != nil {
+	// 	return errors.Wrap(err, "error reading cni data from stdin")
+	// }
 
-	if _, err := cniversion.NewResult(cniversion.Current(), cniDataJSON); err != nil {
-		log.Printf("unexpected result output: %s", cniDataJSON)
-		return errors.Wrap(err, "unable to parse result")
-	}
+	// if _, err := cniversion.NewResult(cniversion.Current(), cniDataJSON); err != nil {
+	// 	log.Printf("unexpected result output: %s", cniDataJSON)
+	// 	return errors.Wrap(err, "unable to parse result")
+	// }
 
 	if err := c.Wait(); err != nil {
-		var cniError cnitypes.Error
-		if err := json.Unmarshal(cniDataJSON, &cniError); err != nil {
-			return errors.Wrap(err, "error unmarshaling cni error")
-		}
-		return errors.Wrap(&cniError, "error running cnispawn")
+		// var cniError cnitypes.Error
+		// if err := json.Unmarshal(cniDataJSON, &cniError); err != nil {
+		// 	return errors.Wrap(err, "error unmarshaling cni error")
+		// }
+		// return errors.Wrap(&cniError, "error running cnispawn")
+		return errors.Wrap(err, "error running cnispawn")
 	}
 
 	if err := waitMachinesRunning(cfg.Machines[mNo].Name); err != nil {
