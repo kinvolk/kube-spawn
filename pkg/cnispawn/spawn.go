@@ -18,10 +18,12 @@ package cnispawn
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 	"syscall"
+	"time"
 )
 
 func getCniPath() (string, error) {
@@ -72,12 +74,39 @@ func Spawn(background bool, nspawnArgs []string) error {
 	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=0")
 
 	if background {
-		_, err := syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
+		systemdRunPath, err := exec.LookPath("systemd-run")
+		if err != nil {
+			return err
+		}
+		ipPath, err := exec.LookPath("ip")
+		if err != nil {
+			return err
+		}
+
+		tmpfile, err := ioutil.TempFile("/run/netns", "kube-spawn-")
+		netnsPath := tmpfile.Name()
+		netnsName := filepath.Base(netnsPath)
+		tmpfile.Close()
+
+		netnsPath := fmt.Sprintf("/proc/%d/ns/net", os.Getpid())
+		argsPrefix := []string{
+			systemdRunPath,
+			"-E", "SYSTEMD_NSPAWN_MOUNT_RW=1",
+			"-E", "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1",
+			"-E", "SYSTEMD_NSPAWN_USE_CGNS=0",
+			ipPath, "netns", "exec", netnsName,
+		}
+		args = append(argsPrefix, args...)
+
+		fmt.Printf("Command to run:\n%v\n", args)
+
+		_, err = syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
 			Dir:   "",
 			Env:   env,
 			Files: []uintptr{},
 			Sys:   &syscall.SysProcAttr{},
 		})
+		time.Sleep(time.Second)
 		return err
 	}
 	return syscall.Exec(systemdNspawnPath, args, env)
