@@ -70,6 +70,13 @@ $ kubectl get pods --all-namespaces
 $ kubectl create -f 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/examples/guestbook/all-in-one/frontend.yaml'
 ```
 
+If you don't have `kubectl`, you can get it with:
+```
+KUBERNETES_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+sudo curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+sudo chmod +x /usr/local/bin/kubectl
+```
+
 It is possible to run `rktlet` on `kube-spawn`. See [doc/rktlet](doc/rktlet.md).
 
 ### Run local Kubernetes builds
