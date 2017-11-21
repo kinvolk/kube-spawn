@@ -44,3 +44,16 @@ modprobe nf_conntrack
 NF_HASHSIZE=/sys/module/nf_conntrack/parameters/hashsize
 
 [ -f ${NF_HASHSIZE} ] && echo "131072" > ${NF_HASHSIZE}
+
+# systemd-nspawn containers are not able to resolve DNS, if systemd-resolved
+# is running on the host.
+# As workaround, we need to disable stub listener of systemd-resolved for now.
+# We also need to explicitly set nameserver to an external one, as
+# /etc/resolv.conf is a symlink that points to
+# /run/systemd/resolve/stub-resolv.conf created by systemd-resolved.
+# This is hacky, but it's at least necessary for systemd v234, the default
+# version on Ubuntu 17.10.
+sudo sed -i -e 's/^#*.*DNSStubListener=.*$/DNSStubListener=no/' /etc/systemd/resolved.conf
+sudo sed -i -e 's/nameserver 127.0.0.53/nameserver 8.8.8.8/' /etc/resolv.conf
+systemctl is-active systemd-resolved >& /dev/null && sudo systemctl stop systemd-resolved
+systemctl is-enabled systemd-resolved >& /dev/null && sudo systemctl disable systemd-resolved
