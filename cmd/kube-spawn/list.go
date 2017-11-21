@@ -26,9 +26,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/kinvolk/kube-spawn/pkg/config"
 )
 
-const tableFmt = "%-10s  %s"
+const tableFmt = "%-18s  %s"
 
 var (
 	listCmd = &cobra.Command{
@@ -62,12 +64,17 @@ func runList(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if fi.IsDir() {
-			found = append(found, []string{
-				fi.Name(),
-				fi.ModTime().Format(time.Stamp),
-			})
+		if !fi.IsDir() {
+			continue
 		}
+		clusterName := fi.Name()
+		if _, err := config.LoadConfig(clusterName); err != nil {
+			clusterName += " [INVALID]"
+		}
+		found = append(found, []string{
+			clusterName,
+			fi.ModTime().Format(time.Stamp),
+		})
 	}
 
 	if len(found) < 1 {
