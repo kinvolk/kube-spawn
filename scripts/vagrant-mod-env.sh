@@ -35,9 +35,6 @@ iptables -C FORWARD -i cni0 -j ACCEPT 2>/dev/null || iptables -I FORWARD 1 -i cn
 iptables -P FORWARD ACCEPT
 sysctl -w net.ipv4.ip_forward=1
 
-groupadd docker && gpasswd -a ${VUSER} docker && systemctl restart docker && newgrp docker
-usermod -aG docker ${VUSER}
-
 modprobe overlay
 modprobe nf_conntrack
 
