@@ -23,18 +23,20 @@ The following example assumes we're going from version 0.1.1 (`v0.1.1`) to 0.2.0
 
 Let's get started:
 
-- Start at the relevant milestone on GitHub (e.g. https://github.com/kinvolk/kube-spawn/milestones/v0.2.0): ensure all referenced issues are closed (or moved elsewhere, if they're not done). Close the milestone.
-- Branch from the latest master, make sure your git status is clean
+- Start at the relevant milestone on GitHub (e.g. https://github.com/kinvolk/kube-spawn/milestones/v0.2.0): ensure all referenced issues are closed (or moved elsewhere, if they're not done).
+- Make sure your git status is clean: `git status`
+- Create a tag locally: `git tag v0.2.0 -m "kube-spawn v0.2.0"`
 - Build the release:
   - `git clean -ffdx && make` should work
+  - check that the version is correct: `./kube-spawn --version`
+  - smoke test the release
   - Integration tests on CI should be green
   - Run the [CNCF conformance tests][conformance-tests] and keep the results
-- Update the release notes. See [the previous release notes][release-notes] for example.
+- Prepare the release notes. See [the previous release notes][release-notes] for example.
   Try to capture most of the salient changes since the last release, but don't go into unnecessary detail (better to link/reference the documentation wherever possible).
 
 Push the tag to GitHub:
 
-- `git tag v0.2.0 -m "kube-spawn v0.2.0"`
 - Push the tag to GitHub: `git push --tags`
 
 Now we switch to the GitHub web UI to conduct the release:
@@ -53,6 +55,8 @@ cp kube-spawn kube-spawn-runc cnispawn cni-noop $NAME/
 sudo chown -R root:root $NAME/
 tar czvf $NAME.tar.gz --numeric-owner $NAME/
 ```
+
+- Ensure the milestone on GitHub is closed (e.g. https://github.com/kinvolk/kube-spawn/milestones/v0.2.0)
 
 - Publish the release!
 
