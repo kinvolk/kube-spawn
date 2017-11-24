@@ -37,7 +37,8 @@ type ClusterConfiguration struct {
 
 	// DevCluster indicates if we should run
 	// from a local kubernetes build
-	DevCluster bool `toml:"dev" mapstructure:"dev"`
+	DevCluster   bool   `toml:"dev" mapstructure:"dev"`
+	HyperkubeTag string `toml:"hyperkube-tag" mapstructure:"hyperkube-tag"`
 
 	RuntimeConfiguration RuntimeConfiguration `toml:"runtime-config,omitempty" mapstructure:"runtime-config"`
 

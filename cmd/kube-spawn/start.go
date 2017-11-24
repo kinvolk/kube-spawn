@@ -102,7 +102,7 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 		}
 		var err error
 		for i := 0; i < distribution.PushImageRetries; i++ {
-			err = distribution.PushImage()
+			err = distribution.PushImage(cfg.HyperkubeTag)
 			if err == nil {
 				break
 			}

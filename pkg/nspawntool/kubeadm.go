@@ -1,6 +1,7 @@
 package nspawntool
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -19,8 +20,9 @@ func InitializeMaster(cfg *config.ClusterConfiguration) error {
 	var initCmd []string
 	var shellOpts string
 	if cfg.DevCluster {
-		// TODO: remove this or implement config for it
-		shellOpts = `--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`
+		// KUBE_HYPERKUBE_IMAGE is used in old kubeadm versions. For new kubeadm >= 1.8,
+		// we set 'unifiedControlPlaneImage' in kubeadm.yml, see pkg/script/kubeadm-config.go
+		shellOpts = fmt.Sprintf(`--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64:%s"`, cfg.HyperkubeTag)
 	}
 	initCmd = append(initCmd, []string{
 		"/usr/bin/kubeadm", "init", "--skip-preflight-checks",
