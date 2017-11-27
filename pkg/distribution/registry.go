@@ -98,7 +98,7 @@ func StartRegistry() error {
 	return cli.ContainerStart(ctx, "registry", types.ContainerStartOptions{})
 }
 
-func PushImage() error {
+func PushImage(tag string) error {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return err
@@ -106,8 +106,8 @@ func PushImage() error {
 
 	if err := cli.ImageTag(
 		context.Background(),
-		"gcr.io/google-containers/hyperkube-amd64",
-		"10.22.0.1:5000/hyperkube-amd64",
+		"gcr.io/google-containers/hyperkube-amd64:"+tag,
+		"10.22.0.1:5000/hyperkube-amd64:"+tag,
 	); err != nil {
 		return err
 	}

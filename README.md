@@ -104,25 +104,28 @@ $ cd $GOPATH/src/k8s.io/kubernetes
 $ build/run.sh make
 
 # Build a Hyperkube Docker image
-$ cd cluster/images/hyperkube
-$ make VERSION=latest
+$ git describe
+v1.8.5-beta.0
+$ make -C cluster/images/hyperkube VERSION=v1.8.5-beta.0-myfeature
 ```
 
-This will create a Docker image with a name `gcr.io/google-containers/hyperkube-amd64`.
+This will create a Docker image with a name `gcr.io/google-containers/hyperkube-amd64:v1.8.5-beta.0-myfeature`.
 To check if it is created correctly, do so:
 
 ```
 $ docker images | grep hyperkube-amd64
-gcr.io/google-containers/hyperkube-amd64               latest                        179a38ef4d78        45 hours ago        506 MB
+gcr.io/google-containers/hyperkube-amd64               v1.8.5-beta.0-myfeature                     8687537eff68        10 minutes ago      530 MB
 ```
 
 Assuming you have built `kube-spawn` and pulled the CoreOS image, do:
 
 ```
 # Spawn and provision nodes for the cluster
-$ sudo -E ./kube-spawn create --dev
-$ sudo -E ./kube-spawn start
+$ sudo -E ./kube-spawn create --dev -t v1.8.5-beta.0-myfeature -c myfeature
+$ sudo -E ./kube-spawn start -c myfeature
 ```
+
+For a specific example, see [doc/dev-workflow](doc/dev-workflow.md).
 
 ### Access a kube-spawn node
 

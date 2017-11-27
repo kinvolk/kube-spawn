@@ -97,7 +97,9 @@ func writeKubeadmConfig(cfg *config.ClusterConfiguration) error {
 	kubeadmConf := path.Join(rootfsPath(cfg), script.KubeadmConfigPath)
 
 	buf, err := script.GetKubeadmConfig(script.KubeadmYmlOpts{
+		DevCluster:        cfg.DevCluster,
 		KubernetesVersion: cfg.KubernetesVersion,
+		HyperkubeTag:      cfg.HyperkubeTag,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", kubeadmConf)
