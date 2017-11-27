@@ -38,8 +38,11 @@ Vagrant.configure("2") do |config|
     # with correct owner/group. Maybe a vagrant issue?
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
 
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
 
   # Ubuntu 17.10 (Artful)
@@ -56,8 +59,11 @@ Vagrant.configure("2") do |config|
       rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
 
   # Debian testing
@@ -74,8 +80,11 @@ Vagrant.configure("2") do |config|
       rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
 
   config.vm.network "forwarded_port", guest: 6443, host: 6443
