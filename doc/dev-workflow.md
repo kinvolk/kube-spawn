@@ -2,7 +2,7 @@
 
 This article describes a step-by-step example of workflow that a Kubernetes developer might follow when patching Kubernetes.
 
-For the purpose of the article, we will write a new [admission controler](https://kubernetes.io/docs/admin/admission-controllers/) named `DenyAttach` that inconditionally denies all attaching to a container. The end result will be:
+For the purpose of the article, we will write a new [admission controller](https://kubernetes.io/docs/admin/admission-controllers/) named `DenyAttach` that inconditionally denies all attaching to a container. The end result will be:
 
 ```bash
 $ kubectl attach mypod-74c9fd65cb-n5hsg
