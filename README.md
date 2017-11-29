@@ -1,3 +1,5 @@
+![kube-spawn Logo](logos/PNG/kube_spawn-horz_prpblkonwht.png)
+
 # kube-spawn
 
 `kube-spawn` is a tool for creating a multi-node Kubernetes cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but should also be useful for just trying things out.
