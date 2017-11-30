@@ -1,5 +1,19 @@
+# Troubleshooting
+
 Here are some common issues that we encountered and how we work around or
 fix them. If you discover more, please create an issue or submit a PR.
+
+- [Missing GOPATH environment variable](#missing-gopath-environment-variable)
+- [SELinux](#selinux)
+- [Restarting machines fails without removing machine images](#restarting-machines-fails-without-removing-machine-images)
+- [Running on a version of systemd \< 233](#running-on-a-version-of-systemd--233)
+- [Docker: Error when pushing image](#docker-error-when-pushing-image)
+- [kubeadm init looks like it is hanging](#kubeadm-init-looks-like-it-is-hanging)
+- [Running with Kubernetes 1.7.3 or newer](#running-with-kubernetes-173-or-newer)
+- [Getting the Kubernetes repositories](#getting-the-kubernetes-repositories)
+- [Setting up an insecure registry](#setting-up-an-insecure-registry)
+- [Debugging kube-spawn-runc](#debugging-kube-spawn-runc)
+- [Inotify problems with many nodes](#inotify-problems-with-many-nodes)
 
 ## Missing GOPATH environment variable
 
@@ -193,3 +207,20 @@ In that case, there are several approaches you could try out.
 ## Debugging `kube-spawn-runc`
 
 see [here](../cmd/kube-spawn-runc/README.md)
+
+## Inotify problems with many nodes
+
+Running a big amount of nodes (many-node clusters or many clusters) can cause inotify limits to be reached, making new nodes fail to start.
+
+The symptom is a message like this in the kubelet logs on nodes with the `NotReady` state:
+
+```
+Failed to start cAdvisor inotify_add_watch /sys/fs/cgroup/blkio/machine.slice/machine-kubespawndefault0.scope/system.slice/var-lib-docker-overlay2-0646d006ef5cf6c4d61c1ad51f958d0891d184ba70a2816d30462175a80beeaa-merged.mount: no space left on device
+```
+
+To increase inotify limits you can use the sysctl tool on the host:
+
+```
+# sysctl fs.inotify.max_user_watches=524288
+# sysctl fs.inotify.max_user_instances=8192
+```
