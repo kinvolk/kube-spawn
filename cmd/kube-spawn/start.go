@@ -29,6 +29,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/distribution"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 var (
@@ -119,6 +120,8 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 		joinWorkerNodes(cfg)
 	}
 	log.Printf("cluster %q initialized", cfg.Name)
+	log.Println("Note: For kubectl to work, please set $KUBECONFIG:")
+	log.Printf("export KUBECONFIG=%s\n", utils.GetValidKubeConfig())
 	saveConfig(cfg)
 }
 
