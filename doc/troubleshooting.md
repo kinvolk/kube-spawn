@@ -1,5 +1,18 @@
+# Troubleshooting
+
 Here are some common issues that we encountered and how we work around or
 fix them. If you discover more, please create an issue or submit a PR.
+
+- [Missing GOPATH environment variable](#missing-gopath-environment-variable)
+- [SELinux](#selinux)
+- [Restarting machines fails without removing machine images](#restarting-machines-fails-without-removing-machine-images)
+- [Running on a version of systemd \< 233](#running-on-a-version-of-systemd--233)
+- [Docker: Error when pushing image](#docker-error-when-pushing-image)
+- [kubeadm init looks like it is hanging](#kubeadm-init-looks-like-it-is-hanging)
+- [Running with Kubernetes 1.7.3 or newer](#running-with-kubernetes-173-or-newer)
+- [Getting the Kubernetes repositories](#getting-the-kubernetes-repositories)
+- [Setting up an insecure registry](#setting-up-an-insecure-registry)
+- [Debugging kube-spawn-runc](#debugging-kube-spawn-runc)
 
 ## Missing GOPATH environment variable
 
