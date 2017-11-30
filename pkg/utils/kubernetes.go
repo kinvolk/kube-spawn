@@ -18,6 +18,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -52,6 +53,15 @@ func CheckValidDir(inPath string) error {
 	return nil
 }
 
+func CheckValidFile(inPath string) error {
+	if fi, err := os.Stat(inPath); os.IsNotExist(err) {
+		return err
+	} else if !fi.Mode().IsRegular() {
+		return fmt.Errorf("%q is not a file.", inPath)
+	}
+	return nil
+}
+
 func GetValidGoPath() (string, error) {
 	if err := CheckValidDir(goPath); err != nil {
 		// fall back to $HOME/go
@@ -62,6 +72,26 @@ func GetValidGoPath() (string, error) {
 	}
 
 	return goPath, nil
+}
+
+func GetValidKubeConfig() string {
+	kcPath := kcSystemPath
+	if err := CheckValidFile(kcPath); err != nil {
+		// fall back to $GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+		kcPath = filepath.Join(goPath, ksRelPath, kcUserPath)
+		log.Printf("fall back to %s...\n", kcPath)
+
+		if err := CheckValidFile(kcPath); err != nil {
+			// fall back to $HOME/go/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
+			kcPath = filepath.Join(homePath, "go", ksRelPath, kcUserPath)
+			log.Printf("fall back to %s...\n", kcPath)
+			if err := CheckValidFile(kcPath); err != nil {
+				return ""
+			}
+		}
+	}
+
+	return kcPath
 }
 
 func GetK8sBuildOutputDir() (string, error) {
