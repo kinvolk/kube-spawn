@@ -27,7 +27,7 @@ const (
 // run kube-spawn
 //
 type ClusterConfiguration struct {
-	KubeSpawnDir string `toml:"-" mapstructure:"dir"`
+	KubeSpawnDir string `toml:"dir" mapstructure:"dir"`
 
 	Name              string `toml:"cluster-name" mapstructure:"cluster-name"`
 	ContainerRuntime  string `toml:"container-runtime" mapstructure:"container-runtime"`
