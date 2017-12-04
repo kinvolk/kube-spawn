@@ -43,6 +43,10 @@ func init() {
 }
 
 func runDestroy(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		log.Fatalf("too many arguments: %v", args)
+	}
+
 	cfg := loadConfig()
 	doDestroy(cfg)
 }

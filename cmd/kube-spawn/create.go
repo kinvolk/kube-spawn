@@ -79,6 +79,10 @@ func init() {
 }
 
 func runCreate(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		log.Fatalf("too many arguments: %v", args)
+	}
+
 	doCreate()
 }
 

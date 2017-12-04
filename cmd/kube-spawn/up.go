@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +39,10 @@ func init() {
 }
 
 func runUp(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		log.Fatalf("too many arguments: %v", args)
+	}
+
 	doUp()
 }
 
