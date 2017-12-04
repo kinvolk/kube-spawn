@@ -43,6 +43,10 @@ func init() {
 }
 
 func runList(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		log.Fatalf("too many arguments: %v", args)
+	}
+
 	ksDir := viper.GetString("dir")
 
 	matches, err := filepath.Glob(path.Join(ksDir, "*"))
