@@ -125,7 +125,7 @@ func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
 	}
 	log.Printf("cluster %q initialized", cfg.Name)
 	log.Println("Note: For kubectl to work, please set $KUBECONFIG:")
-	log.Printf("export KUBECONFIG=%s\n", utils.GetValidKubeConfig())
+	log.Printf("export KUBECONFIG=%s\n", utils.GetKubeconfigPath(cfg.KubeSpawnDir, cfg.Name))
 	saveConfig(cfg)
 }
 

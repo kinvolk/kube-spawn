@@ -29,19 +29,14 @@ import (
 )
 
 const (
-	kubeSpawnDir string = "/var/lib/kube-spawn"
-	ksHiddenDir  string = ".kube-spawn"
-	kcRelPath    string = "default/kubeconfig"
-	ksRelPath    string = "src/github.com/kinvolk/kube-spawn"
+	ksHiddenDir string = ".kube-spawn"
+	ksRelPath   string = "src/github.com/kinvolk/kube-spawn"
 )
 
 var (
 	homePath string = os.Getenv("HOME")
 	goPath   string = os.Getenv("GOPATH")
 	cniPath  string = os.Getenv("CNI_PATH")
-
-	kcUserPath   string = filepath.Join(ksHiddenDir, kcRelPath)
-	kcSystemPath string = filepath.Join(kubeSpawnDir, kcRelPath)
 )
 
 func CheckValidDir(inPath string) error {
@@ -74,7 +69,11 @@ func GetValidGoPath() (string, error) {
 	return goPath, nil
 }
 
-func GetValidKubeConfig() string {
+func GetKubeconfigPath(kubeSpawnDir, clusterName string) string {
+	kcRelPath := filepath.Join(clusterName, "kubeconfig")
+	kcUserPath := filepath.Join(ksHiddenDir, kcRelPath)
+	kcSystemPath := filepath.Join(kubeSpawnDir, kcRelPath)
+
 	kcPath := kcSystemPath
 	if err := CheckValidFile(kcPath); err != nil {
 		// fall back to $GOPATH/src/github.com/kinvolk/kube-spawn/.kube-spawn/default/kubeconfig
