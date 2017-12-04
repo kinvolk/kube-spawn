@@ -12,6 +12,8 @@ Error from server (Forbidden): pods "mypod-74c9fd65cb-n5hsg" is forbidden: canno
 
 The implementation of `DenyAttach` will be reusing code from the existing admission controller [DenyEscalatingExec](https://kubernetes.io/docs/admin/admission-controllers/#denyescalatingexec).
 
+![kube-spawn dev workflow](kube-spawn-dev-workflow.svg)
+
 ## Compiling locally
 
 We will first fetch the [patch](https://github.com/kinvolk/kubernetes/commit/c117bd71672b2da7c7777cddf0287b07d29b90e5).
