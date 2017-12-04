@@ -54,12 +54,12 @@ func doStop(cfg *config.ClusterConfiguration, force bool) {
 	}
 	log.Printf("%sstopping %d machines", forceTxt, len(cfg.Machines))
 
-	if !force && config.RunningMachines(cfg) == 0 {
+	if config.RunningMachines(cfg) != 0 {
+		stopMachines(cfg, force)
+	} else {
 		log.Print("nothing to stop")
-		return
 	}
 
-	stopMachines(cfg, force)
 	removeImages(cfg)
 
 	// clear cluster config
