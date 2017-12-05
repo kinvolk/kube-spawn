@@ -14,6 +14,7 @@ fix them. If you discover more, please create an issue or submit a PR.
 - [Setting up an insecure registry](#setting-up-an-insecure-registry)
 - [Debugging kube-spawn-runc](#debugging-kube-spawn-runc)
 - [Inotify problems with many nodes](#inotify-problems-with-many-nodes)
+- [Issues with ISPs hijacking DNS requests](#issues-with-isps-hijacking-dns-requests)
 
 ## Missing GOPATH environment variable
 
@@ -223,4 +224,29 @@ To increase inotify limits you can use the sysctl tool on the host:
 ```
 # sysctl fs.inotify.max_user_watches=524288
 # sysctl fs.inotify.max_user_instances=8192
+```
+
+## Issues with ISPs hijacking DNS requests
+
+Some ISPs use [DNS
+hijacking](https://en.wikipedia.org/wiki/DNS_hijacking#Manipulation_by_ISPs),
+violating the DNS protocol. Please check if your DNS server correctly returns the `NXDOMAIN` error on non-existent domains:
+
+```
+$ host non-existent-domain-name-7932432687432.com
+Host non-existent-domain-name-7932432687432.com not found: 3(NXDOMAIN)
+```
+
+If it's not the case, the kube-dns pod might not start correctly or might be very slow:
+
+```
+$ kubectl get pods --all-namespaces
+NAMESPACE     NAME                                        READY     STATUS              RESTARTS   AGE
+kube-system   kube-dns-2425271678-t7mrw                   0/3       ContainerCreating   0          5m
+```
+
+To fix this issue, please specify valid DNS servers on the host. Example:
+```
+$ cat /etc/resolv.conf
+nameserver 8.8.8.8
 ```
