@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
 
   # Fedora 26
   config.vm.define "fedora", primary: true do |fedora|
-    config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils polkit qemu-img systemd-container"
+    config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils polkit qemu-img rinetd systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -38,14 +38,17 @@ Vagrant.configure("2") do |config|
     # with correct owner/group. Maybe a vagrant issue?
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
 
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
 
   # Ubuntu 17.10 (Artful)
   config.vm.define "ubuntu", autostart: false do |ubuntu|
     config.vm.box = "generic/ubuntu1710"
-    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils selinux-utils systemd-container"
+    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils rinetd selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -56,14 +59,17 @@ Vagrant.configure("2") do |config|
       rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
 
   # Debian testing
   config.vm.define "debian", autostart: false do |debian|
     config.vm.box = "debian/testing64"
-    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils selinux-utils systemd-container"
+    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils rinetd selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -74,7 +80,12 @@ Vagrant.configure("2") do |config|
       rsync__exclude: ".kube-spawn/"
 
     config.vm.provision "shell", inline: "mkdir -p /home/vagrant/go ; chown -R vagrant:vagrant /home/vagrant/go"
-    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go"}, privileged: false, path: "scripts/vagrant-setup-env.sh"
+    config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, privileged: false, path: "scripts/vagrant-setup-env.sh"
     config.vm.provision "shell", env: {"VUSER" => "vagrant"}, path: "scripts/vagrant-mod-env.sh"
+    if ENV["KUBESPAWN_AUTOBUILD"] <=> "true"
+      config.vm.provision "shell", env: {"GOPATH" => "/home/vagrant/go", "KUBESPAWN_REDIRECT_TRAFFIC" => ENV["KUBESPAWN_REDIRECT_TRAFFIC"]}, inline: "bash /home/vagrant/build.sh"
+    end
   end
+
+  config.vm.network "forwarded_port", guest: 6443, host: 6443
 end
