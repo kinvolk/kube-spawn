@@ -8,7 +8,6 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
-	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 	"github.com/pkg/errors"
 )
@@ -98,8 +97,7 @@ func JoinNode(cfg *config.ClusterConfiguration, mNo int) error {
 	// See: https://github.com/kubernetes/kubernetes/pull/49520
 	// It is mandatory since Kubernetes 1.9
 	// See: https://github.com/kubernetes/kubernetes/pull/55468
-	// Test is !<1.8 instead of >=1.8 in order to handle non-semver version 'latest'
-	if !utils.CheckVersionConstraint(cfg.KubernetesVersion, "<1.8") {
+	if cfg.IsVerConstraintOrDev(">=1.8") {
 		joinCmd = append(joinCmd, "--discovery-token-unsafe-skip-ca-verification")
 	}
 

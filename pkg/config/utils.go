@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 )
 
@@ -79,4 +80,13 @@ func WriteConfigToFile(cfg *ClusterConfiguration) error {
 		return errors.Wrap(err, "unable to encode cluster config")
 	}
 	return fs.CreateFileFromBytes(cfgFilepath, raw)
+}
+
+// returns true if one of the following conditions is true
+//  * DevCluster is true (i.e. "--dev" is given)
+//  * cfg.KubernetesVersion == "latest" (non-semver version string)
+//  * cfg.KubernetesVersion sastifies the given constraint
+func (cfg *ClusterConfiguration) IsVerConstraintOrDev(constraint string) bool {
+	return cfg.DevCluster || cfg.KubernetesVersion == "latest" ||
+		utils.CheckVersionConstraint(cfg.KubernetesVersion, constraint)
 }
