@@ -32,5 +32,5 @@ variable = {
 
 // lead comment
 foo {
-  bar = "fatih" // line comment 2
+  bar = "fatih" // line comment 2 
 } // line comment 3

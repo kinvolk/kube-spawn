@@ -111,10 +111,10 @@ commands and options, see the
 
 In swarm mode, it is possible to create a service that allows for attaching
 to networks or mounting volumes. Swarm schedules services based on plugin availability
-on a node. In this example, a volume plugin is installed on a swarm worker and a volume
+on a node. In this example, a volume plugin is installed on a swarm worker and a volume 
 is created using the plugin. In the manager, a service is created with the relevant
 mount options. It can be observed that the service is scheduled to run on the worker
-node with the said volume plugin and volume.
+node with the said volume plugin and volume. 
 
 In the following example, node1 is the manager and node2 is the worker.
 
@@ -141,7 +141,7 @@ In the following example, node1 is the manager and node2 is the worker.
     Status: Downloaded newer image for tiborvass/sample-volume-plugin:latest
     Installed plugin tiborvass/sample-volume-plugin
     ```
-
+	
     ```bash
     $ docker volume create -d tiborvass/sample-volume-plugin --name pluginVol
     ```
@@ -152,14 +152,14 @@ In the following example, node1 is the manager and node2 is the worker.
     $ docker service create --name my-service --mount type=volume,volume-driver=tiborvass/sample-volume-plugin,source=pluginVol,destination=/tmp busybox top
 
     $ docker service ls
-    z1sj8bb8jnfn  my-service   replicated  1/1       busybox:latest
+    z1sj8bb8jnfn  my-service   replicated  1/1       busybox:latest 
     ```
     docker service ls shows service 1 instance of service running.
 
 4. Observe the task getting scheduled in node 2:
 
     ```bash
-    $ docker ps --format '{{.ID}}\t {{.Status}} {{.Names}} {{.Command}}'
+    $ docker ps --format '{{.ID}}\t {{.Status}} {{.Names}} {{.Command}}' 
     83fc1e842599     Up 2 days my-service.1.9jn59qzn7nbc3m0zt1hij12xs "top"
     ```
 
@@ -215,7 +215,7 @@ with Docker Engine. This plugin has no runtime parameters.
 A new plugin can be created by running
 `docker plugin create <plugin-name> ./path/to/plugin/data` where the plugin
 data contains a plugin configuration file `config.json` and a root filesystem
-in subdirectory `rootfs`.
+in subdirectory `rootfs`. 
 
 After that the plugin `<plugin-name>` will show up in `docker plugin ls`.
 Plugins can be pushed to remote registries with

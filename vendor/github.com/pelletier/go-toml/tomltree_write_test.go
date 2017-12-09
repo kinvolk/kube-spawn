@@ -264,11 +264,11 @@ func TestTreeWriteToMapWithTablesInMultipleChunks(t *testing.T) {
 
 func TestTreeWriteToMapWithArrayOfInlineTables(t *testing.T) {
 	tree, _ := Load(`
-	[params]
+    	[params]
 	language_tabs = [
-		{ key = "shell", name = "Shell" },
-		{ key = "ruby", name = "Ruby" },
-		{ key = "python", name = "Python" }
+    		{ key = "shell", name = "Shell" },
+    		{ key = "ruby", name = "Ruby" },
+    		{ key = "python", name = "Python" }
 	]`)
 
 	expected := map[string]interface{}{

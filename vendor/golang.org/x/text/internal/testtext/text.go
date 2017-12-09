@@ -21,15 +21,15 @@ const (
 		"The quick brown fox jumps over the lazy dog. "
 
 	// Vietnamese is a snippet from http://creativecommons.org/licenses/by-sa/3.0/vn/
-	Vietnamese = `Với các điều kiện sau: Ghi nhận công của tác giả.
-Nếu bạn sử dụng, chuyển đổi, hoặc xây dựng dự án từ
-nội dung được chia sẻ này, bạn phải áp dụng giấy phép này hoặc
+	Vietnamese = `Với các điều kiện sau: Ghi nhận công của tác giả. 
+Nếu bạn sử dụng, chuyển đổi, hoặc xây dựng dự án từ 
+nội dung được chia sẻ này, bạn phải áp dụng giấy phép này hoặc 
 một giấy phép khác có các điều khoản tương tự như giấy phép này
 cho dự án của bạn. Hiểu rằng: Miễn — Bất kỳ các điều kiện nào
 trên đây cũng có thể được miễn bỏ nếu bạn được sự cho phép của
 người sở hữu bản quyền. Phạm vi công chúng — Khi tác phẩm hoặc
 bất kỳ chương nào của tác phẩm đã trong vùng dành cho công
-chúng theo quy định của pháp luật thì tình trạng của nó không
+chúng theo quy định của pháp luật thì tình trạng của nó không 
 bị ảnh hưởng bởi giấy phép trong bất kỳ trường hợp nào.`
 
 	// Russian is a snippet from http://creativecommons.org/licenses/by-sa/1.0/deed.ru
@@ -95,7 +95,7 @@ Attribution — Вы должны атрибутировать произвед�
 	Korean = `다음과 같은 조건을 따라야 합니다: 저작자표시
 — 저작자나 이용허락자가 정한 방법으로 저작물의
 원저작자를 표시하여야 합니다(그러나 원저작자가 이용자나 이용자의
-이용을 보증하거나 추천한다는 의미로 표시해서는 안됩니다).
+이용을 보증하거나 추천한다는 의미로 표시해서는 안됩니다). 
 동일조건변경허락 — 이 저작물을 이용하여 만든 이차적 저작물에는 본
 라이선스와 동일한 라이선스를 적용해야 합니다.`
 

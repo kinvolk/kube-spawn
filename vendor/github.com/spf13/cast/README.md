@@ -72,3 +72,4 @@ the code for a complete set.
 	var eight interface{} = 8
     cast.ToInt(eight)              // 8
     cast.ToInt(nil)                // 0
+

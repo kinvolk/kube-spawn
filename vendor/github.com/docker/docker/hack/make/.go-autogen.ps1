@@ -81,7 +81,7 @@ const (
     if ($LASTEXITCODE -ne 0) { Throw "Failed to compile daemon resources" }
 }
 Catch [Exception] {
-    # Throw the error onto the caller to display errors. We don't expect this script to be called directly
+    # Throw the error onto the caller to display errors. We don't expect this script to be called directly 
     Throw ".go-autogen.ps1 failed with error $_"
 }
 Finally {

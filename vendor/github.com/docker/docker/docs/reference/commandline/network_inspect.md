@@ -124,8 +124,8 @@ $ docker network inspect simple-network
 ]
 ```
 
-For swarm mode overlay networks `network inspect` also shows the IP address and node name
-of the peers. Peers are the nodes in the swarm cluster which have at least one task attached
+For swarm mode overlay networks `network inspect` also shows the IP address and node name 
+of the peers. Peers are the nodes in the swarm cluster which have at least one task attached 
 to the network. Node name is of the format `<hostname>-<unique ID>`.
 
 ```bash

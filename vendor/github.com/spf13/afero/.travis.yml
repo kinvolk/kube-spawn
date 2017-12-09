@@ -18,3 +18,4 @@ matrix:
 script:
   - go build
   - go test -race -v ./...
+

@@ -128,7 +128,7 @@ Also not bold."
 
 #data
 <html><body>
-<label><a><div>Hello<div>World</div></a></label>
+<label><a><div>Hello<div>World</div></a></label>  
 </body></html>
 #errors
 #document
@@ -144,7 +144,7 @@ Also not bold."
 |           "Hello"
 |           <div>
 |             "World"
-|         "
+|         "  
 "
 
 #data

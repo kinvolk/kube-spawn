@@ -23,14 +23,15 @@ numbers = [1,2] // another line here
          # Another comment
 variable = {
     description =     "bar" # another yooo
-    foo {
+    foo { 
 	# Nested standalone
 
         bar = "fatih"
-    }
+    } 
 }
 
           // lead comment
-foo {
-    bar = "fatih"       // line comment 2
+foo { 
+    bar = "fatih"       // line comment 2 
 }        // line comment 3
+

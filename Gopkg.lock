@@ -32,6 +32,12 @@
   version = "v0.6.0-rc1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/coreos/ioprogress"
+  packages = ["."]
+  revision = "4637e494fd9b23c5565ee193e89f91fdc1639bc0"
+
+[[projects]]
   name = "github.com/docker/distribution"
   packages = ["digest","reference"]
   revision = "48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89"
@@ -154,7 +160,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = ["cast5","openpgp","openpgp/armor","openpgp/elgamal","openpgp/errors","openpgp/packet","openpgp/s2k","ssh/terminal"]
   revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
@@ -184,6 +190,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8ffa83389287bb0bbab699a3b69157d9b21ea8b6ff2d9a08fbf8842dad277af3"
+  inputs-digest = "ca458e3c1e763b5fe072027e6348c595f1c3cfbc8908ecc7bc9d7944cb988234"
   solver-name = "gps-cdcl"
   solver-version = 1

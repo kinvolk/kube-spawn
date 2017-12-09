@@ -46,7 +46,7 @@ Volume names must be unique among drivers.  This means you cannot use the same v
 A volume named  "hello"  already exists with the "some-other" driver. Choose a different volume name.
 ```
 
-If you specify a volume name already in use on the current driver, Docker assumes you want to re-use the existing volume and does not return an error.
+If you specify a volume name already in use on the current driver, Docker assumes you want to re-use the existing volume and does not return an error.   
 
 ## Driver specific options
 

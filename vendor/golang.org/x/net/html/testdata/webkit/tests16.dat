@@ -118,7 +118,7 @@ Line: 1 Col: 31 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script></SCRIPT
+<!doctype html><script></SCRIPT 
 #errors
 Line: 1 Col: 32 Unexpected end of file. Expected end tag (script).
 #document
@@ -201,7 +201,7 @@ Line: 1 Col: 31 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script></script
+<!doctype html><script></script 
 #errors
 Line: 1 Col: 32 Unexpected end of file. Expected end tag (script).
 #document
@@ -332,7 +332,7 @@ Line: 1 Col: 35 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script><!--</script
+<!doctype html><script><!--</script 
 #errors
 Line: 1 Col: 36 Unexpected end of file. Expected end tag (script).
 #document
@@ -368,7 +368,7 @@ Line: 1 Col: 34 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script><!--<script
+<!doctype html><script><!--<script 
 #errors
 Line: 1 Col: 35 Unexpected end of file. Expected end tag (script).
 #document
@@ -452,7 +452,7 @@ Line: 1 Col: 44 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script><!--<script </script
+<!doctype html><script><!--<script </script 
 #errors
 Line: 1 Col: 44 Unexpected end of file. Expected end tag (script).
 #document
@@ -536,7 +536,7 @@ Line: 1 Col: 52 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script><!--<script </script </script
+<!doctype html><script><!--<script </script </script 
 #errors
 Line: 1 Col: 53 Unexpected end of file. Expected end tag (script).
 #document
@@ -691,7 +691,7 @@ Line: 1 Col: 46 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<!doctype html><script><!--<script --></script
+<!doctype html><script><!--<script --></script 
 #errors
 Line: 1 Col: 47 Unexpected end of file. Expected end tag (script).
 #document
@@ -1267,7 +1267,7 @@ Line: 1 Col: 16 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script></SCRIPT
+<script></SCRIPT 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 17 Unexpected end of file. Expected end tag (script).
@@ -1350,7 +1350,7 @@ Line: 1 Col: 16 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script></script
+<script></script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 17 Unexpected end of file. Expected end tag (script).
@@ -1481,7 +1481,7 @@ Line: 1 Col: 20 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script><!--</script
+<script><!--</script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 21 Unexpected end of file. Expected end tag (script).
@@ -1517,7 +1517,7 @@ Line: 1 Col: 19 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script><!--<script
+<script><!--<script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 20 Unexpected end of file. Expected end tag (script).
@@ -1601,7 +1601,7 @@ Line: 1 Col: 29 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script><!--<script </script
+<script><!--<script </script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 29 Unexpected end of file. Expected end tag (script).
@@ -1685,7 +1685,7 @@ Line: 1 Col: 38 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script><!--<script </script </script
+<script><!--<script </script </script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 38 Unexpected end of file. Expected end tag (script).
@@ -1816,7 +1816,7 @@ Line: 1 Col: 31 Unexpected end of file. Expected end tag (script).
 |   <body>
 
 #data
-<script><!--<script --></script
+<script><!--<script --></script 
 #errors
 Line: 1 Col: 8 Unexpected start tag (script). Expected DOCTYPE.
 Line: 1 Col: 32 Unexpected end of file. Expected end tag (script).

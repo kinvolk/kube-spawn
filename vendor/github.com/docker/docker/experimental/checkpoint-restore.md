@@ -77,11 +77,12 @@ resumes from the point it left off once you restore.
 seccomp is only supported by CRIU in very up to date kernels.
 
 External terminal (i.e. `docker run -t ..`) is not supported at the moment.
-If you try to create a checkpoint for a container with an external terminal,
+If you try to create a checkpoint for a container with an external terminal, 
 it would fail:
 
     $ docker checkpoint create cr checkpoint1
     Error response from daemon: Cannot checkpoint container c1: rpc error: code = 2 desc = exit status 1: "criu failed: type NOTIFY errno 0\nlog file: /var/lib/docker/containers/eb62ebdbf237ce1a8736d2ae3c7d88601fc0a50235b0ba767b559a1f3c5a600b/checkpoints/checkpoint1/criu.work/dump.log\n"
-
+    
     $ cat /var/lib/docker/containers/eb62ebdbf237ce1a8736d2ae3c7d88601fc0a50235b0ba767b559a1f3c5a600b/checkpoints/checkpoint1/criu.work/dump.log
     Error (mount.c:740): mnt: 126:./dev/console doesn't have a proper root mount
+

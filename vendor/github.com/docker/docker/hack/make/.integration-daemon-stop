@@ -21,7 +21,7 @@ if [ ! "$(go env GOOS)" = 'windows' ]; then
 		fi
 	fi
 else
-	# Note this script is not actionable on Windows to Linux CI. Instead the
+	# Note this script is not actionable on Windows to Linux CI. Instead the 
 	# DIND daemon under test is torn down by the Jenkins tear-down script
 	echo "INFO: Not stopping daemon on Windows CI"
 fi

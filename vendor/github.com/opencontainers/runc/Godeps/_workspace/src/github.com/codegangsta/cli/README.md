@@ -56,7 +56,7 @@ func main() {
   app.Action = func(c *cli.Context) {
     println("boom! I say!")
   }
-
+  
   app.Run(os.Args)
 }
 ```

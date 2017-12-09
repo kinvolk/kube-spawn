@@ -39,7 +39,7 @@ Config provides the base accessible fields for working with V0 plugin format
 
 - **`documentation`** *string*
 
-	link to the documentation about the plugin
+  	link to the documentation about the plugin
 
 - **`interface`** *PluginInterface*
 
@@ -51,9 +51,9 @@ Config provides the base accessible fields for working with V0 plugin format
 
       currently supported:
 
-	- **docker.volumedriver/1.0**
+      	- **docker.volumedriver/1.0**
 
-	- **docker.authz/1.0**
+      	- **docker.authz/1.0**
 
     - **`socket`** *string*
 
@@ -79,9 +79,9 @@ Config provides the base accessible fields for working with V0 plugin format
 
       currently supported:
 
-	- **bridge**
-	- **host**
-	- **none**
+      	- **bridge**
+      	- **host**
+      	- **none**
 
 - **`mounts`** *PluginMount array*
 
