@@ -760,11 +760,11 @@ func ensureCoreosVersion() {
 	}
 }
 
-func PrepareCoreosImage() error {
+func PrepareCoreosImage(ImageGpgVerify bool) error {
 	// If no coreos image exists, just download it
 	if !machinetool.ImageExists("coreos") {
 		log.Printf("pulling coreos image...")
-		if err := pullRawCoreosImage(); err != nil {
+		if err := pullRawCoreosImage(ImageGpgVerify); err != nil {
 			return err
 		}
 	} else {
@@ -900,21 +900,26 @@ func verifyImage() error {
 	return nil
 }
 
-func pullRawCoreosImage() error {
+func pullRawCoreosImage(imageGpgVerify bool) error {
 	if err := downloadImage(); err != nil {
 		return err
 	}
 	defer os.Remove(imageTmpFile)
 
-	if err := downloadSignature(); err != nil {
-		return err
-	}
-	defer os.Remove(signatureTmpFile)
+	log.Println("Image downloaded successfully")
 
-	if err := verifyImage(); err != nil {
-		return err
+	if imageGpgVerify {
+		if err := downloadSignature(); err != nil {
+			return err
+		}
+		defer os.Remove(signatureTmpFile)
+
+		if err := verifyImage(); err != nil {
+			return err
+		}
+
+		log.Println("Image verified successfully")
 	}
-	log.Println("Image downloaded and verified successfully")
 
 	log.Printf("Importing raw image %s ...", imageTmpFile)
 	if err := machinetool.ImportRaw(imageTmpFile, "coreos"); err != nil {
