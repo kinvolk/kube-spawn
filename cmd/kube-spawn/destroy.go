@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
@@ -43,6 +44,10 @@ func init() {
 }
 
 func runDestroy(cmd *cobra.Command, args []string) {
+	if unix.Geteuid() != 0 {
+		log.Fatalf("non-root user cannot destroy clusters. abort.")
+	}
+
 	if len(args) > 0 {
 		log.Fatalf("too many arguments: %v", args)
 	}

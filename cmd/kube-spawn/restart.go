@@ -20,6 +20,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -43,6 +44,10 @@ func init() {
 }
 
 func runRestart(cmd *cobra.Command, args []string) {
+	if unix.Geteuid() != 0 {
+		log.Fatalf("non-root user cannot restart clusters. abort.")
+	}
+
 	if len(args) > 0 {
 		log.Fatalf("too many arguments: %v", args)
 	}
