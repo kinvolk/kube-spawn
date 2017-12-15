@@ -63,7 +63,7 @@ func init() {
 
 func main() {
 	if err := kubespawnCmd.Execute(); err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 }
 
