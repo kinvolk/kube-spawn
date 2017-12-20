@@ -61,7 +61,7 @@ func init() {
 	// and call from the if uninitialized {} block below
 	//
 	createCmd.Flags().StringP("container-runtime", "r", "", "runtime to use for the spawned cluster (docker or rkt)")
-	createCmd.Flags().String("kubernetes-version", "", `version kubernetes used to initialize the cluster. Irrelevant if used with --dev. Only accepts semantic version strings like "v1.7.5"`)
+	createCmd.Flags().String("kubernetes-version", "", `version kubernetes used to initialize the cluster. Irrelevant if used with --dev. Only accepts semantic version strings like "v1.8.5"`)
 	createCmd.Flags().StringP("hyperkube-tag", "t", "latest", `Docker tag of the hyperkube image to use. Only with --dev`)
 	createCmd.Flags().Bool("dev", false, "create a cluster from a local build of Kubernetes")
 	createCmd.Flags().IntP("nodes", "n", 0, "number of nodes to spawn")

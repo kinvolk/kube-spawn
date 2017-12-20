@@ -32,7 +32,7 @@ const (
 	DefaultKubeSpawnDir      = "/var/lib/kube-spawn"
 	DefaultClusterName       = "default"
 	DefaultContainerRuntime  = RuntimeDocker
-	DefaultKubernetesVersion = "v1.7.5"
+	DefaultKubernetesVersion = "v1.8.5"
 	DefaultBaseImage         = "coreos"
 
 	DefaultDockerRuntimeEndpoint = "" // "unix:///var/run/docker.sock"
