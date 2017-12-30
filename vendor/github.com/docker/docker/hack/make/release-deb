@@ -105,7 +105,7 @@ for dir in bundles/$VERSION/build-deb/*/; do
 	# add the deb for each component for the distro version into the
 	# pool (if it is not there already)
 	mkdir -p "$APTDIR/pool/$component/d/docker-engine/"
-	for deb in ${DEBFILE[@]}; do
+ 	for deb in ${DEBFILE[@]}; do
 		d=$(basename "$deb")
 		# We do not want to generate a new deb if it has already been
 		# copied into the APTDIR

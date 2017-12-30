@@ -19,8 +19,10 @@ package bootstrap
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -29,10 +31,12 @@ import (
 	"syscall"
 
 	"github.com/Masterminds/semver"
+	"github.com/coreos/ioprogress"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/openpgp"
 )
 
 const (
@@ -43,6 +47,10 @@ const (
 	machinesDir           string = "/var/lib/machines"
 	machinesImage         string = "/var/lib/machines.raw"
 	coreosStableVersion   string = "1478.0.0"
+	imageUrl              string = "https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2"
+	signatureUrl          string = "https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2.sig"
+	imageTmpFile          string = "/tmp/coreos_developer_container.bin.bz2"
+	signatureTmpFile      string = "/tmp/coreos_developer_container.bin.bz2.sig"
 )
 
 type Node struct {
@@ -745,39 +753,6 @@ func checkCoreosVersion() error {
 	return nil
 }
 
-func pullRawCoreosImage() error {
-	var cmdPath string
-	var err error
-
-	// TODO: use machinetool pkg
-	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
-	}
-
-	args := []string{
-		cmdPath,
-		"pull-raw",
-		"--verify=no",
-		"https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2",
-		"coreos",
-	}
-
-	cmd := exec.Cmd{
-		Path:   cmdPath,
-		Args:   args,
-		Env:    os.Environ(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running machinectl pull-raw: %s", err)
-	}
-
-	return nil
-}
-
 func ensureCoreosVersion() {
 	if err := checkCoreosVersion(); err != nil {
 		log.Println(err)
@@ -785,11 +760,11 @@ func ensureCoreosVersion() {
 	}
 }
 
-func PrepareCoreosImage() error {
+func PrepareCoreosImage(ImageGpgVerify bool) error {
 	// If no coreos image exists, just download it
 	if !machinetool.ImageExists("coreos") {
 		log.Printf("pulling coreos image...")
-		if err := pullRawCoreosImage(); err != nil {
+		if err := pullRawCoreosImage(ImageGpgVerify); err != nil {
 			return err
 		}
 	} else {
@@ -797,5 +772,160 @@ func PrepareCoreosImage() error {
 		// then next time `kube-spawn up` will download a new image again.
 		ensureCoreosVersion()
 	}
+	return nil
+}
+
+func downloadFile(dest, url string) error {
+	f, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	response, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	progress := &ioprogress.Reader{
+		Reader: response.Body,
+		Size:   response.ContentLength,
+	}
+
+	if _, err := io.Copy(f, progress); err != nil {
+		return err
+	}
+
+	if err := f.Sync(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func downloadImage() error {
+	return downloadFile(imageTmpFile, imageUrl)
+}
+
+func downloadSignature() error {
+	return downloadFile(signatureTmpFile, signatureUrl)
+}
+
+func verifyImage() error {
+	// TODO(nhlfr): Try to use or implement some library for managing PGP keys instead
+	// of executing gpg binary.
+	gpgCmdPath, err := exec.LookPath("gpg")
+	if err != nil {
+		gpgCmdPath = "/usr/bin/gpg"
+	}
+
+	importPubKeyArgs := []string{
+		gpgCmdPath,
+		"--keyserver",
+		"keyserver.ubuntu.com",
+		"--recv-key",
+		"50E0885593D2DCB4",
+	}
+
+	importPubKeyCmd := exec.Cmd{
+		Path:   gpgCmdPath,
+		Args:   importPubKeyArgs,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := importPubKeyCmd.Run(); err != nil {
+		return err
+	}
+
+	exportPubKeyArgs := []string{
+		gpgCmdPath,
+		"--export",
+		"50E0885593D2DCB4",
+		"--export-options",
+		"export-minimal,no-export-attributes",
+	}
+
+	exportPubKeyCmd := exec.Cmd{
+		Path:   gpgCmdPath,
+		Args:   exportPubKeyArgs,
+		Env:    os.Environ(),
+		Stderr: os.Stderr,
+	}
+
+	exportStdout, err := exportPubKeyCmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("error creating stdout pipe: %s", err)
+	}
+	defer exportStdout.Close()
+
+	if err := exportPubKeyCmd.Start(); err != nil {
+		return fmt.Errorf("error running gpg: %s", err)
+	}
+
+	pubKeyArmor, err := ioutil.ReadAll(exportStdout)
+	if err != nil {
+		return fmt.Errorf("error reading public key from stdout: %s", err)
+	}
+
+	if err := exportPubKeyCmd.Wait(); err != nil {
+		return fmt.Errorf("error running gpg: %s", err)
+	}
+
+	imageFile, err := os.Open(imageTmpFile)
+	if err != nil {
+		return err
+	}
+	defer imageFile.Close()
+
+	keyRingReader := strings.NewReader(string(pubKeyArmor))
+	keyring, err := openpgp.ReadKeyRing(keyRingReader)
+	if err != nil {
+		return fmt.Errorf("error reading keyring: %v\n", err)
+	}
+
+	signatureFile, err := os.Open(signatureTmpFile)
+	if err != nil {
+		return err
+	}
+	defer signatureFile.Close()
+
+	_, err = openpgp.CheckDetachedSignature(keyring, imageFile, signatureFile)
+	if err != nil {
+		return fmt.Errorf("error checking detached signature: %v\n", err)
+	}
+
+	return nil
+}
+
+func pullRawCoreosImage(imageGpgVerify bool) error {
+	if err := downloadImage(); err != nil {
+		return err
+	}
+	defer os.Remove(imageTmpFile)
+
+	log.Println("Image downloaded successfully")
+
+	if imageGpgVerify {
+		if err := downloadSignature(); err != nil {
+			return err
+		}
+		defer os.Remove(signatureTmpFile)
+
+		if err := verifyImage(); err != nil {
+			return err
+		}
+
+		log.Println("Image verified successfully")
+	}
+
+	log.Printf("Importing raw image %s ...", imageTmpFile)
+	if err := machinetool.ImportRaw(imageTmpFile, "coreos"); err != nil {
+		return fmt.Errorf("error importing image %s\n", imageTmpFile)
+	}
+	log.Printf("Done.")
+
 	return nil
 }

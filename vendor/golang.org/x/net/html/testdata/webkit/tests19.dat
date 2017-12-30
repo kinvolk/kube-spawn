@@ -479,7 +479,7 @@
 | <!-- foo -->
 
 #data
-<!doctype html><html><frameset></frameset></html>
+<!doctype html><html><frameset></frameset></html>  
 #errors
 #document
 | <!DOCTYPE html>

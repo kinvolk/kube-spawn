@@ -34,6 +34,7 @@ type ClusterConfiguration struct {
 	KubernetesVersion string `toml:"kubernetes-version" mapstructure:"kubernetes-version"`
 	Image             string `toml:"image" mapstructure:"image"`
 	Nodes             int    `toml:"nodes" mapstructure:"nodes"`
+	ImageGpgVerify    bool   `toml:"image-gpg-verify" mapstructure:"image-gpg-verify"`
 
 	// DevCluster indicates if we should run
 	// from a local kubernetes build

@@ -14,14 +14,14 @@ const file = `
 9;       True  ;9  ;  -1;-2.25  ;  0009;
 
 # more comments to be ignored
-@Part0
+@Part0  
 
 A;       N;   10  ;   -2;  -1.25; ;# N
-B;       No;   11 ;   -3;  -0.25;
+B;       No;   11 ;   -3;  -0.25; 
 C;        False;12;   -4;   0.75;
 D;        ;13;-5;1.75;
 
-@Part1   # Another part.
+@Part1   # Another part. 
 # We test part comments get removed by not commenting the the next line.
 E..10FFFF; F;   14  ; -6;   2.75;
 `

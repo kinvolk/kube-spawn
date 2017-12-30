@@ -66,6 +66,7 @@ func init() {
 	createCmd.Flags().Bool("dev", false, "create a cluster from a local build of Kubernetes")
 	createCmd.Flags().IntP("nodes", "n", 0, "number of nodes to spawn")
 	createCmd.Flags().StringP("image", "i", "", "base image for nodes")
+	createCmd.Flags().Bool("image-gpg-verify", true, "GnuPG image verification. Defaults to true")
 	viper.BindPFlags(createCmd.Flags())
 
 	viper.BindEnv("runtime-config.rkt.rkt-bin", "KUBE_SPAWN_RKT_BIN")
@@ -149,7 +150,7 @@ func doCreate() {
 	})
 
 	if cfg.Image == config.DefaultBaseImage {
-		if err := bootstrap.PrepareCoreosImage(); err != nil {
+		if err := bootstrap.PrepareCoreosImage(cfg.ImageGpgVerify); err != nil {
 			log.Fatal(errors.Wrap(err, "error setting up default base image"))
 		}
 	}

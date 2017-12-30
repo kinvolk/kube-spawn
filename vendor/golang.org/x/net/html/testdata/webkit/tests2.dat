@@ -588,8 +588,8 @@ x { content:"</style" } "
 |       <optgroup>
 
 #data
-
-
+ 
+ 
 #errors
 Line: 2 Col: 1 Unexpected End of file. Expected DOCTYPE.
 #document
@@ -670,7 +670,7 @@ Line: 1 Col: 24 Unexpected non-space characters in the after body phase.
 |     "XX"
 
 #data
-<!DOCTYPE html>X</html>
+<!DOCTYPE html>X</html> 
 #errors
 #document
 | <!DOCTYPE html>

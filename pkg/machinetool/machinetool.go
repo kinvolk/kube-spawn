@@ -74,6 +74,11 @@ func Terminate(machine string) error {
 	return err
 }
 
+func ImportRaw(imagePath, imageName string) error {
+	_, err := machinectl(nil, nil, "--verify=no", "import-raw", imagePath, imageName)
+	return err
+}
+
 func RemoveImage(image string) error {
 	_, err := machinectl(nil, nil, "", "remove", image)
 	return err

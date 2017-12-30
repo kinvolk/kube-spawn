@@ -55,7 +55,7 @@ func TestRuleProcessor(t *testing.T) {
 			in: `
 
 
-				# adsfads
+		  		# adsfads
 # adfadf
 		`,
 		},

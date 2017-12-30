@@ -1,5 +1,5 @@
 set +x
-set +e
+set +e 
 
 echo ""
 echo ""
@@ -16,9 +16,9 @@ if [ ! $(docker ps -aq | wc -l) -eq 0 ]; then
 fi
 
 # Remove all images which don't have docker or debian in the name
-if [ ! $(docker images | sed -n '1!p' | grep -v 'docker' | grep -v 'debian' | awk '{ print $3 }' | wc -l) -eq 0 ]; then
+if [ ! $(docker images | sed -n '1!p' | grep -v 'docker' | grep -v 'debian' | awk '{ print $3 }' | wc -l) -eq 0 ]; then 
 	echo INFO: Removing images...
-	! docker rmi -f $(docker images | sed -n '1!p' | grep -v 'docker' | grep -v 'debian' | awk '{ print $3 }')
+	! docker rmi -f $(docker images | sed -n '1!p' | grep -v 'docker' | grep -v 'debian' | awk '{ print $3 }') 
 fi
 
 # Kill off any instances of git, go and docker, just in case

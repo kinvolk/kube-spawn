@@ -60,7 +60,7 @@
 		enum's type name if it is a top-level enum. Enum types have a String
 		method, and a Enum method to assist in message construction.
 	  - Nested messages, groups and enums have type names prefixed with the name of
-		the surrounding message type.
+	  	the surrounding message type.
 	  - Extensions are given descriptor names that start with E_,
 		followed by an underscore-delimited list of the nested messages
 		that contain it (if any) followed by the CamelCased name of the

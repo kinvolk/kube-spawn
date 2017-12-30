@@ -300,7 +300,7 @@
 |   <body>
 
 #data
-<!DOCTYPE root-element [SYSTEM OR PUBLIC FPI] "uri" [
+<!DOCTYPE root-element [SYSTEM OR PUBLIC FPI] "uri" [ 
 <!-- internal declarations -->
 ]>
 #errors

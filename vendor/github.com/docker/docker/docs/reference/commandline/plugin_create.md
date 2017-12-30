@@ -21,7 +21,7 @@ Usage:  docker plugin create [OPTIONS] PLUGIN PLUGIN-DATA-DIR
 Create a plugin from a rootfs and configuration. Plugin data directory must contain config.json and rootfs directory.
 
 Options:
-      --compress   Compress the context using gzip
+      --compress   Compress the context using gzip 
       --help       Print usage
 ```
 
