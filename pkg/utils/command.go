@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 )
 
-func isExecBinary(path string) bool {
+func IsExecBinary(path string) bool {
 	fi, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false
@@ -43,7 +43,7 @@ func Command(name string, arg ...string) *exec.Cmd {
 		Args: append([]string{name}, arg...),
 	}
 	if filepath.Base(name) == name {
-		if isExecBinary(name) {
+		if IsExecBinary(name) {
 			return cmd
 		}
 		if lp, err := exec.LookPath(name); err == nil {
