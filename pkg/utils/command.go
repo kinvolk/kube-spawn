@@ -30,7 +30,7 @@ func IsExecBinary(path string) bool {
 	if fi.IsDir() {
 		return false
 	}
-	return (fi.Mode().Perm() & 0111) == 0
+	return (fi.Mode().Perm() & 0111) != 0
 }
 
 // Command creates an exec.Cmd instance like exec.Command does - it
