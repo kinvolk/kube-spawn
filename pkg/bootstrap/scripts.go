@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"os"
 	"path"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ func rootfsPath(cfg *config.ClusterConfiguration) string {
 // also create empty machine specific rootfs/ dirs
 //
 func GenerateScripts(cfg *config.ClusterConfiguration) error {
-	if err := fs.CreateDir(rootfsPath(cfg)); err != nil {
+	if err := os.MkdirAll(rootfsPath(cfg), 0755); err != nil {
 		return err
 	}
 
@@ -52,13 +53,13 @@ func GenerateScripts(cfg *config.ClusterConfiguration) error {
 	// create empty config dirs for all nodes
 	for i := 0; i < cfg.Nodes; i++ {
 		rootDir := path.Join(cfg.KubeSpawnDir, cfg.Name, config.MachineName(cfg.Name, i), "rootfs")
-		if err := fs.CreateDir(path.Join(rootDir, "etc")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "etc"), 0755); err != nil {
 			return err
 		}
-		if err := fs.CreateDir(path.Join(rootDir, "opt")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "opt"), 0755); err != nil {
 			return err
 		}
-		if err := fs.CreateDir(path.Join(rootDir, "usr/bin")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "usr/bin"), 0755); err != nil {
 			return err
 		}
 	}

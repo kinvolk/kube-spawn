@@ -61,12 +61,6 @@ func CreateBytes(path string, data []byte) error {
 	return Create(path, buf)
 }
 
-func CreateDir(path string) error {
-	// make sure path is passed along with a trailing slash
-	// otherwise Create() will not create it
-	return Create(path+"/", nil)
-}
-
 func Copy(src, dst string) error {
 	f, err := os.OpenFile(src, os.O_RDONLY, 0755)
 	if err != nil {

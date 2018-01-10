@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -50,7 +51,7 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 	var err error
 	versionPath := path.Join(getCacheDir(cfg), cfg.KubernetesVersion)
 	if !fs.Exists(versionPath) {
-		if err := fs.CreateDir(versionPath); err != nil {
+		if err := os.MkdirAll(versionPath, 0755); err != nil {
 			return err
 		}
 	}
@@ -82,7 +83,7 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 func DownloadSocatBin(cfg *config.ClusterConfiguration) error {
 	cachePath := getCacheDir(cfg)
 	if !fs.Exists(cachePath) {
-		if err := fs.CreateDir(cachePath); err != nil {
+		if err := os.MkdirAll(cachePath, 0755); err != nil {
 			return err
 		}
 	}
