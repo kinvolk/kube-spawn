@@ -18,8 +18,7 @@ package main
 
 import (
 	"log"
-	"os"
-	"path"
+	"os/exec"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -136,16 +135,23 @@ func doCreate() {
 		log.Fatal(errors.Wrap(err, "error setting container runtime defaults"))
 	}
 
-	// note: this is a workaround the keyctl issue with runc
-	// can be removed when systemd v235 is common
-	// TODO: move this somewhere else and reuse code from utils pkg
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		log.Fatal("GOPATH was not set")
+	// TODO: the docker-runc wrapper ensures `--no-new-keyring` is
+	// set, otherwise Docker will attempt to use keyring syscalls
+	// which are not allowed in systemd-nspawn containers. It can
+	// be removed once we require systemd v235 or later. We then
+	// will be able to whitelist the required syscalls; see:
+	// https://github.com/systemd/systemd/pull/6798
+	kubeSpawnRuncPath := "kube-spawn-runc"
+	if !utils.IsExecBinary(kubeSpawnRuncPath) {
+		if lp, err := exec.LookPath(kubeSpawnRuncPath); err != nil {
+			log.Fatal(errors.Wrap(err, "kube-spawn-runc binary not found but required"))
+		} else {
+			kubeSpawnRuncPath = lp
+		}
 	}
 	cfg.Copymap = append(cfg.Copymap, config.Pathmap{
 		Dst: "/usr/bin/kube-spawn-runc",
-		Src: path.Join(goPath, "src/github.com/kinvolk/kube-spawn/kube-spawn-runc"),
+		Src: kubeSpawnRuncPath,
 	})
 
 	if cfg.Image == config.DefaultBaseImage {
