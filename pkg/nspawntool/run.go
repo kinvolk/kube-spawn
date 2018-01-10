@@ -59,7 +59,8 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 	}
 
 	args := []string{
-		"-d",
+		"cni-spawn",
+		"--",
 		"--machine", cfg.Machines[mNo].Name,
 		optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot),
 		optionsOverlay("--overlay", "/opt", lowerRoot, upperRoot),
@@ -69,7 +70,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 	args = append(args, optionsFromBindmountConfig(cfg.Bindmount)...)
 	args = append(args, optionsFromBindmountConfig(cfg.Machines[mNo].Bindmount)...)
 
-	c := utils.Command("cnispawn", args...)
+	c := utils.Command("kube-spawn", args...)
 	c.Stderr = os.Stderr
 
 	// log.Printf(">>> runnning: %q", strings.Join(c.Args, " "))

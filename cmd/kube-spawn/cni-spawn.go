@@ -20,24 +20,27 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/kinvolk/kube-spawn/pkg/cnispawn"
 )
 
-func main() {
-	var background bool
-
-	switch os.Args[1] {
-	case "-i":
-		background = false
-	case "-d":
-		background = true
-	default:
-		fmt.Println("Usage: cnispawn [-i|-d] <nspawn arguments>\n\n-i\tinteractive; container will be spawned with tty attached\n-d\tdetached; container will be run in the background")
-		os.Exit(0)
+var (
+	cniSpawnCmd = &cobra.Command{
+		Use:    "cni-spawn",
+		Short:  "Spawn systemd-nspawn containers in a new network namespace",
+		Hidden: true,
+		Run:    runCNISpawn,
 	}
+)
 
-	if err := cnispawn.Spawn(background, os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+func init() {
+	kubespawnCmd.AddCommand(cniSpawnCmd)
+}
+
+func runCNISpawn(cmd *cobra.Command, args []string) {
+	if err := cnispawn.Spawn(args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }

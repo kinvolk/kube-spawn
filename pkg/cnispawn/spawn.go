@@ -32,7 +32,7 @@ func getCniPath() (string, error) {
 	return cniPath, nil
 }
 
-func Spawn(background bool, nspawnArgs []string) error {
+func Spawn(nspawnArgs []string) error {
 	runtime.LockOSThread()
 
 	cniNetns, err := NewCniNetns()
@@ -71,14 +71,11 @@ func Spawn(background bool, nspawnArgs []string) error {
 	env = append(env, "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1")
 	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=0")
 
-	if background {
-		_, err := syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
-			Dir:   "",
-			Env:   env,
-			Files: []uintptr{},
-			Sys:   &syscall.SysProcAttr{},
-		})
-		return err
-	}
-	return syscall.Exec(systemdNspawnPath, args, env)
+	_, err = syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
+		Dir:   "",
+		Env:   env,
+		Files: []uintptr{},
+		Sys:   &syscall.SysProcAttr{},
+	})
+	return err
 }
