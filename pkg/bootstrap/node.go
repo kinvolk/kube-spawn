@@ -361,9 +361,6 @@ func EnsureRequirements(cfg *config.ClusterConfiguration) error {
 	if err := WriteNetConf(); err != nil {
 		errors.Wrap(err, "error writing CNI configuration")
 	}
-	if err := EnsureBridge(); err != nil {
-		return errors.Wrap(err, "error checking CNI bridge")
-	}
 	// check if container linux base image exists
 	log.Printf("checking base image")
 	if !machinetool.ImageExists(cfg.Image) {

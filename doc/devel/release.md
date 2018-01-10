@@ -49,7 +49,7 @@ Now we switch to the GitHub web UI to conduct the release:
 export KSVER="0.2.0"
 export NAME="kube-spawn-v$KSVER"
 mkdir $NAME
-cp kube-spawn kube-spawn-runc cnispawn cni-noop $NAME/
+cp kube-spawn kube-spawn-runc cnispawn $NAME/
 sudo chown -R root:root $NAME/
 tar czvf $NAME.tar.gz --numeric-owner $NAME/
 ```
