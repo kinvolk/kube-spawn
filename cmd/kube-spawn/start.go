@@ -31,6 +31,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
 	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
+	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 )
 
 var (
@@ -162,7 +163,10 @@ func resizeMachineDir(baseImage string, nodesN int) {
 	var poolSize int64
 	var err error
 
-	if !bootstrap.PoolImageExists() {
+	if exists, err := fs.PathExists("/var/lib/machines.raw"); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to determine if btrfs pool image exists"))
+	} else if !exists {
+		// nothing to do
 		return
 	}
 

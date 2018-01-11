@@ -32,21 +32,21 @@ func GenerateScripts(cfg *config.ClusterConfiguration) error {
 	if err := writeKubeadmConfig(cfg); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.DockerDaemonConfigPath), []byte(script.DockerDaemonConfig)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.DockerDaemonConfigPath), []byte(script.DockerDaemonConfig)); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.DockerKubeadmExtraArgsPath), []byte(script.DockerKubeadmExtraArgs)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.DockerKubeadmExtraArgsPath), []byte(script.DockerKubeadmExtraArgs)); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.KubeletTmpfilesPath), []byte(script.KubeletTmpfiles)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.KubeletTmpfilesPath), []byte(script.KubeletTmpfiles)); err != nil {
 		return err
 	}
 	if cfg.ContainerRuntime == config.RuntimeRkt {
-		if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.RktletServicePath), []byte(script.RktletService)); err != nil {
+		if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.RktletServicePath), []byte(script.RktletService)); err != nil {
 			return err
 		}
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.WeaveNetworkdUnmaskPath), []byte(script.WeaveNetworkdUnmask)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.WeaveNetworkdUnmaskPath), []byte(script.WeaveNetworkdUnmask)); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func writeKubeadmBootstrap(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", bootstrapScript)
 	}
-	return fs.Create(bootstrapScript, buf)
+	return fs.CreateFileFromReader(bootstrapScript, buf)
 }
 
 func writeKubeadmExtraArgs(cfg *config.ClusterConfiguration) error {
@@ -91,7 +91,7 @@ func writeKubeadmExtraArgs(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", extraArgsConf)
 	}
-	return fs.Create(extraArgsConf, buf)
+	return fs.CreateFileFromReader(extraArgsConf, buf)
 }
 
 func writeKubeadmConfig(cfg *config.ClusterConfiguration) error {
@@ -105,5 +105,5 @@ func writeKubeadmConfig(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", kubeadmConf)
 	}
-	return fs.Create(kubeadmConf, buf)
+	return fs.CreateFileFromReader(kubeadmConf, buf)
 }

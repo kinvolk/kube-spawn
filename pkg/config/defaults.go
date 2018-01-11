@@ -150,7 +150,9 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 		// create dirs from above if they don't exist already
 		// TODO: should we create the dirs from here or move this to the check pkg
 		for _, pm := range cfg.Machines[i].Bindmount.ReadWrite {
-			if !fs.Exists(pm.Src) {
+			if exists, err := fs.PathExists(pm.Src); err != nil {
+				return errors.Wrap(err, "cannot determine if path exists")
+			} else if !exists {
 				if err := os.MkdirAll(pm.Src, 0755); err != nil {
 					return err
 				}

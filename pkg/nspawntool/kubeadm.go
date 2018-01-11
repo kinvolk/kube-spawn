@@ -55,7 +55,7 @@ func InitializeMaster(cfg *config.ClusterConfiguration) error {
 
 	kubeConfigSrc := path.Join(cfg.KubeSpawnDir, cfg.Name, cfg.Machines[0].Name, "rootfs/etc/kubernetes/admin.conf")
 	kubeConfigDst := path.Join(cfg.KubeSpawnDir, cfg.Name, "kubeconfig")
-	if err := fs.Copy(kubeConfigSrc, kubeConfigDst); err != nil {
+	if err := fs.CopyFile(kubeConfigSrc, kubeConfigDst); err != nil {
 		return errors.Wrap(err, "failed copying kubeconfig to host")
 	}
 	return nil

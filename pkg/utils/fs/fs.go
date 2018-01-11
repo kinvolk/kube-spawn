@@ -25,46 +25,43 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Exists(path string) bool {
-	if fi, err := os.Stat(path); os.IsNotExist(err) {
-		return false
-	} else {
-		if !fi.IsDir() && !fi.Mode().IsRegular() {
-			return false
-		}
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
 	}
-	return true
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
 }
 
-func Create(path string, data io.Reader) error {
+func CreateFileFromReader(path string, reader io.Reader) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, os.FileMode(0755)); err != nil {
 		return errors.Wrapf(err, "error creating directory %q", dir)
-	}
-	// assume we are creating a directory
-	if data == nil {
-		return nil
 	}
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return errors.Wrapf(err, "error creating %q", path)
 	}
 	defer f.Close()
-	if _, err := io.Copy(f, data); err != nil {
+	if _, err := io.Copy(f, reader); err != nil {
 		return errors.Wrapf(err, "error writing %q", path)
 	}
 	return nil
 }
 
-func CreateBytes(path string, data []byte) error {
+func CreateFileFromBytes(path string, data []byte) error {
 	buf := bytes.NewBuffer(data)
-	return Create(path, buf)
+	return CreateFileFromReader(path, buf)
 }
 
-func Copy(src, dst string) error {
+func CopyFile(src, dst string) error {
 	f, err := os.OpenFile(src, os.O_RDONLY, 0755)
 	if err != nil {
 		return err
 	}
-	return Create(dst, f)
+	defer f.Close()
+	return CreateFileFromReader(dst, f)
 }

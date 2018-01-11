@@ -19,6 +19,8 @@ package main
 import (
 	"log"
 	"os/exec"
+	"path"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,6 +30,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
+	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 )
 
 var (
@@ -188,9 +191,42 @@ func doCreate() {
 		log.Fatal(errors.Wrap(err, "error generating files"))
 	}
 
-	log.Print("copy files into environment")
-	if err := bootstrap.CopyFiles(cfg); err != nil {
-		log.Fatal(errors.Wrap(err, "error copying files"))
+	log.Print("copying files into environment")
+
+	copyFailed := false
+	copyErrChan := make(chan error)
+	go func() {
+		for {
+			select {
+			case err, ok := <-copyErrChan:
+				if !ok {
+					return
+				}
+				copyFailed = true
+				log.Printf("%v", err)
+			}
+		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(cfg.Copymap))
+
+	for _, pm := range cfg.Copymap {
+		go func(dst, src string) {
+			defer wg.Done()
+			// dst path is relative to the machine rootfs
+			dst = path.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs", dst)
+			if copyErr := fs.CopyFile(src, dst); copyErr != nil {
+				copyErrChan <- errors.Wrapf(err, "failed to copy file %q -> %q", src, dst)
+			}
+		}(pm.Dst, pm.Src)
+	}
+
+	wg.Wait()
+	close(copyErrChan)
+
+	if copyFailed {
+		log.Fatalf("Copying necessary files didn't succeed, aborting")
 	}
 
 	saveConfig(cfg)
