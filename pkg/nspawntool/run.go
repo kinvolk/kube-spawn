@@ -60,6 +60,7 @@ func Run(cfg *config.ClusterConfiguration, mNo int) error {
 
 	args := []string{
 		"cni-spawn",
+		"--cni-plugin-dir", cfg.CNIPluginDir,
 		"--",
 		"--machine", cfg.Machines[mNo].Name,
 		optionsOverlay("--overlay", "/etc", lowerRoot, upperRoot),

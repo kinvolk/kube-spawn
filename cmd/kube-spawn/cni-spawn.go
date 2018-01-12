@@ -32,14 +32,16 @@ var (
 		Hidden: true,
 		Run:    runCNISpawn,
 	}
+	cniPluginDir string
 )
 
 func init() {
 	kubespawnCmd.AddCommand(cniSpawnCmd)
+	cniSpawnCmd.Flags().StringVar(&cniPluginDir, "cni-plugin-dir", "/opt/cni/bin", "path to CNI plugin directory")
 }
 
 func runCNISpawn(cmd *cobra.Command, args []string) {
-	if err := cnispawn.Spawn(args); err != nil {
+	if err := cnispawn.Spawn(cniPluginDir, args); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

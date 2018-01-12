@@ -32,7 +32,7 @@ type CniNetns struct {
 	netns ns.NetNS
 }
 
-func NewCniNetns() (*CniNetns, error) {
+func NewCniNetns(cniPluginDir string) (*CniNetns, error) {
 	var err error
 
 	netns, err := ns.NewNS()
@@ -43,11 +43,7 @@ func NewCniNetns() (*CniNetns, error) {
 	sNetnsPath := strings.Split(netns.Path(), "/")
 	containerId := sNetnsPath[len(sNetnsPath)-1]
 
-	cniPath, err := getCniPath()
-	if err != nil {
-		return nil, err
-	}
-	cniPluginPath := path.Join(cniPath, "bridge")
+	cniBridgePluginPath := path.Join(cniPluginDir, "bridge")
 
 	// CNI-specific environment variables must appear before other ones
 	// obtained from os.Environ(), so that they can override default ones.
@@ -56,11 +52,11 @@ func NewCniNetns() (*CniNetns, error) {
 	env = append(env, fmt.Sprintf("CNI_CONTAINERID=%s", containerId))
 	env = append(env, fmt.Sprintf("CNI_NETNS=%s", netns.Path()))
 	env = append(env, "CNI_IFNAME=eth0")
-	env = append(env, fmt.Sprintf("CNI_PATH=%s", cniPath))
+	env = append(env, fmt.Sprintf("CNI_PATH=%s", cniPluginDir))
 	env = append(env, os.Environ()...)
 
 	c := exec.Cmd{
-		Path:   cniPluginPath,
+		Path:   cniBridgePluginPath,
 		Args:   nil,
 		Env:    env,
 		Stdout: os.Stdout,

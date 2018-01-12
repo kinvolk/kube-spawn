@@ -17,25 +17,16 @@ limitations under the License.
 package cnispawn
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 	"runtime"
 	"syscall"
 )
 
-func getCniPath() (string, error) {
-	cniPath := os.Getenv("CNI_PATH")
-	if cniPath == "" {
-		return "", errors.New("CNI_PATH was not set")
-	}
-	return cniPath, nil
-}
-
-func Spawn(nspawnArgs []string) error {
+func Spawn(cniPluginDir string, nspawnArgs []string) error {
 	runtime.LockOSThread()
 
-	cniNetns, err := NewCniNetns()
+	cniNetns, err := NewCniNetns(cniPluginDir)
 	if err != nil {
 		return err
 	}

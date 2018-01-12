@@ -2,7 +2,7 @@
 
 # kube-spawn
 
-<img src="https://raw.githubusercontent.com/cncf/artwork/master/kubernetes/certified-kubernetes/versionless/color/certified_kubernetes_color.png" align="right" width="100px">`kube-spawn` is a tool for creating a multi-node Kubernetes cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but is also a [Certified Kubernetes Distribution](https://kubernetes.io/partners/#dist) and, therefore, perfect for running and testing deployments locally.
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/kubernetes/certified-kubernetes/versionless/color/certified_kubernetes_color.png" align="right" width="100px">`kube-spawn` is a tool for creating a multi-node Kubernetes (>= 1.7) cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but is also a [Certified Kubernetes Distribution](https://kubernetes.io/partners/#dist) and, therefore, perfect for running and testing deployments locally.
 
 It attempts to mimic production setups by making use of OS containers to set up nodes.
 
@@ -12,53 +12,69 @@ It attempts to mimic production setups by making use of OS containers to set up 
 
 ## Requirements
 
-* **Host:**
-  - `systemd-nspawn` at least version 233
-  - `qemu-img`
+* `systemd-nspawn` at least version 233
+* `qemu-img`
 
-* **Kubernetes** at least version 1.7.0
+## Installation
+
+`kube-spawn` should run well on a modern Linux system (for example Fedora 27 or
+Debian testing). If you want to test it in a controlled environment, you can
+use [Vagrant](doc/vagrant.md).
+
+To setup `kube-spawn` on your machine, make sure you have a working [Go
+environment](https://golang.org/doc/install).
+
+kube-spawn uses CNI to setup networking for its containers. For that, you need
+to download the CNI plugins (v.0.6.0 or later) from GitHub. Example:
+
+```
+cd /tmp
+curl -fsSL -O https://github.com/containernetworking/plugins/releases/download/v0.6.0/cni-plugins-amd64-v0.6.0.tgz
+sudo mkdir -p /opt/cni/bin
+sudo tar -C /opt/cni/bin -xvf cni-plugins-amd64-v0.6.0.tgz
+```
+
+Alternatively, you can use `go get` to fetch the plugins into your `GOPATH`:
+
+```
+go get -u github.com/containernetworking/plugins/plugins/...
+```
+
+(Note: that requires `--cni-plugin-dir=$GOPATH/bin` later.)
+
+To build kube-spawn in a Docker build container, simply run:
+
+```
+make
+```
+
+Optionally, install kube-spawn under a system directory:
+
+```
+sudo make install
+```
+
+(`PREFIX` can be set to override the default target `/usr`.)
 
 ## Quickstart
 
-`kube-spawn` should run well on Fedora 26. If you want to test it in a
-controlled environment, you can use [Vagrant](doc/vagrant.md).
-
-To setup `kube-spawn` on your machine, make sure you have a working [Go environment](https://golang.org/doc/install):
+Create and start a 3 node cluster with the name "default":
 
 ```
-# Get CNI plugins
-$ go get -u github.com/containernetworking/plugins/plugins/...
-
-# Get the source for this project
-$ go get -d github.com/kinvolk/kube-spawn
+sudo ./kube-spawn create --nodes=3
+sudo ./kube-spawn start
 ```
 
-`kube-spawn` will configure the networks it needs in `/etc/cni/net.d`.
+Note: if the CNI plugins cannot be found in `/opt/cni/bin`, you need to
+pass `--cni-plugin-dir path/to/plugins` to create.
 
-```
-# Build the tool
-$ cd $GOPATH/src/github.com/kinvolk/kube-spawn
-$ make all
+`create` sets up the cluster environment in `/var/lib/kube-spawn`, and puts all
+the neccessary scripts/configs into place.
 
-# (optional) Install binaries under a system directory.
-# The install prefix defaults to /usr, which you can override with an env
-# variable $PREFIX, like "make PREFIX=/usr/local install".
-$ sudo make install
+`start` brings up the nodes and configures the cluster using
+[kubeadm](https://github.com/kubernetes/kubeadm).
 
-$ export CNI_PATH=$GOPATH/bin
-
-# This generated a default 3 nodes cluster configuration
-$ sudo -E ./kube-spawn create --nodes=3
-$ sudo -E ./kube-spawn start
-```
-
-The `create` subcommand sets up a cluster environment in `/var/lib/kube-spawn`, and puts all the neccessary
-scripts/configs into place for running the cluster.
-Via `start` you bring up the nodes and `kube-spawn` configures the cluster using [kubeadm](https://github.com/kubernetes/kubeadm).
 Now that you're up and running, you can start using it.
-
-After stopping the cluster with `stop` you don't have to run `create` again, unless you want to change the cluster config in
-`/var/lib/kube-spawn/CLUSTER_NAME/kspawn.toml`.
 
 ## How to..
 

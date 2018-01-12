@@ -68,6 +68,7 @@ func init() {
 	createCmd.Flags().Bool("dev", false, "create a cluster from a local build of Kubernetes")
 	createCmd.Flags().IntP("nodes", "n", 0, "number of nodes to spawn")
 	createCmd.Flags().StringP("image", "i", "", "base image for nodes")
+	createCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "path to directory with CNI plugins")
 	viper.BindPFlags(createCmd.Flags())
 
 	viper.BindEnv("runtime-config.rkt.rkt-bin", "KUBE_SPAWN_RKT_BIN")

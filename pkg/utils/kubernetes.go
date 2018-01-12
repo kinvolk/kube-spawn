@@ -36,7 +36,6 @@ const (
 var (
 	homePath string = os.Getenv("HOME")
 	goPath   string = os.Getenv("GOPATH")
-	cniPath  string = os.Getenv("CNI_PATH")
 )
 
 func CheckValidDir(inPath string) error {

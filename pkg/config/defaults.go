@@ -193,15 +193,11 @@ func SetDefaults_RktRuntime(cfg *ClusterConfiguration) error {
 		cfg.RuntimeConfiguration.Rkt.Stage1Image = DefaultRktStage1ImagePath
 	}
 
-	cniPath := os.Getenv("CNI_PATH")
-	if cniPath == "" {
-		return errors.New("CNI_PATH was not set")
-	}
 	pms := []Pathmap{
 		{Dst: "/usr/bin/rkt", Src: cfg.RuntimeConfiguration.Rkt.RktBin},
 		{Dst: "/usr/bin/rktlet", Src: cfg.RuntimeConfiguration.Rkt.RktletBin},
 		{Dst: path.Join("/usr/bin/", path.Base(cfg.RuntimeConfiguration.Rkt.Stage1Image)), Src: cfg.RuntimeConfiguration.Rkt.Stage1Image},
-		{Dst: "/usr/lib/rkt/plugins/net", Src: cniPath},
+		{Dst: "/usr/lib/rkt/plugins/net", Src: cfg.CNIPluginDir},
 	}
 	cfg.Bindmount.ReadOnly = append(cfg.Bindmount.ReadOnly, pms...)
 	return err
@@ -249,11 +245,6 @@ func SetDefaults_CrioRuntime(cfg *ClusterConfiguration) error {
 }
 
 func SetDefaults_BindmountConfiguration(cfg *ClusterConfiguration) error {
-	cniPath := os.Getenv("CNI_PATH")
-	if cniPath == "" {
-		return errors.New("CNI_PATH was not set")
-	}
-
-	cfg.Bindmount.ReadWrite = append(cfg.Bindmount.ReadWrite, Pathmap{Dst: "/opt/cni/bin", Src: cniPath})
+	cfg.Bindmount.ReadWrite = append(cfg.Bindmount.ReadWrite, Pathmap{Dst: "/opt/cni/bin", Src: cfg.CNIPluginDir})
 	return nil
 }

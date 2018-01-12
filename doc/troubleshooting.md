@@ -16,15 +16,6 @@ fix them. If you discover more, please create an issue or submit a PR.
 - [Inotify problems with many nodes](#inotify-problems-with-many-nodes)
 - [Issues with ISPs hijacking DNS requests](#issues-with-isps-hijacking-dns-requests)
 
-## Missing GOPATH environment variable
-
-`kube-spawn` is able to check for environment variables, such as `$GOPATH` and `$CNI_PATH`, which are necessary for launching nspawn containers as well as creating network namespaces for CNI. If `$GOPATH` is unavailable, it tries to fall back to `$HOME/go`. If `$CNI_PATH` is unavailable, it tries to fall back to `$GOPATH/bin`. Doing so, `kube-spawn` should be able to figure out most probable paths.
-
-If any path-related problem still occurs, please try the following approaches:
-
-* try to run with `sudo -E kube-spawn ...` to pass normal-user's env variables
-* try to run with pre-defined `GOPATH` or `CNI_PATH`, for example `sudo GOPATH=/home/myuser/go CNI_PATH=/home/myuser/go/bin kube-spawn ...`
-
 ## SELinux
 
 To run `kube-spawn`, it is recommended to turn off SELinux enforcing mode:
