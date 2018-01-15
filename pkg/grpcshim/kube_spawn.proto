@@ -1,0 +1,31 @@
+
+syntax = "proto3";
+
+package grpcshim;
+
+service KubeSpawn {
+	rpc Create (ClusterProperties) returns (Result) {}
+	rpc Start (Cluster) returns (Result) {}
+	rpc GetKubeconfig (Cluster) returns (Result) {}
+	rpc List (Empty) returns (Result) {}
+	rpc Destroy (Cluster) returns (Result) {}
+}
+
+message Result {
+	bool Success = 1;
+	string Error = 2;
+	string Stdout = 3;
+	string Stderr = 4;
+	string Kubeconfig = 5;
+}
+
+message ClusterProperties {
+	string Name = 1;
+	uint32 NumberNodes = 2;
+}
+
+message Cluster {
+	string Name = 1;
+}
+
+message Empty {}

@@ -36,3 +36,6 @@ clean:
 
 install:
 	install kube-spawn kube-spawn-runc "$(BINDIR)"
+
+proto:
+	protoc -I pkg/grpcshim/ pkg/grpcshim/kube_spawn.proto --go_out=plugins=grpc:pkg/grpcshim
