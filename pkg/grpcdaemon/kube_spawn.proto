@@ -1,0 +1,27 @@
+
+syntax = "proto3";
+
+package grpcdaemon;
+
+service KubeSpawn {
+	rpc Create (ClusterProps) returns (Result) {}
+	rpc Start (ClusterProps) returns (Result) {}
+	rpc GetKubeconfig (ClusterProps) returns (Result) {}
+	rpc List (Empty) returns (Result) {}
+	rpc Destroy (ClusterProps) returns (Result) {}
+}
+
+message Result {
+	bool Success = 1;
+	string Error = 2;
+	string Kubeconfig = 3;
+}
+
+message ClusterProps {
+	string Name = 1;
+	string KubernetesVersion = 2;
+	string HyperkubeImage = 3;
+	uint32 NumberNodes = 4;
+}
+
+message Empty {}
