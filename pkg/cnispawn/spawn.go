@@ -17,6 +17,7 @@ limitations under the License.
 package cnispawn
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -34,7 +35,6 @@ func Spawn(cniPluginDir string, nspawnArgs []string) error {
 	if err := cniNetns.Set(); err != nil {
 		return err
 	}
-	defer cniNetns.Close()
 
 	systemdNspawnPath := os.Getenv("SYSTEMD_NSPAWN_PATH")
 
@@ -45,7 +45,17 @@ func Spawn(cniPluginDir string, nspawnArgs []string) error {
 		}
 	}
 
+	systemdRunPath, err := exec.LookPath("systemd-run")
+	if err != nil {
+		return err
+	}
+
 	args := []string{
+		systemdRunPath,
+		"--setenv", "SYSTEMD_NSPAWN_MOUNT_RW=1",
+		"--setenv", "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1",
+		"--setenv", "SYSTEMD_NSPAWN_USE_CGNS=0",
+		"--",
 		systemdNspawnPath,
 		"--capability=cap_audit_control,cap_audit_read,cap_audit_write,cap_audit_control,cap_block_suspend,cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_ipc_lock,cap_ipc_owner,cap_kill,cap_lease,cap_linux_immutable,cap_mac_admin,cap_mac_override,cap_mknod,cap_net_admin,cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_setgid,cap_setfcap,cap_setpcap,cap_setuid,cap_sys_admin,cap_sys_boot,cap_sys_chroot,cap_sys_module,cap_sys_nice,cap_sys_pacct,cap_sys_ptrace,cap_sys_rawio,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_syslog,cap_wake_alarm",
 		"--bind=/sys/fs/cgroup",
@@ -53,18 +63,13 @@ func Spawn(cniPluginDir string, nspawnArgs []string) error {
 		"--bind-ro=/lib/modules",
 		"--boot",
 		"--notify-ready=yes",
+		fmt.Sprintf("--network-namespace-path=%s", cniNetns.Path()),
 	}
 
 	args = append(args, nspawnArgs...)
 
-	env := os.Environ()
-	env = append(env, "SYSTEMD_NSPAWN_MOUNT_RW=1")
-	env = append(env, "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1")
-	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=0")
-
-	_, err = syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
+	_, err = syscall.ForkExec(systemdRunPath, args, &syscall.ProcAttr{
 		Dir:   "",
-		Env:   env,
 		Files: []uintptr{},
 		Sys:   &syscall.SysProcAttr{},
 	})

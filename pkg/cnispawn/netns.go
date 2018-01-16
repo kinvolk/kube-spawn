@@ -94,3 +94,7 @@ func (c *CniNetns) Set() error {
 func (c *CniNetns) Close() error {
 	return c.netns.Close()
 }
+
+func (c *CniNetns) Path() string {
+	return c.netns.Path()
+}
