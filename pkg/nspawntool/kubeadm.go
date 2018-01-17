@@ -79,7 +79,8 @@ func JoinNode(cfg *config.ClusterConfiguration, mNo int) error {
 	if cfg.Token == "" {
 		return errors.New("no token found")
 	}
-	if cfg.Machines[0].IP == "" {
+	masterIP := cfg.Machines[0].IP
+	if masterIP == "" || masterIP == "-" {
 		return errors.New("no master IP found")
 	}
 
@@ -102,7 +103,7 @@ func JoinNode(cfg *config.ClusterConfiguration, mNo int) error {
 		joinCmd = append(joinCmd, "--discovery-token-unsafe-skip-ca-verification")
 	}
 
-	joinCmd = append(joinCmd, cfg.Machines[0].IP+":6443")
+	joinCmd = append(joinCmd, masterIP+":6443")
 
 	return machinetool.Shell(shellOpts, cfg.Machines[mNo].Name, joinCmd...)
 }
