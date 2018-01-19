@@ -68,7 +68,7 @@ func main() {
 }
 
 func loadConfig() *config.ClusterConfiguration {
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfig(viper.GetString("cluster-name"))
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "error loading config"))
 	}

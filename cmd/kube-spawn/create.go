@@ -95,7 +95,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 }
 
 func doCreate() {
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfig(viper.GetString("cluster-name"))
 	if err != nil {
 		// ignore if config not found
 		// it means we started from scratch and need to generate one

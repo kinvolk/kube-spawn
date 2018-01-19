@@ -50,8 +50,8 @@ func RunningMachines(cfg *ClusterConfiguration) int {
 	return n
 }
 
-func LoadConfig() (*ClusterConfiguration, error) {
-	cfgFile := path.Join(viper.GetString("dir"), viper.GetString("cluster-name"), Filename)
+func LoadConfig(clusterName string) (*ClusterConfiguration, error) {
+	cfgFile := path.Join(viper.GetString("dir"), clusterName, Filename)
 	viper.SetConfigFile(cfgFile)
 
 	var err error
