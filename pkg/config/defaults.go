@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -124,6 +125,8 @@ func SetDefaults_RuntimeConfiguration(cfg *ClusterConfiguration) error {
 		err = SetDefaults_RktRuntime(cfg)
 	case RuntimeCrio:
 		err = SetDefaults_CrioRuntime(cfg)
+	default:
+		return fmt.Errorf("runtime %q not supported", cfg.ContainerRuntime)
 	}
 	if err != nil {
 		return err
