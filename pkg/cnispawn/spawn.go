@@ -17,25 +17,16 @@ limitations under the License.
 package cnispawn
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 	"runtime"
 	"syscall"
 )
 
-func getCniPath() (string, error) {
-	cniPath := os.Getenv("CNI_PATH")
-	if cniPath == "" {
-		return "", errors.New("CNI_PATH was not set")
-	}
-	return cniPath, nil
-}
-
-func Spawn(background bool, nspawnArgs []string) error {
+func Spawn(cniPluginDir string, nspawnArgs []string) error {
 	runtime.LockOSThread()
 
-	cniNetns, err := NewCniNetns()
+	cniNetns, err := NewCniNetns(cniPluginDir)
 	if err != nil {
 		return err
 	}
@@ -71,14 +62,11 @@ func Spawn(background bool, nspawnArgs []string) error {
 	env = append(env, "SYSTEMD_NSPAWN_API_VFS_WRITABLE=1")
 	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=0")
 
-	if background {
-		_, err := syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
-			Dir:   "",
-			Env:   env,
-			Files: []uintptr{},
-			Sys:   &syscall.SysProcAttr{},
-		})
-		return err
-	}
-	return syscall.Exec(systemdNspawnPath, args, env)
+	_, err = syscall.ForkExec(systemdNspawnPath, args, &syscall.ProcAttr{
+		Dir:   "",
+		Env:   env,
+		Files: []uintptr{},
+		Sys:   &syscall.SysProcAttr{},
+	})
+	return err
 }

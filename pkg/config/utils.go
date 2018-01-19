@@ -78,5 +78,5 @@ func WriteConfigToFile(cfg *ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to encode cluster config")
 	}
-	return fs.CreateBytes(cfgFilepath, raw)
+	return fs.CreateFileFromBytes(cfgFilepath, raw)
 }

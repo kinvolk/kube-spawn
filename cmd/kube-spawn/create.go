@@ -18,8 +18,9 @@ package main
 
 import (
 	"log"
-	"os"
+	"os/exec"
 	"path"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/utils"
+	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 )
 
 var (
@@ -66,6 +68,7 @@ func init() {
 	createCmd.Flags().Bool("dev", false, "create a cluster from a local build of Kubernetes")
 	createCmd.Flags().IntP("nodes", "n", 0, "number of nodes to spawn")
 	createCmd.Flags().StringP("image", "i", "", "base image for nodes")
+	createCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "path to directory with CNI plugins")
 	viper.BindPFlags(createCmd.Flags())
 
 	viper.BindEnv("runtime-config.rkt.rkt-bin", "KUBE_SPAWN_RKT_BIN")
@@ -136,16 +139,23 @@ func doCreate() {
 		log.Fatal(errors.Wrap(err, "error setting container runtime defaults"))
 	}
 
-	// note: this is a workaround the keyctl issue with runc
-	// can be removed when systemd v235 is common
-	// TODO: move this somewhere else and reuse code from utils pkg
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		log.Fatal("GOPATH was not set")
+	// TODO: the docker-runc wrapper ensures `--no-new-keyring` is
+	// set, otherwise Docker will attempt to use keyring syscalls
+	// which are not allowed in systemd-nspawn containers. It can
+	// be removed once we require systemd v235 or later. We then
+	// will be able to whitelist the required syscalls; see:
+	// https://github.com/systemd/systemd/pull/6798
+	kubeSpawnRuncPath := "kube-spawn-runc"
+	if !utils.IsExecBinary(kubeSpawnRuncPath) {
+		if lp, err := exec.LookPath(kubeSpawnRuncPath); err != nil {
+			log.Fatal(errors.Wrap(err, "kube-spawn-runc binary not found but required"))
+		} else {
+			kubeSpawnRuncPath = lp
+		}
 	}
 	cfg.Copymap = append(cfg.Copymap, config.Pathmap{
 		Dst: "/usr/bin/kube-spawn-runc",
-		Src: path.Join(goPath, "src/github.com/kinvolk/kube-spawn/kube-spawn-runc"),
+		Src: kubeSpawnRuncPath,
 	})
 
 	if cfg.Image == config.DefaultBaseImage {
@@ -182,9 +192,42 @@ func doCreate() {
 		log.Fatal(errors.Wrap(err, "error generating files"))
 	}
 
-	log.Print("copy files into environment")
-	if err := bootstrap.CopyFiles(cfg); err != nil {
-		log.Fatal(errors.Wrap(err, "error copying files"))
+	log.Print("copying files into environment")
+
+	copyFailed := false
+	copyErrChan := make(chan error)
+	go func() {
+		for {
+			select {
+			case err, ok := <-copyErrChan:
+				if !ok {
+					return
+				}
+				copyFailed = true
+				log.Printf("%v", err)
+			}
+		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(cfg.Copymap))
+
+	for _, pm := range cfg.Copymap {
+		go func(dst, src string) {
+			defer wg.Done()
+			// dst path is relative to the machine rootfs
+			dst = path.Join(cfg.KubeSpawnDir, cfg.Name, "rootfs", dst)
+			if copyErr := fs.CopyFile(src, dst); copyErr != nil {
+				copyErrChan <- errors.Wrapf(err, "failed to copy file %q -> %q", src, dst)
+			}
+		}(pm.Dst, pm.Src)
+	}
+
+	wg.Wait()
+	close(copyErrChan)
+
+	if copyFailed {
+		log.Fatalf("Copying necessary files didn't succeed, aborting")
 	}
 
 	saveConfig(cfg)

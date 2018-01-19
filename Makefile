@@ -18,8 +18,6 @@ all:
 		kube-spawn-build
 else
 all:
-	go build -o cni-noop ./cmd/cni-noop
-	go build -o cnispawn ./cmd/cnispawn
 	go build -o kube-spawn-runc ./cmd/kube-spawn-runc
 	go build -o kube-spawn \
 		-ldflags "-X main.version=$(VERSION)" \
@@ -33,10 +31,8 @@ dep:
 
 clean:
 	rm -f \
-		cni-noop \
-		cnispawn \
 		kube-spawn \
 		kube-spawn-runc
 
 install:
-	install cni-noop cnispawn kube-spawn kube-spawn-runc "$(BINDIR)"
+	install kube-spawn kube-spawn-runc "$(BINDIR)"

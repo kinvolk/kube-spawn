@@ -29,6 +29,8 @@ const (
 type ClusterConfiguration struct {
 	KubeSpawnDir string `toml:"dir" mapstructure:"dir"`
 
+	CNIPluginDir string `toml:"cni-plugin-dir" mapstructure:"cni-plugin-dir"`
+
 	Name              string `toml:"cluster-name" mapstructure:"cluster-name"`
 	ContainerRuntime  string `toml:"container-runtime" mapstructure:"container-runtime"`
 	KubernetesVersion string `toml:"kubernetes-version" mapstructure:"kubernetes-version"`

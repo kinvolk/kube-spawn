@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"os"
 	"path"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ func rootfsPath(cfg *config.ClusterConfiguration) string {
 // also create empty machine specific rootfs/ dirs
 //
 func GenerateScripts(cfg *config.ClusterConfiguration) error {
-	if err := fs.CreateDir(rootfsPath(cfg)); err != nil {
+	if err := os.MkdirAll(rootfsPath(cfg), 0755); err != nil {
 		return err
 	}
 
@@ -31,34 +32,34 @@ func GenerateScripts(cfg *config.ClusterConfiguration) error {
 	if err := writeKubeadmConfig(cfg); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.DockerDaemonConfigPath), []byte(script.DockerDaemonConfig)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.DockerDaemonConfigPath), []byte(script.DockerDaemonConfig)); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.DockerKubeadmExtraArgsPath), []byte(script.DockerKubeadmExtraArgs)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.DockerKubeadmExtraArgsPath), []byte(script.DockerKubeadmExtraArgs)); err != nil {
 		return err
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.KubeletTmpfilesPath), []byte(script.KubeletTmpfiles)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.KubeletTmpfilesPath), []byte(script.KubeletTmpfiles)); err != nil {
 		return err
 	}
 	if cfg.ContainerRuntime == config.RuntimeRkt {
-		if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.RktletServicePath), []byte(script.RktletService)); err != nil {
+		if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.RktletServicePath), []byte(script.RktletService)); err != nil {
 			return err
 		}
 	}
-	if err := fs.CreateBytes(path.Join(rootfsPath(cfg), script.WeaveNetworkdUnmaskPath), []byte(script.WeaveNetworkdUnmask)); err != nil {
+	if err := fs.CreateFileFromBytes(path.Join(rootfsPath(cfg), script.WeaveNetworkdUnmaskPath), []byte(script.WeaveNetworkdUnmask)); err != nil {
 		return err
 	}
 
 	// create empty config dirs for all nodes
 	for i := 0; i < cfg.Nodes; i++ {
 		rootDir := path.Join(cfg.KubeSpawnDir, cfg.Name, config.MachineName(cfg.Name, i), "rootfs")
-		if err := fs.CreateDir(path.Join(rootDir, "etc")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "etc"), 0755); err != nil {
 			return err
 		}
-		if err := fs.CreateDir(path.Join(rootDir, "opt")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "opt"), 0755); err != nil {
 			return err
 		}
-		if err := fs.CreateDir(path.Join(rootDir, "usr/bin")); err != nil {
+		if err := os.MkdirAll(path.Join(rootDir, "usr/bin"), 0755); err != nil {
 			return err
 		}
 	}
@@ -74,7 +75,7 @@ func writeKubeadmBootstrap(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", bootstrapScript)
 	}
-	return fs.Create(bootstrapScript, buf)
+	return fs.CreateFileFromReader(bootstrapScript, buf)
 }
 
 func writeKubeadmExtraArgs(cfg *config.ClusterConfiguration) error {
@@ -90,7 +91,7 @@ func writeKubeadmExtraArgs(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", extraArgsConf)
 	}
-	return fs.Create(extraArgsConf, buf)
+	return fs.CreateFileFromReader(extraArgsConf, buf)
 }
 
 func writeKubeadmConfig(cfg *config.ClusterConfiguration) error {
@@ -104,5 +105,5 @@ func writeKubeadmConfig(cfg *config.ClusterConfiguration) error {
 	if err != nil {
 		return errors.Wrapf(err, "error generating %q", kubeadmConf)
 	}
-	return fs.Create(kubeadmConf, buf)
+	return fs.CreateFileFromReader(kubeadmConf, buf)
 }

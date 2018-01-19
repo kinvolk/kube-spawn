@@ -1,4 +1,4 @@
-FROM fedora:26
+FROM fedora:27
 
 ENV GOPATH /go
 ENV PATH "/go/bin:${PATH}"

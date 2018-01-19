@@ -1,6 +1,8 @@
 # kube-spawn-runc
 
 `kube-spawn-runc` is a wrapper around `runc` to add the `--no-new-keyring` flag on `run` and `create` commands.
+We have to do this as the keyring syscalls as used by Docker are forbidden by
+system-nspawn.
 
 To use the wrapper create a custom runtime in `/etc/docker/daemon.json` and activate it as the default-runtime.
 For how to do this refer to [this example](https://github.com/kinvolk/kube-spawn/blob/master/etc/daemon.json#L3-L6).

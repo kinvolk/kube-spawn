@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -43,14 +44,16 @@ func Download(url, fpath string) error {
 	if resp.StatusCode != 200 {
 		return errors.Errorf("server returned [%d] %q", resp.StatusCode, resp.Status)
 	}
-	return fs.Create(fpath, resp.Body)
+	return fs.CreateFileFromReader(fpath, resp.Body)
 }
 
 func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 	var err error
 	versionPath := path.Join(getCacheDir(cfg), cfg.KubernetesVersion)
-	if !fs.Exists(versionPath) {
-		if err := fs.CreateDir(versionPath); err != nil {
+	if exists, err := fs.PathExists(versionPath); err != nil {
+		return err
+	} else if !exists {
+		if err := os.MkdirAll(versionPath, 0755); err != nil {
 			return err
 		}
 	}
@@ -65,7 +68,10 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 			defer wg.Done()
 			url = strings.Replace(url, "$VERSION", cfg.KubernetesVersion, 1)
 			inCachePath := path.Join(versionPath, path.Base(url))
-			if !fs.Exists(inCachePath) {
+			if exists, err := fs.PathExists(inCachePath); err != nil {
+				log.Printf("Error checking if path %q exists: %v\n", inCachePath, err)
+				return
+			} else if !exists {
 				log.Printf("downloading %s", path.Base(inCachePath))
 				err = Download(url, inCachePath)
 				if err != nil {
@@ -81,14 +87,18 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 
 func DownloadSocatBin(cfg *config.ClusterConfiguration) error {
 	cachePath := getCacheDir(cfg)
-	if !fs.Exists(cachePath) {
-		if err := fs.CreateDir(cachePath); err != nil {
+	if exists, err := fs.PathExists(cachePath); err != nil {
+		return err
+	} else if !exists {
+		if err := os.MkdirAll(cachePath, 0755); err != nil {
 			return err
 		}
 	}
 	inCachePath := path.Join(cachePath, path.Base(staticSocatUrl))
 
-	if !fs.Exists(inCachePath) {
+	if exists, err := fs.PathExists(inCachePath); err != nil {
+		return err
+	} else if !exists {
 		log.Printf("downloading %s", path.Base(inCachePath))
 		if err := Download(staticSocatUrl, inCachePath); err != nil {
 			return errors.Wrapf(err, "error downloading %s", staticSocatUrl)

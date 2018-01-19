@@ -86,7 +86,9 @@ func stopMachines(cfg *config.ClusterConfiguration, force bool) {
 				return
 			}
 			cfg.Machines[i].Running = false
-			cfg.Machines[i].IP = ""
+			// machinectl output for machines with no IP
+			// is '-', hence use '-' here was well
+			cfg.Machines[i].IP = "-"
 			log.Printf("%q stopped", cfg.Machines[i].Name)
 		}(i)
 	}

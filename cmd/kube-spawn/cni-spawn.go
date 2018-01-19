@@ -17,18 +17,32 @@ limitations under the License.
 package main
 
 import (
-	"log"
-	"runtime"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
 
 	"github.com/kinvolk/kube-spawn/pkg/cnispawn"
 )
 
-func main() {
-	runtime.LockOSThread()
-
-	cniNetns, err := cnispawn.NewCniNetns()
-	if err != nil {
-		log.Fatal(err)
+var (
+	cniSpawnCmd = &cobra.Command{
+		Use:    "cni-spawn",
+		Short:  "Spawn systemd-nspawn containers in a new network namespace",
+		Hidden: true,
+		Run:    runCNISpawn,
 	}
-	defer cniNetns.Close()
+	cniPluginDir string
+)
+
+func init() {
+	kubespawnCmd.AddCommand(cniSpawnCmd)
+	cniSpawnCmd.Flags().StringVar(&cniPluginDir, "cni-plugin-dir", "/opt/cni/bin", "path to CNI plugin directory")
+}
+
+func runCNISpawn(cmd *cobra.Command, args []string) {
+	if err := cnispawn.Spawn(cniPluginDir, args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 }

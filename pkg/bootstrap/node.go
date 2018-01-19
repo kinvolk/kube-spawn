@@ -31,7 +31,6 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/machinetool"
-	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 	"github.com/pkg/errors"
 )
 
@@ -137,10 +136,6 @@ func GetIPAddressLegacy(mach string) (string, error) {
 	}
 
 	return "", err
-}
-
-func PoolImageExists() bool {
-	return fs.Exists(machinesImage)
 }
 
 func GetPoolSize(baseImage string, nodes int) (int64, error) {
@@ -360,9 +355,6 @@ func EnsureRequirements(cfg *config.ClusterConfiguration) error {
 	// TODO: should be moved to pkg/config/defaults.go
 	if err := WriteNetConf(); err != nil {
 		errors.Wrap(err, "error writing CNI configuration")
-	}
-	if err := EnsureBridge(); err != nil {
-		return errors.Wrap(err, "error checking CNI bridge")
 	}
 	// check if container linux base image exists
 	log.Printf("checking base image")
