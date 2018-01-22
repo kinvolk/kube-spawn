@@ -14,33 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
-// import (
-// 	"log"
+import (
+	"syscall"
+	"unsafe"
 
-// 	"github.com/spf13/cobra"
-// )
+	"golang.org/x/sys/unix"
+)
 
-// var (
-// 	upCmd = &cobra.Command{
-// 		Use:   "up",
-// 		Short: "Create a cluster with name `default` and start it",
-// 		Run:   runUp,
-// 	}
-// )
-
-// func init() {
-// 	kubespawnCmd.AddCommand(upCmd)
-// }
-
-// func runUp(cmd *cobra.Command, args []string) {
-// 	if len(args) > 0 {
-// 		log.Fatalf("Command up doesn't take arguments, got: %v", args)
-// 	}
-
-// 	doCreate()
-
-// 	cfg := loadConfig()
-// 	doStart(cfg, false)
-// }
+// IsTerminal returns true if the given file descriptor is a terminal.
+func IsTerminal(fd uintptr) bool {
+	var termios syscall.Termios
+	_, _, err := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(&termios)))
+	return err == 0
+}

@@ -31,8 +31,6 @@ const LoopbackNetConf string = `
     "type": "loopback"
 }`
 
-const VarLibCniDir string = "/var/lib/cni/networks/kube-spawn-net"
-
 func writeNetConf(fpath, content string) error {
 	if _, err := os.Stat(fpath); os.IsExist(err) {
 		return nil

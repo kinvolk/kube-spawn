@@ -18,7 +18,6 @@ all:
 		kube-spawn-build
 else
 all:
-	go build -o kube-spawn-runc ./cmd/kube-spawn-runc
 	go build -o kube-spawn \
 		-ldflags "-X main.version=$(VERSION)" \
 		./cmd/kube-spawn
@@ -32,7 +31,6 @@ dep:
 clean:
 	rm -f \
 		kube-spawn \
-		kube-spawn-runc
 
 install:
-	install kube-spawn kube-spawn-runc "$(BINDIR)"
+	install kube-spawn "$(BINDIR)"

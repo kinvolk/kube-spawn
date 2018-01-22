@@ -17,23 +17,20 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-const tableFmt = "%-10s  %s"
-
 var (
 	listCmd = &cobra.Command{
 		Use:   "list",
-		Short: "print the created environments",
+		Short: "List all kube-spawn clusters",
 		Run:   runList,
 	}
 )
@@ -44,48 +41,22 @@ func init() {
 
 func runList(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
-		log.Fatalf("too many arguments: %v", args)
+		log.Fatalf("Command list doesn't take arguments, got: %v", args)
 	}
 
-	ksDir := viper.GetString("dir")
+	clusterDir := path.Join(viper.GetString("dir"), "clusters/")
 
-	matches, err := filepath.Glob(path.Join(ksDir, "*"))
-	if err != nil {
-		log.Fatal(err)
-
+	entries, err := ioutil.ReadDir(clusterDir)
+	if err != nil && !os.IsNotExist(err) {
+		log.Fatalf("Failed to read cluster directory: %v", err)
 	}
 
-	var found [][]string
-	for _, m := range matches {
-		name := filepath.Base(m)
-		// skip .cache
-		if strings.HasPrefix(name, ".") {
-			continue
-		}
-		fi, err := os.Stat(m)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if fi.IsDir() {
-			found = append(found, []string{
-				fi.Name(),
-				fi.ModTime().Format(time.Stamp),
-			})
+	if len(entries) == 0 {
+		log.Printf("No clusters yet")
+	} else {
+		fmt.Println("Available clusters:")
+		for _, entry := range entries {
+			fmt.Printf(" %s\n", entry.Name())
 		}
 	}
-
-	if len(found) < 1 {
-		log.Printf("no environments found")
-		return
-	}
-
-	printTable(found)
-}
-
-func printTable(found [][]string) {
-	log.Printf(tableFmt, "ENV NAME", "LAST MODIFIED")
-	for _, e := range found {
-		log.Printf(tableFmt, e[0], e[1])
-	}
-	log.Printf("\n%d environment(s) found", len(found))
 }

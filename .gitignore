@@ -31,4 +31,3 @@ _testmain.go
 /cni-noop
 /cnispawn
 /kube-spawn
-/kube-spawn-runc

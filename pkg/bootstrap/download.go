@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kinvolk/kube-spawn/pkg/config"
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
 	"github.com/pkg/errors"
 )
@@ -30,10 +29,6 @@ var (
 	}
 )
 
-func getCacheDir(cfg *config.ClusterConfiguration) string {
-	return path.Join(cfg.KubeSpawnDir, config.CacheDir)
-}
-
 func Download(url, fpath string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -47,9 +42,9 @@ func Download(url, fpath string) error {
 	return fs.CreateFileFromReader(fpath, resp.Body)
 }
 
-func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
+func DownloadKubernetesBinaries(k8sVersion, targetDir string) error {
 	var err error
-	versionPath := path.Join(getCacheDir(cfg), cfg.KubernetesVersion)
+	versionPath := path.Join(targetDir, k8sVersion)
 	if exists, err := fs.PathExists(versionPath); err != nil {
 		return err
 	} else if !exists {
@@ -62,19 +57,16 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 	wg.Add(len(k8sfiles))
 	for _, url := range k8sfiles {
 		// replace placeholder $VERSION with actual version parameter
-		// TODO we need some way to validate this or a better way to get
-		// kubelet/kubeadm/kubectl binaries
 		go func(url string) {
 			defer wg.Done()
-			url = strings.Replace(url, "$VERSION", cfg.KubernetesVersion, 1)
+			url = strings.Replace(url, "$VERSION", k8sVersion, 1)
 			inCachePath := path.Join(versionPath, path.Base(url))
 			if exists, err := fs.PathExists(inCachePath); err != nil {
 				log.Printf("Error checking if path %q exists: %v\n", inCachePath, err)
 				return
 			} else if !exists {
-				log.Printf("downloading %s", path.Base(inCachePath))
-				err = Download(url, inCachePath)
-				if err != nil {
+				log.Printf("Downloading %s", path.Base(inCachePath))
+				if err = Download(url, inCachePath); err != nil {
 					err = errors.Wrapf(err, "error downloading %s", url)
 					return
 				}
@@ -85,16 +77,15 @@ func DownloadK8sBins(cfg *config.ClusterConfiguration) error {
 	return err
 }
 
-func DownloadSocatBin(cfg *config.ClusterConfiguration) error {
-	cachePath := getCacheDir(cfg)
-	if exists, err := fs.PathExists(cachePath); err != nil {
+func DownloadSocatBin(targetDir string) error {
+	if exists, err := fs.PathExists(targetDir); err != nil {
 		return err
 	} else if !exists {
-		if err := os.MkdirAll(cachePath, 0755); err != nil {
+		if err := os.MkdirAll(targetDir, 0755); err != nil {
 			return err
 		}
 	}
-	inCachePath := path.Join(cachePath, path.Base(staticSocatUrl))
+	inCachePath := path.Join(targetDir, path.Base(staticSocatUrl))
 
 	if exists, err := fs.PathExists(inCachePath); err != nil {
 		return err

@@ -12,7 +12,6 @@ fix them. If you discover more, please create an issue or submit a PR.
 - [Running with Kubernetes 1.7.3 or newer](#running-with-kubernetes-173-or-newer)
 - [Getting the Kubernetes repositories](#getting-the-kubernetes-repositories)
 - [Setting up an insecure registry](#setting-up-an-insecure-registry)
-- [Debugging kube-spawn-runc](#debugging-kube-spawn-runc)
 - [Inotify problems with many nodes](#inotify-problems-with-many-nodes)
 - [Issues with ISPs hijacking DNS requests](#issues-with-isps-hijacking-dns-requests)
 
@@ -195,10 +194,6 @@ In that case, there are several approaches you could try out.
 
 * Check if the network interface `cni0` is available, by running `ip link | grep cni0`.
 * Check if the port 5000 is open, by running `ss | grep 5000`.
-
-## Debugging `kube-spawn-runc`
-
-see [here](../cmd/kube-spawn-runc/README.md)
 
 ## Inotify problems with many nodes
 

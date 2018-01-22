@@ -52,8 +52,8 @@ func CreateFileFromReader(path string, reader io.Reader) error {
 	return nil
 }
 
-func CreateFileFromBytes(path string, data []byte) error {
-	buf := bytes.NewBuffer(data)
+func CreateFileFromString(path string, content string) error {
+	buf := bytes.NewBuffer([]byte(content))
 	return CreateFileFromReader(path, buf)
 }
 
