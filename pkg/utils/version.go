@@ -1,13 +1,19 @@
 package utils
 
-import "github.com/Masterminds/semver"
+import (
+	"fmt"
 
-func CheckVersionConstraint(version, constraint string) bool {
+	"github.com/Masterminds/semver"
+)
+
+func VersionConstraintSatisfied(version, constraint string) (bool, error) {
 	v, err := semver.NewVersion(version)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("cannot parse %q as semver version: %v", version, err)
 	}
-
-	c, _ := semver.NewConstraint(constraint)
-	return c.Check(v)
+	c, err := semver.NewConstraint(constraint)
+	if err != nil {
+		return false, fmt.Errorf("cannot parse %q as version constraint: %v", constraint, err)
+	}
+	return c.Check(v), nil
 }

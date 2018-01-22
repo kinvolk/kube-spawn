@@ -18,164 +18,53 @@ package main
 
 import (
 	"log"
-	"sync"
-	"time"
+	"path"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/sys/unix"
+	"github.com/spf13/viper"
 
-	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
-	"github.com/kinvolk/kube-spawn/pkg/config"
-	"github.com/kinvolk/kube-spawn/pkg/distribution"
-	"github.com/kinvolk/kube-spawn/pkg/machinetool"
-	"github.com/kinvolk/kube-spawn/pkg/nspawntool"
-	"github.com/kinvolk/kube-spawn/pkg/utils"
-	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
+	"github.com/kinvolk/kube-spawn/pkg/cluster"
 )
 
 var (
 	startCmd = &cobra.Command{
-		Use: "start",
-		// Aliases: []string{"setup, up"},
-		Short: "Start the cluster. You should have run 'kube-spawn create' before this",
+		Use:   "start",
+		Short: "Start a cluster. You should have run 'kube-spawn create' before this",
 		Run:   runStart,
 	}
-
 	flagSkipInit bool
 )
 
 func init() {
 	kubespawnCmd.AddCommand(startCmd)
-	startCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "skips the initialization of a Kubernetes-Cluster with kubeadm")
+
+	startCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "Skips cluster initialization through kubeadm")
+	startCmd.Flags().IntP("nodes", "n", 3, "Number of nodes to start")
+	startCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
+
+	viper.BindPFlags(startCmd.Flags())
 }
 
 func runStart(cmd *cobra.Command, args []string) {
-	if unix.Geteuid() != 0 {
-		log.Fatalf("non-root user cannot start clusters. abort.")
-	}
-
 	if len(args) > 0 {
-		log.Fatalf("too many arguments: %v", args)
+		log.Fatalf("Command start doesn't take arguments, got: %v", args)
 	}
 
-	cfg := loadConfig()
-	doStart(cfg, flagSkipInit)
-}
+	kubespawnDir := viper.GetString("dir")
+	clusterName := viper.GetString("cluster-name")
+	numberNodes := viper.GetInt("nodes")
+	cniPluginDir := viper.GetString("cni-plugin-dir")
 
-func doStart(cfg *config.ClusterConfiguration, skipInit bool) {
-	if config.RunningMachines(cfg) == cfg.Nodes {
-		log.Print("cluster is up")
-		return
+	kluster, err := cluster.New(path.Join(kubespawnDir, "clusters", clusterName), clusterName)
+	if err != nil {
+		log.Fatalf("Failed to create cluster object: %v", err)
 	}
 
-	log.Printf("using %q base image from /var/lib/machines", cfg.Image)
-	log.Printf("spawning cluster %q (%d machines)", cfg.Name, cfg.Nodes)
-
-	resizeMachineDir(cfg.Image, cfg.Nodes)
-
-	var wg sync.WaitGroup
-	wg.Add(cfg.Nodes)
-	for i := 0; i < cfg.Nodes; i++ {
-		go func(i int) {
-			defer wg.Done()
-			log.Printf("waiting for machine %q to start up", config.MachineName(cfg.Name, i))
-			if err := nspawntool.Run(cfg, i); err != nil {
-				log.Print(errors.Wrap(err, "failed to start machine"))
-				return
-			}
-			log.Printf("machine %q started", cfg.Machines[i].Name)
-
-			log.Printf("bootstrapping %q", cfg.Machines[i].Name)
-			if err := machinetool.Exec(cfg.Machines[i].Name, "/opt/kube-spawn/bootstrap.sh"); err != nil {
-				log.Fatal(errors.Wrap(err, "failed to bootstrap"))
-			}
-		}(i)
-	}
-	wg.Wait()
-	saveConfig(cfg)
-
-	if config.RunningMachines(cfg) != cfg.Nodes {
-		log.Print("not all machines started")
-		return
-	}
-	log.Printf("cluster %q started", cfg.Name)
-
-	if skipInit {
-		return
+	if err := kluster.Start(numberNodes, cniPluginDir); err != nil {
+		log.Fatalf("Failed to start cluster: %v", err)
 	}
 
-	if cfg.DevCluster {
-		// bring up the docker registry
-		// needed for supplying the hyperkube to kubeadm in the machines
-		if err := distribution.StartRegistry(); err != nil {
-			log.Fatal(errors.Wrap(err, "error starting registry"))
-		}
-		var err error
-		for i := 0; i < distribution.PushImageRetries; i++ {
-			err = distribution.PushImage(cfg.HyperkubeTag)
-			if err == nil {
-				break
-			}
-			time.Sleep(1 * time.Second)
-		}
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "error pushing hyperkube image"))
-		}
-	}
-
-	// cluster init with kubeadm from here
-	initMasterNode(cfg)
-	if cfg.Nodes > 1 {
-		joinWorkerNodes(cfg)
-	}
-	log.Printf("cluster %q initialized", cfg.Name)
-	log.Println("Note: For kubectl to work, please set $KUBECONFIG:")
-	log.Printf("export KUBECONFIG=%s\n", utils.GetKubeconfigPath(cfg.KubeSpawnDir, cfg.Name))
-	saveConfig(cfg)
-}
-
-func initMasterNode(cfg *config.ClusterConfiguration) error {
-	log.Println("[!] note: init on master can take a couple of minutes until all pods are up")
-	if err := nspawntool.InitializeMaster(cfg); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to initialize master node"))
-	}
-
-	return nil
-}
-
-func joinWorkerNodes(cfg *config.ClusterConfiguration) {
-	var wg sync.WaitGroup
-	wg.Add(cfg.Nodes - 1)
-	for i := 1; i < cfg.Nodes; i++ {
-		go func(i int) {
-			defer wg.Done()
-			if err := nspawntool.JoinNode(cfg, i); err != nil {
-				log.Fatal(errors.Wrapf(err, "failed to join %q", cfg.Machines[i].Name))
-			}
-		}(i)
-	}
-	wg.Wait()
-}
-
-func resizeMachineDir(baseImage string, nodesN int) {
-	// estimate get pool size based on sum of virtual image sizes.
-	var poolSize int64
-	var err error
-
-	if exists, err := fs.PathExists("/var/lib/machines.raw"); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to determine if btrfs pool image exists"))
-	} else if !exists {
-		// nothing to do
-		return
-	}
-
-	if poolSize, err = bootstrap.GetPoolSize(baseImage, nodesN); err != nil {
-		// fail hard in case of error, to avoid running unnecessary nodes
-		log.Fatalf("cannot get pool size: %v", err)
-	}
-
-	if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
-		log.Printf("[!] warning: cannot enlarge storage pool: %v", err)
-	}
+	log.Printf("Cluster %q initialized", clusterName)
+	log.Println("Export $KUBECONFIG as follows for kubectl:")
+	log.Printf("\n\texport KUBECONFIG=%s\n\n", kluster.AdminKubeconfigPath())
 }

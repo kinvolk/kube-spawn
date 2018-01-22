@@ -21,10 +21,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/kinvolk/kube-spawn/pkg/config"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -43,41 +42,56 @@ You can run a release-version cluster or spawn one from your local Kubernetes re
 			}
 		},
 	}
-
+	// set from ldflags to current git version during build
 	version string
 
 	printVersion bool
+
+	cfgFile string
 )
 
 func init() {
-	kubespawnCmd.PersistentFlags().StringP("dir", "d", "", "Path to kube-spawn asset directory")
-	kubespawnCmd.PersistentFlags().StringP("cluster-name", "c", "", "Name for the cluster")
+	log.SetFlags(0)
+
+	cobra.OnInitialize(initConfig)
+
+	kubespawnCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version and exit")
+	kubespawnCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default \"/etc/kube-spawn/config.yaml\")")
+	kubespawnCmd.PersistentFlags().StringP("dir", "d", "/var/lib/kube-spawn", "Path to kube-spawn asset directory")
+	kubespawnCmd.PersistentFlags().StringP("cluster-name", "c", "default", "Name for the cluster")
+
 	viper.BindPFlags(kubespawnCmd.PersistentFlags())
 
-	kubespawnCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Output version information")
+	kubespawnCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		cmdName := cmd.Use
+		if cmdName == "create" || cmdName == "destroy" || cmdName == "start" || cmdName == "stop" || cmdName == "up" {
+			if unix.Geteuid() != 0 {
+				cmd.SilenceUsage = true
+				return fmt.Errorf("root privileges required for command %q, aborting", cmdName)
+			}
+		}
+		return nil
+	}
+}
 
-	kubespawnCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		log.SetFlags(0)
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		config := fmt.Sprintf("/etc/kube-spawn")
+		viper.AddConfigPath(config)
+	}
+	viper.SetEnvPrefix("KUBE_SPAWN")
+	viper.AutomaticEnv()
+	if err := viper.ReadInConfig(); err == nil {
+		log.Printf("Using config file %q", viper.ConfigFileUsed())
 	}
 }
 
 func main() {
 	if err := kubespawnCmd.Execute(); err != nil {
 		os.Exit(1)
-	}
-}
-
-func loadConfig() *config.ClusterConfiguration {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "error loading config"))
-	}
-	log.Printf("using config from %s/%s", cfg.KubeSpawnDir, cfg.Name)
-	return cfg
-}
-
-func saveConfig(cfg *config.ClusterConfiguration) {
-	if err := config.WriteConfigToFile(cfg); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to write to config file"))
 	}
 }

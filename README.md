@@ -155,7 +155,7 @@ All nodes can be seen with `machinectl list`, `machinectl shell` can be used to 
 sudo machinectl shell root@kubespawn0
 ```
 
-The password is `k8s`.
+The password is `root`.
 
 
 ## Command Usage
