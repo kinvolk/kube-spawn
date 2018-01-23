@@ -102,6 +102,11 @@ func SetDefaults_Kubernetes(cfg *ClusterConfiguration) error {
 	if cfg.DevCluster || utils.CheckVersionConstraint(cfg.KubernetesVersion, ">=1.8.0") {
 		cfg.TokenGroupsOption = "--groups=system:bootstrappers:kubeadm:default-node-token"
 	}
+	if cfg.DevCluster || utils.CheckVersionConstraint(cfg.KubernetesVersion, ">=1.9.0") {
+		cfg.PreflightChecksOption = "--ignore-preflight-errors=all"
+	} else {
+		cfg.PreflightChecksOption = "--skip-preflight-checks"
+	}
 
 	return nil
 }

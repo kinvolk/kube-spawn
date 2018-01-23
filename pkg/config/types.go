@@ -52,8 +52,9 @@ type ClusterConfiguration struct {
 
 	// Token is the token generated on kubeadm init
 	// used to join more workers to the cluster
-	Token             string `toml:"token, omitempty" mapstructure:"token"`
-	TokenGroupsOption string `toml:"token-groups-option, omitempty" mapstructure:"token-groups-option"`
+	Token                 string `toml:"token, omitempty" mapstructure:"token"`
+	TokenGroupsOption     string `toml:"token-groups-option, omitempty" mapstructure:"token-groups-option"`
+	PreflightChecksOption string `toml:"preflight-checks-option, omitempty" mapstructure:"preflight-checks-option"`
 
 	Machines []MachineConfiguration `toml:"machines, omitempty" mapstructure:"machines"`
 }

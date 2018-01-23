@@ -25,7 +25,7 @@ func InitializeMaster(cfg *config.ClusterConfiguration) error {
 		shellOpts = fmt.Sprintf(`--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64:%s"`, cfg.HyperkubeTag)
 	}
 	initCmd = append(initCmd, []string{
-		"/usr/bin/kubeadm", "init", "--skip-preflight-checks",
+		"/usr/bin/kubeadm", "init", cfg.PreflightChecksOption,
 		"--config=/etc/kubeadm/kubeadm.yml"}...)
 
 	if err := machinetool.Shell(shellOpts, cfg.Machines[0].Name, initCmd...); err != nil {
@@ -91,7 +91,7 @@ func JoinNode(cfg *config.ClusterConfiguration, mNo int) error {
 		shellOpts = `--setenv=KUBE_HYPERKUBE_IMAGE="10.22.0.1:5000/hyperkube-amd64"`
 	}
 	joinCmd = append(joinCmd, []string{
-		"/usr/bin/kubeadm", "join", "--skip-preflight-checks",
+		"/usr/bin/kubeadm", "join", cfg.PreflightChecksOption,
 		"--token", cfg.Token}...)
 
 	// --discovery-token-unsafe-skip-ca-verification appeared in Kubernetes 1.8
