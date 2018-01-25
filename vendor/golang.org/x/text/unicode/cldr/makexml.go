@@ -139,7 +139,7 @@ var comments = map[string]string{
 `,
 	"collation": `
 // Collation contains rules that specify a certain sort-order,
-// as a tailoring of the root order.
+// as a tailoring of the root order. 
 // The parsed rules are obtained by passing a RuleProcessor to Collation's
 // Process method.
 `,
