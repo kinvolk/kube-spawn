@@ -1,14 +1,7 @@
-FROM fedora:27
+FROM golang:latest
 
 ENV GOPATH /go
 ENV PATH "/go/bin:${PATH}"
-
-RUN dnf install -y \
-		git \
-		go \
-		make \
-		which \
-	&& dnf clean all
 
 RUN go get -u github.com/golang/dep/...
 
