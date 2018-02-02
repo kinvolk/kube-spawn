@@ -449,19 +449,29 @@ func isConntrackLoaded() bool {
 }
 
 func isConntrackHashsizeCorrect() bool {
-	hsStr, err := ioutil.ReadFile(ctHashsizeModparam)
+	hsByte, err := ioutil.ReadFile(ctHashsizeModparam)
 	if err != nil {
 		log.Printf("cannot read from %s: %v\n", ctHashsizeModparam, err)
 		return false
 	}
-	hs, _ := strconv.Atoi(string(hsStr))
+	hsStr := strings.TrimSpace(string(hsByte))
+	hs, err := strconv.Atoi(hsStr)
+	if err != nil {
+		log.Printf("parse error on %s: %v\n", hsStr, err)
+		return false
+	}
 
-	ctmaxStr, err := ioutil.ReadFile(ctMaxSysctl)
+	ctmaxByte, err := ioutil.ReadFile(ctMaxSysctl)
 	if err != nil {
 		log.Printf("cannot open %s: %v\n", ctMaxSysctl, err)
 		return false
 	}
-	ctmax, _ := strconv.Atoi(string(ctmaxStr))
+	ctmaxStr := strings.TrimSpace(string(ctmaxByte))
+	ctmax, err := strconv.Atoi(ctmaxStr)
+	if err != nil {
+		log.Printf("parse error on %s: %v\n", ctmaxStr, err)
+		return false
+	}
 
 	if hs < (ctmax / 4) {
 		log.Printf("hashsize(%d) should be greater than nf_conntrack_max/4 (%d).\n", hs, ctmax/4)
