@@ -60,8 +60,6 @@ func init() {
 	kubespawnCmd.PersistentFlags().StringP("dir", "d", "/var/lib/kube-spawn", "Path to kube-spawn asset directory")
 	kubespawnCmd.PersistentFlags().StringP("cluster-name", "c", "default", "Name for the cluster")
 
-	viper.BindPFlags(kubespawnCmd.PersistentFlags())
-
 	kubespawnCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		cmdName := cmd.Use
 		if cmdName == "create" || cmdName == "destroy" || cmdName == "start" || cmdName == "stop" || cmdName == "up" {
@@ -70,6 +68,7 @@ func init() {
 				return fmt.Errorf("root privileges required for command %q, aborting", cmdName)
 			}
 		}
+		viper.BindPFlags(cmd.Flags())
 		return nil
 	}
 }

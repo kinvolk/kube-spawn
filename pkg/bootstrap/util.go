@@ -41,6 +41,10 @@ func PathSupportsOverlay(path string) error {
 		return fmt.Errorf("overlayfs is not available")
 	}
 
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("cannot create directory %q", path)
+	}
+
 	var data syscall.Statfs_t
 	if err := syscall.Statfs(path, &data); err != nil {
 		return fmt.Errorf("cannot statfs %q", path)
