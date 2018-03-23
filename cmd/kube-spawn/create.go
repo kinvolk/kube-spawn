@@ -55,8 +55,6 @@ func init() {
 	createCmd.Flags().String("rkt-binary-path", "/usr/local/bin/rkt", "Path to rkt binary")
 	createCmd.Flags().String("rkt-stage1-image-path", "/usr/local/bin/stage1-coreos.aci", "Path to rkt stage1-coreos.aci image")
 	createCmd.Flags().String("rktlet-binary-path", "/usr/local/bin/rktlet", "Path to rktlet binary")
-
-	viper.BindPFlags(createCmd.Flags())
 }
 
 func runCreate(cmd *cobra.Command, args []string) {
