@@ -36,6 +36,7 @@ const (
 // It returns error if OverlayFS is not supported.
 //  - taken from https://github.com/rkt/rkt/blob/master/common/common.go
 func PathSupportsOverlay(path string) error {
+	ensureOverlayfs()
 	if !isOverlayfsAvailable() {
 		return fmt.Errorf("overlayfs is not available")
 	}
