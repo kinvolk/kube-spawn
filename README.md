@@ -2,7 +2,7 @@
 
 # kube-spawn
 
-<img src="https://raw.githubusercontent.com/cncf/artwork/master/kubernetes/certified-kubernetes/versionless/color/certified_kubernetes_color.png" align="right" width="100px">`kube-spawn` is a tool for creating a multi-node Kubernetes (>= 1.7) cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but is also a [Certified Kubernetes Distribution](https://kubernetes.io/partners/#dist) and, therefore, perfect for running and testing deployments locally.
+<img src="https://github.com/cncf/artwork/raw/8760b54868864a24459716cd0e9ba9986de882f8/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.png" align="right" width="100px"> `kube-spawn` is a tool for creating a multi-node Kubernetes (>= 1.7) cluster on a single Linux machine, created mostly for developers __of__ Kubernetes but is also a [Certified Kubernetes Distribution](https://kubernetes.io/partners/#dist) and, therefore, perfect for running and testing deployments locally.
 
 It attempts to mimic production setups by making use of OS containers to set up nodes.
 
