@@ -29,8 +29,7 @@ import (
 	"syscall"
 
 	"github.com/Masterminds/semver"
-	"github.com/kinvolk/kube-spawn/pkg/config"
-	"github.com/kinvolk/kube-spawn/pkg/machinetool"
+	"github.com/kinvolk/kube-spawn/pkg/machinectl"
 	"github.com/pkg/errors"
 )
 
@@ -43,100 +42,6 @@ const (
 	machinesImage         string = "/var/lib/machines.raw"
 	coreosStableVersion   string = "1478.0.0"
 )
-
-type Node struct {
-	Name string
-	IP   string
-}
-
-func GetRunningNodes() ([]Node, error) {
-	var nodes []Node
-
-	args := []string{
-		"list",
-		"--no-legend",
-	}
-
-	cmd := exec.Command("machinectl", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	b, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	s := bufio.NewScanner(strings.NewReader(string(b)))
-	for s.Scan() {
-		line := strings.Fields(s.Text())
-		if len(line) <= 2 {
-			continue
-		}
-
-		// an example line from systemd v232 or newer:
-		//  kubespawn0 container systemd-nspawn coreos 1478.0.0 10.22.0.130...
-		//
-		// systemd v231 or older:
-		//  kubespawn0 container systemd-nspawn
-
-		var ipaddr string
-		machineName := strings.TrimSpace(line[0])
-		if !strings.HasPrefix(machineName, "kubespawn") {
-			continue
-		}
-
-		if len(line) >= 6 {
-			ipaddr = strings.TrimSuffix(line[5], "...")
-		} else {
-			ipaddr, err = GetIPAddressLegacy(machineName)
-			if err != nil {
-				return nil, err
-			}
-		}
-		node := Node{
-			Name: machineName,
-			IP:   ipaddr,
-		}
-		nodes = append(nodes, node)
-	}
-
-	return nodes, nil
-}
-
-func GetIPAddressLegacy(mach string) (string, error) {
-	// machinectl status kubespawn0 --no-pager | grep Address
-	args := []string{
-		"status",
-		mach,
-		"--no-pager",
-	}
-
-	cmd := exec.Command("machinectl", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	b, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	s := bufio.NewScanner(strings.NewReader(string(b)))
-	for s.Scan() {
-		// an example line is like this:
-		//
-		//  Address: 10.22.0.4
-		if strings.Contains(s.Text(), "Address:") {
-			line := strings.TrimSpace(s.Text())
-			fields := strings.Fields(line)
-			if len(fields) <= 1 {
-				continue
-			}
-			return fields[1], nil
-		}
-	}
-
-	return "", err
-}
 
 func GetPoolSize(baseImage string, nodes int) (int64, error) {
 	var poolSize, extraSize, biSize int64 // in bytes
@@ -351,15 +256,10 @@ func runBtrfsDisableQuota() error {
 	return nil
 }
 
-func EnsureRequirements(cfg *config.ClusterConfiguration) error {
+func EnsureRequirements() error {
 	// TODO: should be moved to pkg/config/defaults.go
 	if err := WriteNetConf(); err != nil {
 		errors.Wrap(err, "error writing CNI configuration")
-	}
-	// check if container linux base image exists
-	log.Printf("checking base image")
-	if !machinetool.ImageExists(cfg.Image) {
-		return fmt.Errorf("base image %q not found", cfg.Image)
 	}
 	// Ensure that the system requirements are satisfied for starting
 	// kube-spawn. It's just like running the commands below:
@@ -751,7 +651,7 @@ func pullRawCoreosImage() error {
 	var cmdPath string
 	var err error
 
-	// TODO: use machinetool pkg
+	// TODO: use machinectl pkg
 	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
 		// fall back to an ordinary abspath to machinectl
 		cmdPath = "/usr/bin/machinectl"
@@ -789,7 +689,7 @@ func ensureCoreosVersion() {
 
 func PrepareCoreosImage() error {
 	// If no coreos image exists, just download it
-	if !machinetool.ImageExists("coreos") {
+	if !machinectl.ImageExists("coreos") {
 		log.Printf("pulling coreos image...")
 		if err := pullRawCoreosImage(); err != nil {
 			return err

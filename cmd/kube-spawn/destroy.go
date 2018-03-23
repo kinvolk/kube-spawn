@@ -18,15 +18,12 @@ package main
 
 import (
 	"log"
-	"os"
 	"path"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/sys/unix"
+	"github.com/spf13/viper"
 
-	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
-	"github.com/kinvolk/kube-spawn/pkg/config"
+	"github.com/kinvolk/kube-spawn/pkg/cluster"
 )
 
 var (
@@ -44,36 +41,24 @@ func init() {
 }
 
 func runDestroy(cmd *cobra.Command, args []string) {
-	if unix.Geteuid() != 0 {
-		log.Fatalf("non-root user cannot destroy clusters. abort.")
-	}
-
 	if len(args) > 0 {
-		log.Fatalf("too many arguments: %v", args)
+		log.Fatalf("Command destroy doesn't take arguments, got: %v", args)
 	}
 
-	cfg := loadConfig()
-	doDestroy(cfg)
-}
+	kubespawnDir := viper.GetString("dir")
+	clusterName := viper.GetString("cluster-name")
+	clusterDir := path.Join(kubespawnDir, "clusters", clusterName)
 
-func doDestroy(cfg *config.ClusterConfiguration) {
-	log.Printf("destroying cluster %q", cfg.Name)
-
-	doStop(cfg, true)
-
-	cDir := path.Join(cfg.KubeSpawnDir, cfg.Name)
-	if err := os.RemoveAll(cDir); err != nil {
-		log.Fatal(errors.Wrapf(err, "error removing cluster dir at %q", cDir))
+	kluster, err := cluster.New(clusterDir, clusterName)
+	if err != nil {
+		log.Fatalf("Failed to create cluster object: %v", err)
 	}
-	RemoveCniConfig()
-	log.Printf("%q destroyed", cfg.Name)
-}
 
-func RemoveCniConfig() {
-	if err := os.RemoveAll(bootstrap.VarLibCniDir); err != nil {
-		log.Printf("cannot remove %q: %v", bootstrap.VarLibCniDir, err)
+	log.Printf("Destroying cluster %s ...", clusterName)
+
+	if err := kluster.Destroy(); err != nil {
+		log.Fatalf("Failed to destroy cluster: %v", err)
 	}
-	if err := os.RemoveAll(bootstrap.NspawnNetPath); err != nil {
-		log.Printf("cannot remove %q: %v", bootstrap.NspawnNetPath, err)
-	}
+
+	log.Printf("Cluster %s destroyed", clusterName)
 }
