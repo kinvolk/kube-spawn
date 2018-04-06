@@ -32,12 +32,12 @@ import (
 	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
-func Run(machinectlImage, lowerRootPath, upperRootPath, machineName, cniPluginDir string) error {
+func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir string) error {
 	if machinectl.IsRunning(machineName) {
 		return errors.Errorf("a machine with name %q is running already", machineName)
 	}
 
-	if err := machinectl.Clone(machinectlImage, machineName); err != nil {
+	if err := machinectl.Clone(baseImageName, machineName); err != nil {
 		return errors.Wrap(err, "error cloning image")
 	}
 
