@@ -47,7 +47,6 @@ func init() {
 	kubespawnCmd.AddCommand(createCmd)
 
 	createCmd.Flags().String("container-runtime", "docker", "Runtime to use for the cluster (can be docker or rkt)")
-	createCmd.Flags().String("machinectl-image", "coreos", "Name of the machinectl image to use for the kube-spawn containers")
 	createCmd.Flags().String("kubernetes-version", "v1.9.3", "Kubernetes version to install")
 	createCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	createCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")

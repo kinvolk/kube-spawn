@@ -34,16 +34,21 @@ import (
 )
 
 const (
-	containerNameTemplate string = "kubespawn%d"
-	ctHashsizeModparam    string = "/sys/module/nf_conntrack/parameters/hashsize"
-	ctHashsizeValue       string = "131072"
-	ctMaxSysctl           string = "/proc/sys/net/nf_conntrack_max"
-	machinesDir           string = "/var/lib/machines"
-	machinesImage         string = "/var/lib/machines.raw"
-	coreosStableVersion   string = "1478.0.0"
+	containerNameTemplate  string = "kubespawn%d"
+	ctHashsizeModparam     string = "/sys/module/nf_conntrack/parameters/hashsize"
+	ctHashsizeValue        string = "131072"
+	ctMaxSysctl            string = "/proc/sys/net/nf_conntrack_max"
+	machinesDir            string = "/var/lib/machines"
+	machinesImage          string = "/var/lib/machines.raw"
+	baseImageStableVersion string = "1478.0.0"
 )
 
-func GetPoolSize(baseImage string, nodes int) (int64, error) {
+var (
+	BaseImageName string = "flatcar"
+	baseImageURL  string = "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2"
+)
+
+func GetPoolSize(baseImageName string, nodes int) (int64, error) {
 	var poolSize, extraSize, biSize int64 // in bytes
 
 	// Give 50% more space for each cloned image.
@@ -55,7 +60,7 @@ func GetPoolSize(baseImage string, nodes int) (int64, error) {
 	var extraSizeRatio float64 = 0.5
 	var err error
 
-	baseImageAbspath := path.Join(machinesDir, baseImage+".raw")
+	baseImageAbspath := path.Join(machinesDir, baseImageName+".raw")
 
 	if poolSize, err = getAllocatedFileSize(machinesImage); err != nil {
 		return 0, err
@@ -274,9 +279,8 @@ func EnsureRequirements() error {
 	ensureIptables()
 	// check for SELinux enforcing mode
 	ensureSelinux()
-	// check for Container Linux version
-	// TODO: this hardcodes usage of coreos
-	ensureCoreosVersion()
+	// check for BaseImage version, either Container Linux or Flatcar Linux
+	ensureBaseImageVersion()
 	return nil
 }
 
@@ -571,29 +575,29 @@ func ensureSelinux() {
 	}
 }
 
-func checkCoreosSemver(coreosVer string) error {
-	v, err := semver.NewVersion(coreosVer)
+func checkBaseImageSemver(baseImageVer string) error {
+	v, err := semver.NewVersion(baseImageVer)
 	if err != nil {
 		return err
 	}
 
-	c, err := semver.NewConstraint(">=" + coreosStableVersion)
+	c, err := semver.NewConstraint(">=" + baseImageStableVersion)
 	if err != nil {
-		log.Printf("cannot get constraint for >= %s: %v", coreosStableVersion, err)
+		log.Printf("cannot get constraint for >= %s: %v", baseImageStableVersion, err)
 		return err
 	}
 
 	if c.Check(v) {
 		return nil
 	} else {
-		return fmt.Errorf("ERROR: Container Linux version %s is too low in your local image.", coreosVer)
+		return fmt.Errorf("ERROR: Container Linux version %s is too low in your local image.", baseImageVer)
 	}
 }
 
-func checkCoreosVersion() error {
+func checkBaseImageVersion() error {
 	args := []string{
 		"image-status",
-		"coreos",
+		BaseImageName,
 	}
 
 	cmd := exec.Command("machinectl", args...)
@@ -605,9 +609,9 @@ func checkCoreosVersion() error {
 		return err
 	}
 
-	checkCoreosVersionField := func(values []string) error {
+	checkBaseImageVersionField := func(values []string) error {
 		for _, v := range values {
-			if err := checkCoreosSemver(strings.TrimSpace(v)); err != nil {
+			if err := checkBaseImageSemver(strings.TrimSpace(v)); err != nil {
 				if err == semver.ErrInvalidSemVer {
 					// just meaning it's not a version field, so continue to the next field
 					continue
@@ -639,7 +643,7 @@ func checkCoreosVersion() error {
 
 		// now the line has the key "OS", so get the version field in the values
 		values := strings.Fields(valueStr)
-		if err := checkCoreosVersionField(values); err != nil {
+		if err := checkBaseImageVersionField(values); err != nil {
 			return err
 		}
 	}
@@ -647,7 +651,7 @@ func checkCoreosVersion() error {
 	return nil
 }
 
-func pullRawCoreosImage() error {
+func pullBaseImage() error {
 	var cmdPath string
 	var err error
 
@@ -661,8 +665,8 @@ func pullRawCoreosImage() error {
 		cmdPath,
 		"pull-raw",
 		"--verify=no",
-		"https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2",
-		"coreos",
+		baseImageURL,
+		BaseImageName,
 	}
 
 	cmd := exec.Cmd{
@@ -680,24 +684,24 @@ func pullRawCoreosImage() error {
 	return nil
 }
 
-func ensureCoreosVersion() {
-	if err := checkCoreosVersion(); err != nil {
+func ensureBaseImageVersion() {
+	if err := checkBaseImageVersion(); err != nil {
 		log.Println(err)
-		log.Fatalf("You will need to remove the image by 'sudo machinectl remove coreos' then the next run of kube-spawn will download version %s of coreos image automatically.", coreosStableVersion)
+		log.Fatalf("You will need to remove the image by 'sudo machinectl remove %s' then the next run of kube-spawn will download version %s of coreos image automatically.", BaseImageName, baseImageStableVersion)
 	}
 }
 
-func PrepareCoreosImage() error {
-	// If no coreos image exists, just download it
-	if !machinectl.ImageExists("coreos") {
-		log.Printf("pulling coreos image...")
-		if err := pullRawCoreosImage(); err != nil {
+func PrepareBaseImage() error {
+	// If no image exists, just download it
+	if !machinectl.ImageExists(BaseImageName) {
+		log.Printf("pulling %s image...", BaseImageName)
+		if err := pullBaseImage(); err != nil {
 			return err
 		}
 	} else {
-		// If coreos image is not new enough, remove the existing image,
+		// If BaseImageName is not new enough, remove the existing image,
 		// then next time `kube-spawn up` will download a new image again.
-		ensureCoreosVersion()
+		ensureBaseImageVersion()
 	}
 	return nil
 }
