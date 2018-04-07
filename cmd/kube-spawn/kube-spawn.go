@@ -30,8 +30,8 @@ var (
 	kubespawnCmd = &cobra.Command{
 		Use:   "kube-spawn",
 		Short: "kube-spawn is a tool for creating a multi-node dev Kubernetes cluster",
-		Long: `kube-spawn is a tool for creating a multi-node dev Kubernetes cluster.
-You can run a release-version cluster or spawn one from your local Kubernetes repository`,
+		Long: `kube-spawn is a tool for creating a multi-node dev Kubernetes cluster
+You can run a release-version cluster or spawn one from a custom hyperkube image`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if printVersion {
 				fmt.Printf("kube-spawn %s\n", version)

@@ -29,10 +29,9 @@ import (
 var (
 	destroyCmd = &cobra.Command{
 		Use:   "destroy",
-		Short: "Remove the cluster environment",
-		Long: `Remove the cluster environment.
-Stops the cluster if it it running`,
-		Run: runDestroy,
+		Short: "Destroy a cluster",
+		Long:  "Destroy a cluster",
+		Run:   runDestroy,
 	}
 )
 

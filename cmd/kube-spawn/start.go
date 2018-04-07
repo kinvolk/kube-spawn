@@ -29,7 +29,7 @@ import (
 var (
 	startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "Start a cluster. You should have run 'kube-spawn create' before this",
+		Short: "Start a cluster that was created with 'kube-spawn create' before",
 		Run:   runStart,
 	}
 	flagSkipInit bool

@@ -32,13 +32,13 @@ import (
 var (
 	createCmd = &cobra.Command{
 		Use:   "create",
-		Short: "Create a new cluster environment",
+		Short: "Create a new cluster",
 		Example: `
-# Create an environment to run a 3 node cluster from a hyperkube image
-$ sudo -E kube-spawn create --nodes 3 --hyperkube-image 10.22.0.1:5000/my-hyperkube-amd64-image:my-test
+# Create a cluster using a custom hyperkube image
+$ sudo ./kube-spawn create --hyperkube-image 10.22.0.1:5000/me/my-hyperkube-amd64-image:my-test
 
 # Create a cluster using rkt as the container runtime
-$ sudo kube-spawn create --container-runtime rkt --rktlet-binary-path $GOPATH/src/github.com/kubernetes-incubator/rktlet/bin/rktlet`,
+$ sudo ./kube-spawn create --container-runtime rkt --rktlet-binary-path $GOPATH/src/github.com/kubernetes-incubator/rktlet/bin/rktlet`,
 		Run: runCreate,
 	}
 )
@@ -47,7 +47,7 @@ func init() {
 	kubespawnCmd.AddCommand(createCmd)
 
 	createCmd.Flags().String("container-runtime", "docker", "Runtime to use for the cluster (can be docker or rkt)")
-	createCmd.Flags().String("kubernetes-version", "v1.9.3", "Kubernetes version to install")
+	createCmd.Flags().String("kubernetes-version", "v1.9.6", "Kubernetes version to install")
 	createCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	createCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")
 	createCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
