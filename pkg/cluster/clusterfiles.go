@@ -87,7 +87,11 @@ systemctl start --no-block kubelet.service
 
 // --cgroups-per-qos should be set to false, so that we can avoid issues with
 // different formats of cgroup paths between k8s and systemd.
-// --enforce-node-allocatable= is also necessary.
+
+// --enforce-node-allocatable= and --eviction-hard= are set to make the
+// kubelet *not* evicting pods from the system, even when memory or disk
+// space is low. Otherwise `kube-spawn start` could fail because the
+// k8s containers started by kubeadm get evicted immediately.
 const KubeletSystemdDropinTmpl = `[Service]
 Environment="KUBELET_CGROUP_ARGS=--cgroup-driver={{ if .UseLegacyCgroupDriver }}cgroupfs{{else}}systemd{{end}}"
 Environment="KUBELET_EXTRA_ARGS=\
@@ -95,6 +99,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 --container-runtime-endpoint={{.RuntimeEndpoint}} \
 --runtime-request-timeout=15m {{- end}} \
 --enforce-node-allocatable= \
+--eviction-hard= \
 --cgroups-per-qos=false \
 --fail-swap-on=false \
 --authentication-token-webhook"
@@ -118,7 +123,7 @@ const KubeSpawnRuncWrapperScript = `#!/bin/bash
 # which are not allowed in systemd-nspawn containers. It can
 # be removed once we require systemd v235 or later. We then
 # will be able to whitelist the required syscalls; see:
-# https:#github.com/systemd/systemd/pull/6798
+# https://github.com/systemd/systemd/pull/6798
 set -euo pipefail
 args=()
 for arg in "${@}"; do
