@@ -46,6 +46,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		log.Fatalf("Command start doesn't take arguments, got: %v", args)
 	}
 
+	doStart()
+
+}
+
+func doStart() {
 	kubespawnDir := viper.GetString("dir")
 	clusterName := viper.GetString("cluster-name")
 	numberNodes := viper.GetInt("nodes")
