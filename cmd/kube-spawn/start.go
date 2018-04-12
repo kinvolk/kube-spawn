@@ -29,16 +29,14 @@ import (
 var (
 	startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "Start a cluster. You should have run 'kube-spawn create' before this",
+		Short: "Start a cluster that was created with 'kube-spawn create' before",
 		Run:   runStart,
 	}
-	flagSkipInit bool
 )
 
 func init() {
 	kubespawnCmd.AddCommand(startCmd)
 
-	startCmd.Flags().BoolVar(&flagSkipInit, "skip-cluster-init", false, "Skips cluster initialization through kubeadm")
 	startCmd.Flags().IntP("nodes", "n", 3, "Number of nodes to start")
 	startCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
 }

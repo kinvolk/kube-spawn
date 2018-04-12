@@ -1,6 +1,6 @@
 # Kubernetes development workflow example
 
-This article describes a step-by-step example of workflow that a Kubernetes developer might follow when patching Kubernetes.
+This article describes a step-by-step workflow that a Kubernetes developer might follow when testing a Kubernetes patch with kube-spawn.
 
 For the purpose of the article, we will write a new [admission controller](https://kubernetes.io/docs/admin/admission-controllers/) named `DenyAttach` that inconditionally denies all attaching to a container. The end result will be:
 
@@ -11,8 +11,6 @@ Error from server (Forbidden): pods "mypod-74c9fd65cb-n5hsg" is forbidden: canno
 ```
 
 The implementation of `DenyAttach` will be reusing code from the existing admission controller [DenyEscalatingExec](https://kubernetes.io/docs/admin/admission-controllers/#denyescalatingexec).
-
-![kube-spawn dev workflow](kube-spawn-dev-workflow.svg)
 
 ## Compiling locally
 
@@ -33,116 +31,75 @@ $ build/run.sh make
 
 # Build a Hyperkube Docker image with a tag
 $ make -C cluster/images/hyperkube VERSION=v1.8.5-beta.0-denyattach
+
+$ docker images | grep hyperkube-amd64
 ```
 
-docker images | grep hyperkube-amd64
+## Pushing the new hyperkube image to a registry of your choice
+
+In this example, we will spawn a local registry:
+
+```
+docker run -d -p 5000:5000 --name registry registry:2
+```
+
+Tag the hyperkube image and push it, for example:
+
+```
+docker tag e0d598144aa3 127.0.0.1:5000/me/hyperkube-amd64:v1.8.5-beta.0-denyattach
+docker push 127.0.0.1:5000/me/hyperkube-amd64:v1.8.5-beta.0-denyattach
+```
 
 ## Deploying your build on kube-spawn
 
 ```
-# Spawn and provision nodes for the cluster
-$ sudo -E ./kube-spawn create --dev -t v1.8.5-beta.0-denyattach -c denyattach
-$ sudo -E ./kube-spawn start -c denyattach
+$ sudo ./kube-spawn create --kubernetes-source-dir $GOPATH/src/k8s.io/kubernetes --hyperkube-image 10.22.0.1:5000/me/hyperkube-amd64:v1.8.5-beta.0-denyattach -c denyattach
+$ sudo ./kube-spawn start -c denyattach
 ```
 
-## Testing the new DenyAttach admission controller
+Note that the registry IP address must be `10.22.0.1` here, which is the
+address of the host `cni0` interface by kube-spawn.
+
+Since the hyperkube image contains the API server, controller manager and
+scheduler but not e.g. kubeadm, we also pass `--kubernetes-source-dir`
+to point kube-spawn to the location from where to copy the necessary
+binaries. If not given, kube-spawn would use the vanilla upstream version
+(`--kubernetes-version` default).
+
+Let's test if it works:
 
 ```
-$ export KUBECONFIG=/var/lib/kube-spawn/denyattach/kubeconfig
-$ kubectl get nodes
-kubespawndenyattach0   Ready     master    1h        v1.8.5-beta.0.1+c117bd71672b2d-dirty
-kubespawndenyattach1   Ready     <none>    1h        v1.8.5-beta.0.1+c117bd71672b2d-dirty
-```
-
-Once all nodes are ready, deploy a simple pod:
-```
-kubectl run mypod --image=busybox --command -- /bin/sh -c 'while true ; do sleep 1 ; date ; done'
-```
-
-Get the name of your pod:
-```
-$ kubectl get pod
+$ export KUBECONFIG=/var/lib/kube-spawn/clusters/denyattach/admin.kubeconfig
+$ kubectl run mypod --image=busybox --command -- /bin/sh -c 'while true ; do sleep 1 ; date ; done'
+...
+$ kubectl get pods
 NAME                     READY     STATUS    RESTARTS   AGE
-mypod-74c9fd65cb-n5hsg   1/1       Running   0          25m
-```
-
-Check that the pod works correctly but that attaching is not possible:
-```
-$ kubectl logs mypod-74c9fd65cb-n5hsg | tail -2
-Sun Nov 26 15:17:32 UTC 2017
-Sun Nov 26 15:17:33 UTC 2017
-$ kubectl attach mypod-74c9fd65cb-n5hsg
+mypod-74c9fd65cb-n9rfs   1/1       Running   0          11s
+$ kubectl attach mypod-74c9fd65cb-n9rfs
 If you don't see a command prompt, try pressing enter.
-Error from server (Forbidden): pods "mypod-74c9fd65cb-n5hsg" is forbidden: cannot attach to a container, rejected by admission controller
+Error from server (Forbidden): pods "mypod-74c9fd65cb-n9rfs" is forbidden: cannot attach to a container, rejected by admission controller
 ```
 
-## Sharing the hyperkube image
-
-```
-docker tag gcr.io/google-containers/hyperkube-amd64:v1.8.5-beta.0-denyattach docker.io/kinvolk/hyperkube-amd64:v1.8.5-beta.0-denyattach
-docker push docker.io/kinvolk/hyperkube-amd64:v1.8.5-beta.0-denyattach
-```
-
-Then, this image can be tested by other developers.
-
-## Using an external hyperkube image
+## Testing a different DenyAttach admission controller
 
 Someone might not like the error message, saying "rejected by admission controller":
 Kubernetes has plenty of admission controllers and it does not say which one rejected the request.
 
-If someone develops a fix for the error message, you can pull that version and test it with kube-spawn without compiling Kubernetes yourself by naming the image in the same way a local build would do:
+Luckily, a colleague fixed that already. Let's test her patch:
 
 ```
-$ docker pull docker.io/kinvolk/hyperkube-amd64:v1.8.5-beta.0-denyattachfix
-$ docker tag docker.io/kinvolk/hyperkube-amd64:v1.8.5-beta.0-denyattachfix gcr.io/google-containers/hyperkube-amd64:v1.8.5-beta.0-denyattachfix
+$ sudo ./kube-spawn create --kubernetes-source-dir $GOPATH/src/k8s.io/kubernetes --hyperkube-image docker.io/kinvolk/hyperkube-amd64:v1.8.5-beta.0-denyattachfix -c denyattachfix
+$ sudo ./kube-spawn start -c denyattachfix
 ```
 
-Then, you can start another kube-spawn cluster:
 ```
-$ sudo -E ./kube-spawn create --dev -t v1.8.5-beta.0-denyattachfix -c denyattachfix
-$ sudo -E ./kube-spawn start -c denyattachfix
-```
-
-By running the same test as before, you could see the different error message:
-```
-$ kubectl attach mypod-74c9fd65cb-48d9m
-If you don't see a command prompt, try pressing enter.
-Error from server (Forbidden): pods "mypod-74c9fd65cb-48d9m" is forbidden: cannot attach to a container, rejected by DenyAttach
-```
-
-This new version of the patch is available on [github](https://github.com/kinvolk/kubernetes/commit/eb0c026372a67eb49bbf80aa619f10ee94527bac).
-
-### Limitations
-
-The hyperkube image contains the api server, the controller manager and the scheduler but not `kubeadm`.
-Therefore, if your patch makes changes in kubeadm, it has to be compiled locally: pulling a remote hyperkube image will not be enough.
-
-## Running several kube-spawn clusters in parallel
-
-You can build several hyperkube versions and run several kube-spawn clusters in parallel by giving them different names with the `-c` option.
-
-```
-$ KUBECONFIG=/var/lib/kube-spawn/denyattach/kubeconfig kubectl get pod
-NAME                     READY     STATUS    RESTARTS   AGE
-mypod-74c9fd65cb-n5hsg   1/1       Running   0          59m
-
-$ KUBECONFIG=/var/lib/kube-spawn/denyattachfix/kubeconfig kubectl get pod
-NAME                     READY     STATUS    RESTARTS   AGE
-mypod-74c9fd65cb-48d9m   1/1       Running   0          3m
+$ export KUBECONFIG=/var/lib/kube-spawn/clusters/denyattachfix/admin.kubeconfig
+$ kubectl run mypod --image=busybox --command -- /bin/sh -c 'while true ; do sleep 1 ; date ; done'
 ...
-
-$ machinectl
-MACHINE                          CLASS     SERVICE        OS     VERSION  ADDRESSES
-3436870bac346e5ad5a7699b92c21834 container docker         alpine 3.4.6    172.17.0.2...
-kubespawndenyattach0             container systemd-nspawn coreos 1492.1.0 10.22.0.2...
-kubespawndenyattach1             container systemd-nspawn coreos 1492.1.0 10.22.0.3...
-kubespawndenyattachfix0          container systemd-nspawn coreos 1492.1.0 10.22.0.4...
-kubespawndenyattachfix1          container systemd-nspawn coreos 1492.1.0 10.22.0.5...
-
-5 machines listed.
+$ kubectl get pods
+NAME                     READY     STATUS    RESTARTS   AGE
+mypod-74c9fd65cb-gbrd9   1/1       Running   0          11s
+$ kubectl attach mypod-74c9fd65cb-gbrd9
+If you don't see a command prompt, try pressing enter.
+Error from server (Forbidden): pods "mypod-74c9fd65cb-gbrd9" is forbidden: cannot attach to a container, rejected by DenyAttach
 ```
-
-### Limitations
-
-If your cluster name finishes with a digit, the node names might conflict.
-To avoid this, I used the cluster names "denyattach" and "denyattachfix".
