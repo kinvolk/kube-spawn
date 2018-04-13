@@ -302,7 +302,9 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string) error {
 	if err := bootstrap.PrepareBaseImage(); err != nil {
 		return err
 	}
-
+	if err := bootstrap.PathSupportsOverlay(c.dir); err != nil {
+		return errors.Wrapf(err, "unable to use overlayfs on underlying filesystem of %q", c.dir)
+	}
 	if err := bootstrap.EnsureRequirements(); err != nil {
 		return err
 	}

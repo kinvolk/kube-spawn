@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kinvolk/kube-spawn/pkg/bootstrap"
 	"github.com/kinvolk/kube-spawn/pkg/cache"
 	"github.com/kinvolk/kube-spawn/pkg/cluster"
 	"github.com/kinvolk/kube-spawn/pkg/utils/fs"
@@ -72,11 +71,6 @@ func doCreate() {
 		log.Fatalf("Failed to stat directory %q: %s\n", err)
 	} else if exists {
 		log.Fatalf("Cluster directory exists already at %q", clusterDir)
-	}
-
-	// TODO
-	if err := bootstrap.PathSupportsOverlay(kubespawnDir); err != nil {
-		log.Fatalf("Unable to use overlayfs on underlying filesystem of %q: %v", kubespawnDir, err)
 	}
 
 	kluster, err := cluster.New(clusterDir, clusterName)

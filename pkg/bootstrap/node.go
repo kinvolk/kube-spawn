@@ -29,8 +29,9 @@ import (
 	"syscall"
 
 	"github.com/Masterminds/semver"
-	"github.com/kinvolk/kube-spawn/pkg/machinectl"
 	"github.com/pkg/errors"
+
+	"github.com/kinvolk/kube-spawn/pkg/machinectl"
 )
 
 const (
@@ -262,9 +263,8 @@ func runBtrfsDisableQuota() error {
 }
 
 func EnsureRequirements() error {
-	// TODO: should be moved to pkg/config/defaults.go
 	if err := WriteNetConf(); err != nil {
-		errors.Wrap(err, "error writing CNI configuration")
+		return errors.Wrap(err, "error writing CNI configuration")
 	}
 	// Ensure that the system requirements are satisfied for starting
 	// kube-spawn. It's just like running the commands below:
@@ -272,32 +272,20 @@ func EnsureRequirements() error {
 	// modprobe overlay
 	// modprobe nf_conntrack
 	// echo "131072" > /sys/module/nf_conntrack/parameters/hashsize
-	ensureOverlayfs()
+	if err := ensureOverlayfs(); err != nil {
+		return errors.Wrap(err, "failed to make sure overlayfs is loaded")
+	}
 	ensureConntrackHashsize()
 
 	// insert an iptables rules to allow traffic through cni0
 	ensureIptables()
-	// check for SELinux enforcing mode
-	ensureSelinux()
+
+	if isSELinuxEnforcing() {
+		return fmt.Errorf("SELinux enforcing mode is enabled but must be disabled (`sudo setenforce 0`) for kube-spawn to work")
+	}
 	// check for BaseImage version, either Container Linux or Flatcar Linux
 	ensureBaseImageVersion()
 	return nil
-}
-
-func isOverlayfsAvailable() bool {
-	f, err := os.Open("/proc/filesystems")
-	if err != nil {
-		log.Fatalf("cannot open /proc/filesystems: %v", err)
-	}
-	defer f.Close()
-
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		if s.Text() == "nodev\toverlay" {
-			return true
-		}
-	}
-	return false
 }
 
 func runModprobe(moduleName string) error {
@@ -308,12 +296,10 @@ func runModprobe(moduleName string) error {
 		// fall back to an ordinary abspath
 		cmdPath = "/usr/sbin/modprobe"
 	}
-
 	args := []string{
 		cmdPath,
 		moduleName,
 	}
-
 	cmd := exec.Cmd{
 		Path:   cmdPath,
 		Args:   args,
@@ -321,26 +307,36 @@ func runModprobe(moduleName string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
-
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return cmd.Run()
 }
 
-func ensureOverlayfs() {
-	if isOverlayfsAvailable() {
-		return
+func isOverlayfsAvailable() (bool, error) {
+	f, err := os.Open("/proc/filesystems")
+	if err != nil {
+		return false, err
 	}
-
-	log.Println("Warning: overlayfs not found, docker would not run.")
-	log.Println("loading overlay module... ")
-
-	if err := runModprobe("overlay"); err != nil {
-		log.Printf("error running modprobe overlay: %v\n", err)
-		return
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if s.Text() == "nodev\toverlay" {
+			return true, nil
+		}
 	}
+	return false, nil
+}
+
+func ensureOverlayfs() error {
+	ok, err := isOverlayfsAvailable()
+	if err != nil {
+		return errors.Wrapf(err, "failed to determine if overlayfs is available")
+	}
+	if ok {
+		// nothing to do
+		return nil
+	}
+	log.Println("overlayfs is not loaded but required")
+	log.Println("Attempting to load overlayfs ...")
+	return runModprobe("overlay")
 }
 
 func isConntrackLoaded() bool {
@@ -567,12 +563,6 @@ func isSELinuxEnforcing() bool {
 	}
 
 	return false
-}
-
-func ensureSelinux() {
-	if isSELinuxEnforcing() {
-		log.Fatalln("ERROR: SELinux enforcing mode is enabled. You will need to disable it with 'sudo setenforce 0' for kube-spawn to work properly.")
-	}
 }
 
 func checkBaseImageSemver(baseImageVer string) error {

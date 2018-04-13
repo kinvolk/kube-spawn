@@ -31,14 +31,12 @@ const (
 	FsMagicZFS      = 0x2FC12FC1 // https://goo.gl/xTvzO5
 )
 
-// PathSupportsOverlay checks whether the given path is compatible with OverlayFS.
-// This method also calls isOverlayfsAvailable().
-// It returns error if OverlayFS is not supported.
-//  - taken from https://github.com/rkt/rkt/blob/master/common/common.go
+// PathSupportsOverlay checks whether overlayfs is supported
+// for the given path. Returns an error if not.
+// Taken from https://github.com/rkt/rkt/blob/master/common/common.go
 func PathSupportsOverlay(path string) error {
-	ensureOverlayfs()
-	if !isOverlayfsAvailable() {
-		return fmt.Errorf("overlayfs is not available")
+	if err := ensureOverlayfs(); err != nil {
+		return err
 	}
 
 	if err := os.MkdirAll(path, 0755); err != nil {
