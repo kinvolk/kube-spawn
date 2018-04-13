@@ -61,6 +61,10 @@ func runCreate(cmd *cobra.Command, args []string) {
 		log.Fatalf("Command create doesn't take arguments, got: %v", args)
 	}
 
+	doCreate()
+}
+
+func doCreate() {
 	kubespawnDir := viper.GetString("dir")
 	clusterName := viper.GetString("cluster-name")
 	clusterDir := path.Join(kubespawnDir, "clusters", clusterName)
