@@ -10,6 +10,18 @@ There is a script called `vagrant-all.sh` which does the following things:
 - redirects traffic from 6443 port on VM to the container with k8s API
 - copies the `kubeconfig` to host
 
+If you are behind a proxy,
+```
+$ vagrant plugin install vagrant-proxyconf
+```
+
+If you are using libvirt instead of virtualbox
+```
+export KUBESPAWN_PROVIDER=libvirt
+```
+
+and then
+
 ```
 $ ./vagrant-all.sh
 ```

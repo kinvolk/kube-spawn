@@ -23,11 +23,21 @@ set -xe
 
 cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
-go get -u github.com/containernetworking/plugins/plugins/...
+# Hitting "fedora: fork/exec /opt/cni/bin/bridge: no such file or directory" with this, using other install method
+#go get -u github.com/containernetworking/plugins/plugins/...
+(
+    cd /tmp
+    curl -fsSL -O https://github.com/containernetworking/plugins/releases/download/v0.6.0/cni-plugins-amd64-v0.6.0.tgz
+    sudo mkdir -p /opt/cni/bin
+    sudo tar -C /opt/cni/bin -xvf cni-plugins-amd64-v0.6.0.tgz
+)
 
 DOCKERIZED=n make all
 
-sudo machinectl show-image coreos || sudo machinectl pull-raw --verify=no https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 coreos
+# workaround lack of http proxy support in machinectl by curl'ing image first and then importing that
+# TODO: replace with a pipe from curl to import-raw
+curl -s https://alpha.release.core-os.net/amd64-usr/current/coreos_developer_container.bin.bz2 -o /tmp/machinectl.bin
+sudo machinectl show-image coreos || sudo machinectl import-raw /tmp/machinectl.bin coreos
 
 sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn create --nodes=2
 sudo GOPATH=$GOPATH CNI_PATH=$GOPATH/bin ./kube-spawn start
