@@ -31,6 +31,7 @@ type ClusterSettings struct {
 	CNIPluginDir          string
 	ContainerRuntime      string
 	HyperkubeImage        string
+	KubeadmResetOptions   string
 	KubernetesSourceDir   string
 	KubernetesVersion     string
 	RuntimeEndpoint       string
@@ -267,6 +268,19 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 	if err := fs.CreateFileFromString(path.Join(rootfsDir, "/etc/systemd/network/50-weave.network"), WeaveSystemdNetworkdConfig); err != nil {
 		return err
 	}
+
+	// When kubeadm is 1.11.0 or newer, `kubeadm reset` stops at user prompt
+	// "Y or n", which prevents subsequent steps from working at all. Thus we
+	// need to deal with kubeadm options differently with k8s versions.
+	kubeadmVersion, err := kubeadmGitVersion(path.Join(rootfsDir, "usr/bin/kubeadm"))
+	if err != nil {
+		return err
+	}
+	opts, err := getKubeadmResetOptions(kubeadmVersion)
+	if err != nil {
+		return err
+	}
+	clusterSettings.KubeadmResetOptions = opts
 
 	buf, err := ExecuteTemplate(KubespawnBootstrapScriptTmpl, clusterSettings)
 	if err != nil {
@@ -634,6 +648,22 @@ func kubeadmJoin(kubeadmVersionStr, masterIP, machineName string, outWriter io.W
 	joinCmd = append(joinCmd, fmt.Sprintf("%s:6443", masterIP))
 	_, err = machinectl.RunCommand(outWriter, nil, "", "shell", machineName, joinCmd...)
 	return err
+}
+
+func getKubeadmResetOptions(kubeadmVersionStr string) (string, error) {
+	kubeadmResetOptions := ""
+	kubeadmVersion, err := semver.NewVersion(kubeadmVersionStr)
+	if err != nil {
+		return "", err
+	}
+	isLargerEqual111, err := semver.NewConstraint(">= 1.11")
+	if err != nil {
+		return "", err
+	}
+	if isLargerEqual111.Check(kubeadmVersion) {
+		kubeadmResetOptions = "--force"
+	}
+	return kubeadmResetOptions, nil
 }
 
 func applyNetworkPlugin(machineName string, outWriter io.Writer) error {
