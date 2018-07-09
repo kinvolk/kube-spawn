@@ -3,12 +3,26 @@
 Here are some common issues that we encountered and how we work around or
 fix them. If you discover more, please create an issue or submit a PR.
 
+- [`/var/lib/machines` partition too small](#varlibmachines-partition-too-small)
 - [SELinux](#selinux)
 - [Restarting machines fails without removing machine images](#restarting-machines-fails-without-removing-machine-images)
 - [Running on a version of systemd \< 233](#running-on-a-version-of-systemd--233)
 - [kubeadm init looks like it is hanging](#kubeadm-init-looks-like-it-is-hanging)
 - [Inotify problems with many nodes](#inotify-problems-with-many-nodes)
 - [Issues with ISPs hijacking DNS requests](#issues-with-isps-hijacking-dns-requests)
+
+## `/var/lib/machines` partition too small
+
+Run the following commands to enlarge the storage pool where `POOL_SIZE`
+is the disk image size in bytes:
+
+```
+# umount /var/lib/machines
+# qemu-img resize -f raw /var/lib/machines.raw POOL_SIZE
+# mount -t btrfs -o loop /var/lib/machines.raw /var/lib/machines
+# btrfs filesystem resize max /var/lib/machines
+# btrfs quota disable /var/lib/machines
+```
 
 ## SELinux
 
