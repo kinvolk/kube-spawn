@@ -30,6 +30,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/kinvolk/kube-spawn/pkg/machinectl"
+	"github.com/kinvolk/kube-spawn/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -151,11 +152,19 @@ func EnlargeStoragePool(poolSize int64) error {
 	// Note: this fails if anything is in use
 	if err := checkMountpoint(machinesDir); err == nil {
 		// It means machinesDir is mountpoint, so do unmount
-		if err := syscall.Unmount(machinesDir, 0); err != nil {
-			// if it's already unmounted, umount(2) returns EINVAL, then continue
-			if !os.IsNotExist(err) && err != syscall.EINVAL {
-				return err
+		// Note that "umount /var/lib/machines" could fail in case "machinectl image-status"
+		// has run once at least. So if the unmount fails, we should retry to unmount
+		// up to 3 seconds.
+		if err := utils.WaitForState(func() error {
+			if err := syscall.Unmount(machinesDir, 0); err != nil {
+				// if it's already unmounted, umount(2) returns EINVAL, then continue
+				if !os.IsNotExist(err) && err != syscall.EINVAL {
+					return err
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
