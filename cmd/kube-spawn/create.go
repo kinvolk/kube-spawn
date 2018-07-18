@@ -51,6 +51,9 @@ func init() {
 	createCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	createCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")
 	createCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
+	createCmd.Flags().String("cni-plugin", "weave", "CNI plugin to use (weave, flannel, calico)")
+	createCmd.Flags().String("cluster-cidr", "", "Cluster CIDR to use")
+	createCmd.Flags().String("pod-network-cidr", "", "Pod Network CIDR to use")
 	createCmd.Flags().String("rkt-binary-path", "/usr/local/bin/rkt", "Path to rkt binary")
 	createCmd.Flags().String("rkt-stage1-image-path", "/usr/local/bin/stage1-coreos.aci", "Path to rkt stage1-coreos.aci image")
 	createCmd.Flags().String("rktlet-binary-path", "/usr/local/bin/rktlet", "Path to rktlet binary")
@@ -88,7 +91,10 @@ func doCreate() {
 		KubernetesVersion:   viper.GetString("kubernetes-version"),
 		KubernetesSourceDir: viper.GetString("kubernetes-source-dir"),
 		CNIPluginDir:        viper.GetString("cni-plugin-dir"),
+		CNIPlugin:           viper.GetString("cni-plugin"),
 		ContainerRuntime:    viper.GetString("container-runtime"),
+		ClusterCIDR:         viper.GetString("cluster-cidr"),
+		PodNetworkCIDR:      viper.GetString("pod-network-cidr"),
 		RktBinaryPath:       viper.GetString("rkt-binary-path"),
 		RktStage1ImagePath:  viper.GetString("rkt-stage1-image-path"),
 		RktletBinaryPath:    viper.GetString("rktlet-binary-path"),
