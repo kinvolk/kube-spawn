@@ -105,7 +105,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 --authentication-token-webhook"
 `
 
-const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/v1alpha1
+const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
 authorizationMode: AlwaysAllow
 apiServerExtraArgs:
   insecure-port: "8080"

@@ -34,6 +34,7 @@ type ClusterSettings struct {
 	ClusterCIDR           string
 	PodNetworkCIDR        string
 	HyperkubeImage        string
+	KubeadmApiVersion     string
 	KubeadmResetOptions   string
 	KubernetesSourceDir   string
 	KubernetesVersion     string
@@ -302,6 +303,13 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 	if err != nil {
 		return err
 	}
+
+	apiVersion, err := getKubeadmApiVersion(kubeadmVersion)
+	if err != nil {
+		return err
+	}
+	clusterSettings.KubeadmApiVersion = apiVersion
+
 	opts, err := getKubeadmResetOptions(kubeadmVersion)
 	if err != nil {
 		return err
@@ -698,6 +706,24 @@ func getKubeadmResetOptions(kubeadmVersionStr string) (string, error) {
 		kubeadmResetOptions = "--force"
 	}
 	return kubeadmResetOptions, nil
+}
+
+func getKubeadmApiVersion(kubeadmVersionStr string) (string, error) {
+	kubeadmApiVersion := ""
+	kubeadmVersion, err := semver.NewVersion(kubeadmVersionStr)
+	if err != nil {
+		return "", err
+	}
+	isLargerEqual111, err := semver.NewConstraint(">= 1.11")
+	if err != nil {
+		return "", err
+	}
+	if isLargerEqual111.Check(kubeadmVersion) {
+		kubeadmApiVersion = "v1alpha2"
+	} else {
+		kubeadmApiVersion = "v1alpha1"
+	}
+	return kubeadmApiVersion, nil
 }
 
 func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Writer) error {
