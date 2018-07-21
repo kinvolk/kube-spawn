@@ -75,6 +75,13 @@ const (
 	kubeadmToken = "aaaaaa.bbbbbbbbbbbbbbbb"
 )
 
+var cniFiles = map[string][]string{
+	"base":    {"bridge", "cnitool", "dhcp", "host-device", "host-local", "ipvlan", "loopback", "macvlan", "noop", "portmap", "ptp", "sample", "tuning", "vlan"},
+	"flannel": {"flannel"},
+	"calico":  {"calico", "calico-ipam"},
+	"weave":   {},
+}
+
 var validNameRegexp = regexp.MustCompile(validNameRegexpStr)
 
 func ValidName(name string) bool {
@@ -197,13 +204,14 @@ func (c *Cluster) Create(clusterSettings *ClusterSettings, clusterCache *cache.C
 
 	socatPath := path.Join(clusterCache.Dir(), "socat")
 	copyItems = append(copyItems, copyItem{dst: "/usr/bin/socat", src: socatPath})
-	files, err := ioutil.ReadDir(clusterSettings.CNIPluginDir)
-	if err != nil {
-		return errors.Errorf("no CNI plugins in %q", clusterSettings.CNIPluginDir)
+	for _, file := range cniFiles["base"] {
+		var dst string = path.Join("opt/cni/bin", file)
+		var src string = path.Join(clusterSettings.CNIPluginDir, file)
+		copyItems = append(copyItems, copyItem{dst: dst, src: src})
 	}
-	for _, file := range files {
-		var dst string = path.Join("opt/cni/bin", file.Name())
-		var src string = path.Join(clusterSettings.CNIPluginDir, file.Name())
+	for _, file := range cniFiles[clusterSettings.CNIPlugin] {
+		var dst string = path.Join("opt/cni/bin", file)
+		var src string = path.Join(clusterSettings.CNIPluginDir, file)
 		copyItems = append(copyItems, copyItem{dst: dst, src: src})
 	}
 

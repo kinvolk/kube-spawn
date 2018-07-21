@@ -101,7 +101,7 @@ container-runtime: rkt
 rktlet-binary-path: /home/user/code/go/src/github.com/kubernetes-incubator/rktlet/bin/rktlet
 ```
 
-## CNI models
+## CNI plugins
 
 kube-spawn supports weave, flannel, calico. It defaults to weave.
 
