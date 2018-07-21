@@ -68,8 +68,8 @@ func init() {
 				return fmt.Errorf("root privileges required for command %q, aborting", cmdName)
 			}
 		}
-		viper.BindPFlags(cmd.Flags())
-		return nil
+		err := viper.BindPFlags(cmd.Flags())
+		return err
 	}
 }
 
