@@ -163,7 +163,9 @@ func Remove(image string) error {
 
 func IsRunning(machine string) bool {
 	check := exec.Command("systemctl", "--machine", machine, "status", "basic.target", "--state=running")
-	check.Run()
+	if err := check.Run(); err != nil {
+		return false
+	}
 	return check.ProcessState.Success()
 }
 

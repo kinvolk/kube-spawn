@@ -549,7 +549,7 @@ func (c *Cluster) RemoveImages(timeout time.Duration) error {
 	for i, image := range images {
 		go func(imageName string, idx int) {
 			defer wg.Done()
-			for _ = range tickChan {
+			for range tickChan {
 				if err := machinectl.Remove(imageName); err == nil {
 					return
 				}
@@ -595,7 +595,7 @@ func (c *Cluster) StopMachines(timeout time.Duration) error {
 	tickChan := time.Tick(2 * time.Second)
 
 waitPoweroff:
-	for _ = range tickChan {
+	for range tickChan {
 		select {
 		case <-ctx.Done():
 			// timeout
