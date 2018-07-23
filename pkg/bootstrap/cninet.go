@@ -36,7 +36,9 @@ func writeNetConf(fpath, content string) error {
 		return nil
 	}
 	dir, _ := path.Split(fpath)
-	os.MkdirAll(dir, os.ModePerm)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return nil
+	}
 	if err := ioutil.WriteFile(fpath, []byte(content), os.ModePerm); err != nil {
 		return fmt.Errorf("error writing %s: %s", fpath, err)
 	}

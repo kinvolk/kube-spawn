@@ -264,7 +264,7 @@ func runBtrfsDisableQuota() error {
 func EnsureRequirements() error {
 	// TODO: should be moved to pkg/config/defaults.go
 	if err := WriteNetConf(); err != nil {
-		errors.Wrap(err, "error writing CNI configuration")
+		return errors.Wrap(err, "error writing CNI configuration")
 	}
 	// Ensure that the system requirements are satisfied for starting
 	// kube-spawn. It's just like running the commands below:
@@ -526,7 +526,10 @@ func setAllowCniRule() error {
 }
 
 func ensureIptables() {
-	setIptablesForwardPolicy()
+	if err := setIptablesForwardPolicy(); err != nil {
+		log.Printf("error running iptables: %v\n", err)
+		return
+	}
 
 	if !isCniRuleLoaded() {
 		log.Println("setting iptables rule to allow CNI traffic...")
