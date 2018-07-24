@@ -9,7 +9,7 @@ following things are done on your system, no matter which distro you run on.
 * set SELinux mode to either `Permissive` or `Disabled`, e.g.: `sudo setenforce 0`
 * set env variables correctly
   * set `GOPATH` correctly, e.g. `export GOPATH=$HOME/go`
-  * set `KUBECONFIG`: `export KUBECONFIG=/var/lib/kube-spawn/default/kubeconfig`
+  * set `KUBECONFIG`: `export KUBECONFIG=/var/lib/kube-spawn/clusters/default/admin.kubeconfig`
 
 ### Fedora
 
