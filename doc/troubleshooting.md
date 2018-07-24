@@ -24,6 +24,18 @@ is the disk image size in bytes:
 # btrfs quota disable /var/lib/machines
 ```
 
+Note that the commands above can fail for some reasons. For example, `umount` can fail because `/var/lib/machines` does not exist. In that case, you might need to create the directory. Or `umount` can fail with `EBUSY`, then you might need to figure out which process blocks umount.
+
+If `/var/lib/machines.raw` does not exist at all, then it means probably that systemd-machined has never initialized the storage pool. So you might need to do the initialization, for example:
+
+```
+sudo truncate -s 20G /var/lib/machines.raw
+sudo mkfs -t btrfs /var/lib/machines.raw
+sudo mount -o loop -t btrfs /var/lib/machines.raw /var/lib/machines
+```
+
+You might also want to set an upper limit for the volume by running `sudo machinectl set-limit 20G`.
+
 ## SELinux
 
 To run `kube-spawn`, it is recommended to turn off SELinux enforcing mode:
