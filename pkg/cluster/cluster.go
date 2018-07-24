@@ -321,6 +321,14 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string) error {
 		return err
 	}
 
+	poolSize, err := bootstrap.GetPoolSize(bootstrap.BaseImageName, numberNodes)
+	if err != nil {
+		return err
+	}
+	if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

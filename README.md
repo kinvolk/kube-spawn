@@ -13,6 +13,12 @@ It attempts to mimic production setups by making use of OS containers to set up 
 ## Requirements
 
 * `systemd-nspawn` in at least version 233
+* Large enough `/var/lib/machines` partition. kube-spawn will attempt
+  to enlarge the underlying image `/var/lib/machines.raw` on cluster
+  start, but this can only succeed when the image is not in use by
+  another cluster or machine. Not enough disk space is a common source
+  of error. See [doc/troubleshooting](doc/troubleshooting.md#varlibmachines-partition-too-small) for
+  instructions on how to increase the size manually.
 * `qemu-img`
 
 ## Installation
