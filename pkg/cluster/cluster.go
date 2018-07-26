@@ -76,7 +76,7 @@ const (
 )
 
 var cniFiles = map[string][]string{
-	"base":    {"bridge", "cnitool", "dhcp", "host-device", "host-local", "ipvlan", "loopback", "macvlan", "noop", "portmap", "ptp", "sample", "tuning", "vlan"},
+	"base":    {"bridge", "dhcp", "host-device", "host-local", "ipvlan", "loopback", "macvlan", "portmap", "ptp", "sample", "tuning", "vlan"},
 	"flannel": {"flannel"},
 	"calico":  {"calico", "calico-ipam"},
 	"weave":   {},
