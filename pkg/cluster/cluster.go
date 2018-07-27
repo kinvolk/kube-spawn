@@ -29,7 +29,10 @@ import (
 
 type ClusterSettings struct {
 	CNIPluginDir          string
+	CNIPlugin             string
 	ContainerRuntime      string
+	ClusterCIDR           string
+	PodNetworkCIDR        string
 	HyperkubeImage        string
 	KubeadmResetOptions   string
 	KubernetesSourceDir   string
@@ -63,11 +66,21 @@ func randString(n int) string {
 const (
 	validNameRegexpStr = "^[a-zA-Z0-9-]{1,50}$"
 	weaveNet           = "https://github.com/weaveworks/weave/releases/download/v2.0.5/weave-daemonset-k8s-1.7.yaml"
+	flannelNet         = "https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+	calicoRBAC         = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
+	calicoNet          = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"
 
 	// Avoid token passing between master and worker nodes by using
 	// a hard-coded token
 	kubeadmToken = "aaaaaa.bbbbbbbbbbbbbbbb"
 )
+
+var cniFiles = map[string][]string{
+	"base":    {"bridge", "dhcp", "host-device", "host-local", "ipvlan", "loopback", "macvlan", "portmap", "ptp", "sample", "tuning", "vlan"},
+	"flannel": {"flannel"},
+	"calico":  {"calico", "calico-ipam"},
+	"weave":   {},
+}
 
 var validNameRegexp = regexp.MustCompile(validNameRegexpStr)
 
@@ -191,9 +204,16 @@ func (c *Cluster) Create(clusterSettings *ClusterSettings, clusterCache *cache.C
 
 	socatPath := path.Join(clusterCache.Dir(), "socat")
 	copyItems = append(copyItems, copyItem{dst: "/usr/bin/socat", src: socatPath})
-
-	copyItems = append(copyItems, copyItem{dst: "/opt/cni/bin/bridge", src: path.Join(clusterSettings.CNIPluginDir, "bridge")})
-	copyItems = append(copyItems, copyItem{dst: "/opt/cni/bin/loopback", src: path.Join(clusterSettings.CNIPluginDir, "loopback")})
+	for _, file := range cniFiles["base"] {
+		var dst string = path.Join("opt/cni/bin", file)
+		var src string = path.Join(clusterSettings.CNIPluginDir, file)
+		copyItems = append(copyItems, copyItem{dst: dst, src: src})
+	}
+	for _, file := range cniFiles[clusterSettings.CNIPlugin] {
+		var dst string = path.Join("opt/cni/bin", file)
+		var src string = path.Join(clusterSettings.CNIPluginDir, file)
+		copyItems = append(copyItems, copyItem{dst: dst, src: src})
+	}
 
 	if clusterSettings.ContainerRuntime == "rkt" {
 		copyItems = append(copyItems, copyItem{dst: "/usr/bin/rkt", src: clusterSettings.RktBinaryPath})
@@ -260,8 +280,14 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 	if err := fs.CreateFileFromString(path.Join(rootfsDir, "/etc/resolv.conf"), "nameserver 8.8.8.8"); err != nil {
 		return err
 	}
+
 	if clusterSettings.ContainerRuntime == "rkt" {
-		if err := fs.CreateFileFromString(path.Join(rootfsDir, "/etc/systemd/system/rktlet.service"), RktletSystemdUnit); err != nil {
+		buf, err := ExecuteTemplate(RktletSystemdUnitTmpl, clusterSettings)
+		if err != nil {
+			return err
+		}
+		if err := fs.CreateFileFromReader(path.Join(rootfsDir, "/etc/systemd/system/rktlet.service"),
+			&buf); err != nil {
 			return err
 		}
 	}
@@ -309,7 +335,7 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 	return nil
 }
 
-func (c *Cluster) Start(numberNodes int, cniPluginDir string) error {
+func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) error {
 	if numberNodes < 1 {
 		return errors.Errorf("cannot start less than 1 node")
 	}
@@ -421,7 +447,7 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string) error {
 	if err := kubeadmInit(kubeadmVersion, masterMachine.Name, cliWriter); err != nil {
 		return errors.Wrapf(err, "failed to kubeadm init %q", masterMachine.Name)
 	}
-	if err := applyNetworkPlugin(masterMachine.Name, cliWriter); err != nil {
+	if err := applyNetworkPlugin(masterMachine.Name, cniPlugin, cliWriter); err != nil {
 		return err
 	}
 
@@ -674,9 +700,25 @@ func getKubeadmResetOptions(kubeadmVersionStr string) (string, error) {
 	return kubeadmResetOptions, nil
 }
 
-func applyNetworkPlugin(machineName string, outWriter io.Writer) error {
-	_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", weaveNet)
-	return err
+func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Writer) error {
+	switch cniPlugin {
+	case "weave":
+		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", weaveNet)
+		return err
+	case "flannel":
+		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", flannelNet)
+		return err
+	case "calico":
+		_, err1 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoRBAC)
+		_, err2 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoNet)
+		if err1 != nil {
+			return err1
+		}
+		return err2
+	default:
+		return errors.Errorf("Incorrect cni plugin %q", cniPlugin)
+	}
+	return nil
 }
 
 type kubeadmVersionType struct {

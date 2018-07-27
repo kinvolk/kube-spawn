@@ -107,6 +107,22 @@ container-runtime: rkt
 rktlet-binary-path: /home/user/code/go/src/github.com/kubernetes-incubator/rktlet/bin/rktlet
 ```
 
+## CNI plugins
+
+kube-spawn supports weave, flannel, calico. It defaults to weave.
+
+To configure with flannel:
+```
+kube-spawn create --pod-network-cidr 10.244.0.0/16 --cni-plugin flannel --kubernetes-version=v1.10.5
+kube-spawn start --cni-plugin flannel --nodes 5
+```
+
+To configure with calico:
+```
+kube-spawn create --pod-network-cidr 192.168.0.0/16 --cni-plugin calico --kubernetes-version=v1.10.5
+kube-spawn start --cni-plugin calico --nodes 5
+```
+
 ## Accessing kube-spawn nodes
 
 All nodes can be seen with `machinectl list`. `machinectl shell` can be

@@ -31,12 +31,12 @@ const DockerSystemdDropin = `[Service]
 Environment="DOCKER_OPTS=--exec-opt native.cgroupdriver=cgroupfs"
 `
 
-const RktletSystemdUnit = `[Unit]
+const RktletSystemdUnitTmpl = `[Unit]
 Description=rktlet: The rkt implementation of a Kubernetes Container Runtime
 Documentation=https://github.com/kubernetes-incubator/rktlet/tree/master/docs
 
 [Service]
-ExecStart=/usr/bin/rktlet --net=weave
+ExecStart=/usr/bin/rktlet --net={{ .CNIPlugin }}
 Restart=always
 StartLimitInterval=0
 RestartSec=10
@@ -112,6 +112,15 @@ apiServerExtraArgs:
 controllerManagerExtraArgs:
 kubernetesVersion: {{.KubernetesVersion}}
 schedulerExtraArgs:
+{{if .ClusterCIDR -}}
+kubeProxy:
+  config:
+    clusterCIDR: {{.ClusterCIDR}}
+{{- end }}
+{{if .PodNetworkCIDR -}}
+networking:
+  podSubnet: {{.PodNetworkCIDR}}
+{{- end }}
 {{if .HyperkubeImage -}}
 unifiedControlPlaneImage: {{.HyperkubeImage}}
 {{- end }}
