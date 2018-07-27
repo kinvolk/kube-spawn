@@ -338,6 +338,23 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 		return err
 	}
 
+	buf, err = ExecuteTemplate(KubeletConfigTmpl, clusterSettings)
+	if err != nil {
+		return err
+	}
+	if err := fs.CreateFileFromReader(path.Join(rootfsDir, "/etc/kubernetes/kubelet.conf"), &buf); err != nil {
+		return err
+	}
+
+	kubeletVersion, err := kubeletGitVersion(path.Join(rootfsDir, "usr/bin/kubelet"))
+	if err != nil {
+		return errors.Wrap(err, "failed to determine kubelet version")
+	}
+
+	if err := createKubeletConfig(clusterSettings, kubeletVersion, rootfsDir); err != nil {
+		return err
+	}
+
 	buf, err = ExecuteTemplate(KubeadmConfigTmpl, clusterSettings)
 	if err != nil {
 		return err
@@ -733,6 +750,36 @@ func getKubeadmApiVersion(kubeadmVersionStr string) (string, error) {
 	return kubeadmApiVersion, nil
 }
 
+func createKubeletConfig(clusterSettings *ClusterSettings, kubeletVersionStr string, rootfsDir string) error {
+	kubeletVersion, err := semver.NewVersion(kubeletVersionStr)
+	if err != nil {
+		return err
+	}
+	isLargerEqual111, err := semver.NewConstraint(">= 1.11")
+	if err != nil {
+		return err
+	}
+	if isLargerEqual111.Check(kubeletVersion) {
+		buf, err := ExecuteTemplate(KubeletConfigTmpl, clusterSettings)
+		if err != nil {
+			return err
+		}
+		if err := fs.CreateFileFromReader(path.Join(rootfsDir, "/etc/kubernetes/kubelet.conf"), &buf); err != nil {
+			return err
+		}
+	} else {
+		buf, err := ExecuteTemplate(KubeletSystemdDropinTmpl, clusterSettings)
+		if err != nil {
+			return err
+		}
+		if err := fs.CreateFileFromReader(path.Join(rootfsDir, "/etc/systemd/system/kubelet.service.d/20-kube-spawn.conf"), &buf); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Writer) error {
 	switch cniPlugin {
 	case "weave":
@@ -776,4 +823,16 @@ func kubeadmGitVersion(kubeadmPath string) (string, error) {
 		return "", err
 	}
 	return kubeadmVersion.ClientVersion.GitVersion, nil
+}
+
+func kubeletGitVersion(kubeletPath string) (string, error) {
+	out, err := exec.Command(kubeletPath, "--version").Output()
+	if err != nil {
+		return "", err
+	}
+	vers := strings.Split(string(out), " ")
+	if len(vers) == 0 {
+		return "", err
+	}
+	return strings.TrimSpace(vers[1]), nil
 }

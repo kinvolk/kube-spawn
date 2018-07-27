@@ -105,7 +105,23 @@ Environment="KUBELET_EXTRA_ARGS=\
 --authentication-token-webhook"
 `
 
-const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
+const KubeletConfigTmpl = `kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  webhook:
+    enabled: true
+cgroupDriver: {{ if .UseLegacyCgroupDriver }}cgroupfs{{else}}systemd{{end}}
+cgroupsPerQOS: false
+enforceNodeAllocatable:
+evictionHard:
+failSwapOn: false
+{{ if ne .ContainerRuntime "docker" -}}
+runtimeRequestTimeout: 15m
+NodeRegistration:
+  CRISocket: {{.RuntimeEndpoint}}
+{{- end}}
+`
+const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/v1alpha1
 authorizationMode: AlwaysAllow
 apiServerExtraArgs:
   insecure-port: "8080"
