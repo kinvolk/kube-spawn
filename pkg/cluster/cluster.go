@@ -70,6 +70,9 @@ const (
 	calicoRBAC         = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
 	calicoNet          = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"
 
+	canalRBAC = "https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/canal/rbac.yaml"
+	canalNet  = "https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/canal/canal.yaml"
+
 	// Avoid token passing between master and worker nodes by using
 	// a hard-coded token
 	kubeadmToken = "aaaaaa.bbbbbbbbbbbbbbbb"
@@ -79,6 +82,7 @@ var cniFiles = map[string][]string{
 	"base":    {"bridge", "dhcp", "host-device", "host-local", "ipvlan", "loopback", "macvlan", "portmap", "ptp", "sample", "tuning", "vlan"},
 	"flannel": {"flannel"},
 	"calico":  {"calico", "calico-ipam"},
+	"canal":   {"flannel", "calico", "calico-ipam"},
 	"weave":   {},
 }
 
@@ -708,6 +712,13 @@ func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Write
 	case "flannel":
 		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", flannelNet)
 		return err
+	case "canal":
+		_, err1 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", canalRBAC)
+		_, err2 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", canalNet)
+		if err1 != nil {
+			return err1
+		}
+		return err2
 	case "calico":
 		_, err1 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoRBAC)
 		_, err2 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoNet)

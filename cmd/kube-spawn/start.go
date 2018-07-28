@@ -39,7 +39,7 @@ func init() {
 
 	startCmd.Flags().IntP("nodes", "n", 3, "Number of nodes to start")
 	startCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
-	startCmd.Flags().String("cni-plugin", "weave", "CNI plugin (weave, flannel, calico)")
+	startCmd.Flags().String("cni-plugin", "weave", "CNI plugin (weave, flannel, calico, canal)")
 }
 
 func runStart(cmd *cobra.Command, args []string) {

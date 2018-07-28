@@ -123,6 +123,12 @@ kube-spawn create --pod-network-cidr 192.168.0.0/16 --cni-plugin calico --kubern
 kube-spawn start --cni-plugin calico --nodes 5
 ```
 
+To configure with canal:
+```
+kube-spawn create --pod-network-cidr 10.244.0.0/16 --cni-plugin canal --kubernetes-version=v1.10.5
+kube-spawn start --cni-plugin canal --nodes 5
+```
+
 ## Accessing kube-spawn nodes
 
 All nodes can be seen with `machinectl list`. `machinectl shell` can be
