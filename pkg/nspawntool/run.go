@@ -87,7 +87,11 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 		args = append(args, fmt.Sprintf("--bind=%s:%s", path.Join(upperRootPath, d), d))
 	}
 
-	c := utils.Command("kube-spawn", args...)
+	ex, err := os.Executable()
+	if err != nil {
+		ex = "kube-spawn"
+	}
+	c := utils.Command(ex, args...)
 	c.Stderr = os.Stderr
 
 	stdout, err := c.StdoutPipe()
@@ -97,7 +101,7 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return errors.Wrap(err, "error running cnispawn")
+		return errors.Wrapf(err, "error running %s cnispawn: %s %v", ex, args)
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
