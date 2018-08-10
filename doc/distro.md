@@ -53,3 +53,23 @@ systemctl is-enabled systemd-resolved >& /dev/null && sudo systemctl disable sys
 
 Normally it should be similar to Ubuntu.
 
+### openSUSE Kubic
+
+All versions of openSUSE Kubic should work. 
+
+#### install required packages
+
+```
+transactional-update pkg install kubectl systemd-container cni-plugins
+systemctl reboot
+```
+
+#### CNI plugins
+
+openSUSE has a cni-plugin RPM. If this should be used, CNI_PATH
+has to be set:
+
+```
+export CNI_PATH=/usr/lib/cni
+```
+
