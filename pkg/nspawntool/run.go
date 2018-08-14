@@ -101,7 +101,7 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return errors.Wrapf(err, "error running %s cnispawn: %s %v", ex, args)
+		return errors.Wrapf(err, "error running %s cnispawn: %v", ex, args)
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
