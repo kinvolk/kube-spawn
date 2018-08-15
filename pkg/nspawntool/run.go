@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kinvolk/kube-spawn/pkg/machinectl"
-	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir string) error {
@@ -87,7 +87,15 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 		args = append(args, fmt.Sprintf("--bind=%s:%s", path.Join(upperRootPath, d), d))
 	}
 
-	c := utils.Command("kube-spawn", args...)
+	ex, err := os.Executable()
+	if err != nil {
+		ex = "kube-spawn"
+	}
+
+	c := &exec.Cmd{
+		Path: ex,
+		Args: append([]string{ex}, args...),
+	}
 	c.Stderr = os.Stderr
 
 	stdout, err := c.StdoutPipe()
@@ -97,7 +105,7 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return errors.Wrap(err, "error running cnispawn")
+		return errors.Wrapf(err, "error running %s cnispawn: %v", ex, args)
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
