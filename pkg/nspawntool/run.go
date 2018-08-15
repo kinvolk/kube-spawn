@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kinvolk/kube-spawn/pkg/machinectl"
-	"github.com/kinvolk/kube-spawn/pkg/utils"
 )
 
 func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir string) error {
@@ -91,7 +91,11 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	if err != nil {
 		ex = "kube-spawn"
 	}
-	c := utils.Command(ex, args...)
+
+	c := &exec.Cmd{
+		Path: ex,
+		Args: append([]string{ex}, args...),
+	}
 	c.Stderr = os.Stderr
 
 	stdout, err := c.StdoutPipe()
