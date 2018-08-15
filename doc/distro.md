@@ -60,7 +60,7 @@ All versions of openSUSE Kubic should work.
 #### install required packages
 
 ```
-transactional-update pkg install kubectl systemd-container cni-plugins
+transactional-update pkg install kubernetes-client systemd-container cni-plugins
 systemctl reboot
 ```
 
