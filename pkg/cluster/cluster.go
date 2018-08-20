@@ -351,6 +351,7 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) 
 	if err != nil {
 		return err
 	}
+	log.Printf("new poolSize to be : %d\n", poolSize)
 	if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
 		return err
 	}
@@ -448,7 +449,7 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) 
 		return errors.Wrapf(err, "failed to kubeadm init %q", masterMachine.Name)
 	}
 	if err := applyNetworkPlugin(masterMachine.Name, cniPlugin, cliWriter); err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to apply network plugin %q", cniPlugin)
 	}
 
 	adminKubeconfigSource := path.Join(c.MachineRootfsPath(), masterMachine.Name, "etc/kubernetes/admin.conf")
