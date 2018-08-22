@@ -93,13 +93,59 @@ func GetPoolSize(baseImageName string, nodes int) (int64, error) {
 	return poolSize, nil
 }
 
+func setPoolLimit(poolSize int64) error {
+	var cmdPath string
+	var err error
+
+	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
+		return fmt.Errorf("machinectl not installed: %s", err)
+	}
+
+	args := []string{
+		cmdPath,
+		"set-limit",
+		strconv.FormatInt(poolSize, 10),
+	}
+
+	cmd := exec.Cmd{
+		Path:   cmdPath,
+		Args:   args,
+		Env:    os.Environ(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		// We do expect this might occur. E.g. if they have
+		// already started using the pool
+		return fmt.Errorf("error running machinectl: %s", err)
+	}
+
+	return nil
+}
+
 func EnlargeStoragePool(poolSize int64) error {
-	// It is equivalent to the following shell commands:
+	// Check to see if the filesystem is already >= poolSize
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(machinesDir, &stat); err == nil {
+		if stat.Bsize >= poolSize {
+			return nil
+		}
+	}
+
+	// First call `machinectl set-limit size`. If this succeeds,
+	// we are done
+	if err := setPoolLimit(poolSize); err == nil {
+		return nil
+	}
+	// If this fails, it means that the FS has been used.
+	// We attempt to work around this with the following shell commands:
 	//  # umount /var/lib/machines
 	//  # qemu-img resize -f raw /var/lib/machines.raw <poolsize>
 	//  # mount -t btrfs -o loop /var/lib/machines.raw /var/lib/machines
 	//  # btrfs filesystem resize max /var/lib/machines
 	//  # btrfs quota disable /var/lib/machines
+	// Note: this fails if anything is in use
 	if err := checkMountpoint(machinesDir); err == nil {
 		// It means machinesDir is mountpoint, so do unmount
 		if err := syscall.Unmount(machinesDir, 0); err != nil {

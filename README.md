@@ -13,9 +13,21 @@ It attempts to mimic production setups by making use of OS containers to set up 
 ## Requirements
 
 * `systemd-nspawn` in at least version 233
-* Large enough `/var/lib/machines` partition. kube-spawn will attempt
-  to enlarge the underlying image `/var/lib/machines.raw` on cluster
-  start, but this can only succeed when the image is not in use by
+* Large enough `/var/lib/machines` partition.
+
+  If /var/lib/machines is not its own filesystem, systemd-nspawn
+  will create /var/lib/machines.raw and loopback mount it as a
+  btrfs filesystem. You may wish to increase the default size:
+
+  `machinectl set-limit 20G`
+
+  We recommend you create a partition of sufficient size, format
+  it as btrfs, and mount it on /var/lib/machines, rather than
+  letting the loopback mechanism take hold.
+
+  In the event there is a loopback file mounted on /var/lib/machines,
+  kube-spawn will attempt to enlarge the underlying image `/var/lib/machines.raw`
+  on cluster start, but this can only succeed when the image is not in use by
   another cluster or machine. Not enough disk space is a common source
   of error. See [doc/troubleshooting](doc/troubleshooting.md#varlibmachines-partition-too-small) for
   instructions on how to increase the size manually.
