@@ -182,8 +182,7 @@ func runImageResize(poolSize int64) error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("qemu-img"); err != nil {
-		// fall back to an ordinary abspath to qemu-img
-		cmdPath = "/usr/bin/qemu-img"
+		return fmt.Errorf("qemu-img not installed: %s", err)
 	}
 
 	args := []string{
@@ -215,8 +214,7 @@ func runMount() error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("mount"); err != nil {
-		// fall back to an ordinary abspath to qemu-img
-		cmdPath = "/usr/bin/mount"
+		return fmt.Errorf("Cannot find mount command: %s", err)
 	}
 
 	args := []string{
@@ -249,8 +247,7 @@ func runBtrfsResize() error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("btrfs"); err != nil {
-		// fall back to an ordinary abspath to qemu-img
-		cmdPath = "/usr/sbin/btrfs"
+		return fmt.Errorf("btrfs not installed: %s", err)
 	}
 
 	args := []string{
@@ -281,8 +278,7 @@ func runBtrfsDisableQuota() error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("btrfs"); err != nil {
-		// fall back to an ordinary abspath to qemu-img
-		cmdPath = "/usr/sbin/btrfs"
+		return fmt.Errorf("btrfs not installed: %s", err)
 	}
 
 	args := []string{
@@ -318,16 +314,23 @@ func EnsureRequirements() error {
 	// modprobe overlay
 	// modprobe nf_conntrack
 	// echo "131072" > /sys/module/nf_conntrack/parameters/hashsize
-	ensureOverlayfs()
-	ensureConntrackHashsize()
+	if err := ensureOverlayfs(); err != nil {
+		return errors.Wrap(err, "error ensuring overlayfs loaded")
+	}
+	if err := ensureConntrackHashsize(); err != nil {
+		return err
+	}
 
 	// insert an iptables rules to allow traffic through cni0
-	ensureIptables()
+	if err := ensureIptables(); err != nil {
+		return err
+	}
 	// check for SELinux enforcing mode
-	ensureSelinux()
+	if err := ensureSelinux(); err != nil {
+		return err
+	}
 	// check for BaseImage version, either Container Linux or Flatcar Linux
-	ensureBaseImageVersion()
-	return nil
+	return ensureBaseImageVersion()
 }
 
 func isOverlayfsAvailable() bool {
@@ -351,8 +354,7 @@ func runModprobe(moduleName string) error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("modprobe"); err != nil {
-		// fall back to an ordinary abspath
-		cmdPath = "/usr/sbin/modprobe"
+		return fmt.Errorf("Cannot find modprobe command: %s", err)
 	}
 
 	args := []string{
@@ -375,60 +377,55 @@ func runModprobe(moduleName string) error {
 	return nil
 }
 
-func ensureOverlayfs() {
-	if isOverlayfsAvailable() {
-		return
-	}
+func ensureOverlayfs() error {
+	if !isOverlayfsAvailable() {
 
-	log.Println("Warning: overlayfs not found, docker would not run.")
-	log.Println("loading overlay module... ")
+		// This is an incorrect assumption. It depends on the docker
+		// storage driver
+		log.Println("Warning: overlayfs not found, docker would not run.")
+		log.Println("loading overlay module... ")
 
-	if err := runModprobe("overlay"); err != nil {
-		log.Printf("error running modprobe overlay: %v\n", err)
-		return
+		if err := runModprobe("overlay"); err != nil {
+			return fmt.Errorf("error running modprobe overlay: %v\n", err)
+		}
 	}
+	return nil
 }
 
 func isConntrackLoaded() bool {
 	if _, err := os.Stat(ctHashsizeModparam); os.IsNotExist(err) {
-		log.Printf("nf_conntrack module is not loaded: %v\n", err)
 		return false
 	}
 
 	return true
 }
 
-func isConntrackHashsizeCorrect() bool {
+func isConntrackHashsizeCorrect() (bool, error) {
 	hsByte, err := ioutil.ReadFile(ctHashsizeModparam)
 	if err != nil {
-		log.Printf("cannot read from %s: %v\n", ctHashsizeModparam, err)
-		return false
+		return false, fmt.Errorf("cannot read from %s: %v\n", ctHashsizeModparam, err)
 	}
 	hsStr := strings.TrimSpace(string(hsByte))
 	hs, err := strconv.Atoi(hsStr)
 	if err != nil {
-		log.Printf("parse error on %s: %v\n", hsStr, err)
-		return false
+		return false, fmt.Errorf("parse error on %s: %v\n", hsStr, err)
 	}
 
 	ctmaxByte, err := ioutil.ReadFile(ctMaxSysctl)
 	if err != nil {
-		log.Printf("cannot open %s: %v\n", ctMaxSysctl, err)
-		return false
+		return false, fmt.Errorf("cannot open %s: %v\n", ctMaxSysctl, err)
 	}
 	ctmaxStr := strings.TrimSpace(string(ctmaxByte))
 	ctmax, err := strconv.Atoi(ctmaxStr)
 	if err != nil {
-		log.Printf("parse error on %s: %v\n", ctmaxStr, err)
-		return false
+		return false, fmt.Errorf("parse error on %s: %v\n", ctmaxStr, err)
 	}
 
 	if hs < (ctmax / 4) {
-		log.Printf("hashsize(%d) should be greater than nf_conntrack_max/4 (%d).\n", hs, ctmax/4)
-		return false
+		return false, fmt.Errorf("hashsize(%d) should be greater than nf_conntrack_max/4 (%d).\n", hs, ctmax/4)
 	}
 
-	return true
+	return true, nil
 }
 
 func setConntrackHashsize() error {
@@ -439,28 +436,27 @@ func setConntrackHashsize() error {
 	return nil
 }
 
-func ensureConntrackHashsize() {
-	if !isConntrackLoaded() {
+func ensureConntrackHashsize() error {
+	if result := isConntrackLoaded(); !result {
 		log.Println("Warning: nf_conntrack module is not loaded.")
 		log.Println("loading nf_conntrack module... ")
 
 		if err := runModprobe("nf_conntrack"); err != nil {
-			log.Printf("error running modprobe nf_conntrack: %v\n", err)
-			return
+			return fmt.Errorf("error running modprobe nf_conntrack: %v\n", err)
 		}
 	}
 
-	if isConntrackHashsizeCorrect() {
-		return
+	if _, err := isConntrackHashsizeCorrect(); err != nil {
+		return err
 	}
 
 	log.Println("Warning: kube-proxy could crash due to insufficient nf_conntrack hashsize.")
 	log.Printf("setting nf_conntrack hashsize to %s... ", ctHashsizeValue)
 
 	if err := setConntrackHashsize(); err != nil {
-		log.Printf("error setting conntrack hashsize: %v\n", err)
-		return
+		return fmt.Errorf("error setting conntrack hashsize: %v\n", err)
 	}
+	return nil
 }
 
 func setIptablesForwardPolicy() error {
@@ -470,8 +466,7 @@ func setIptablesForwardPolicy() error {
 	log.Println("making iptables FORWARD chain defaults to ACCEPT...")
 
 	if cmdPath, err = exec.LookPath("iptables"); err != nil {
-		// fall back to an ordinary abspath
-		cmdPath = "/sbin/iptables"
+		return fmt.Errorf("Cannot find iptables: %s", err)
 	}
 
 	// set the default policy for FORWARD chain to ACCEPT
@@ -498,13 +493,12 @@ func setIptablesForwardPolicy() error {
 	return nil
 }
 
-func isCniRuleLoaded() bool {
+func isCniRuleLoaded() (bool, error) {
 	var cmdPath string
 	var err error
 
 	if cmdPath, err = exec.LookPath("iptables"); err != nil {
-		// fall back to an ordinary abspath
-		cmdPath = "/sbin/iptables"
+		return false, fmt.Errorf("Cannot find iptables: %s", err)
 	}
 
 	// check if a cni iptables rules already exists
@@ -528,10 +522,10 @@ func isCniRuleLoaded() bool {
 
 	if err := cmd.Run(); err != nil {
 		// error means that the rule does not exist
-		return false
+		return false, err
 	}
 
-	return true
+	return true, nil
 }
 
 func setAllowCniRule() error {
@@ -539,8 +533,7 @@ func setAllowCniRule() error {
 	var err error
 
 	if cmdPath, err = exec.LookPath("iptables"); err != nil {
-		// fall back to an ordinary abspath
-		cmdPath = "/sbin/iptables"
+		return fmt.Errorf("Cannot find iptables: %s", err)
 	}
 
 	// insert an iptables rules to allow traffic through cni0
@@ -571,19 +564,18 @@ func setAllowCniRule() error {
 	return nil
 }
 
-func ensureIptables() {
+func ensureIptables() error {
 	if err := setIptablesForwardPolicy(); err != nil {
-		log.Printf("error running iptables: %v\n", err)
-		return
+		return fmt.Errorf("error running iptables: %v\n", err)
 	}
 
-	if !isCniRuleLoaded() {
+	if result, _ := isCniRuleLoaded(); !result {
 		log.Println("setting iptables rule to allow CNI traffic...")
 		if err := setAllowCniRule(); err != nil {
-			log.Printf("error running iptables: %v\n", err)
-			return
+			return fmt.Errorf("error running iptables: %v\n", err)
 		}
 	}
+	return nil
 }
 
 func isSELinuxEnforcing() bool {
@@ -591,8 +583,10 @@ func isSELinuxEnforcing() bool {
 	var err error
 
 	if cmdGetPath, err = exec.LookPath("getenforce"); err != nil {
-		// fall back to an ordinary abspath
-		cmdGetPath = "/usr/sbin/getenforce"
+		// If we do not have getenforce, we do not have selinux
+		// (e.g. Ubuntu host). So by definition it cannot
+		// be enforcing
+		return false
 	}
 
 	argsGet := []string{
@@ -618,10 +612,11 @@ func isSELinuxEnforcing() bool {
 	return false
 }
 
-func ensureSelinux() {
+func ensureSelinux() error {
 	if isSELinuxEnforcing() {
 		log.Fatalln("ERROR: SELinux enforcing mode is enabled. You will need to disable it with 'sudo setenforce 0' for kube-spawn to work properly.")
 	}
+	return nil
 }
 
 func checkBaseImageSemver(baseImageVer string) error {
@@ -706,8 +701,7 @@ func pullBaseImage() error {
 
 	// TODO: use machinectl pkg
 	if cmdPath, err = exec.LookPath("machinectl"); err != nil {
-		// fall back to an ordinary abspath to machinectl
-		cmdPath = "/usr/bin/machinectl"
+		return fmt.Errorf("systemd-nspawn / machinectl not installed: %s", err)
 	}
 
 	args := []string{
@@ -733,11 +727,12 @@ func pullBaseImage() error {
 	return nil
 }
 
-func ensureBaseImageVersion() {
+func ensureBaseImageVersion() error {
 	if err := checkBaseImageVersion(); err != nil {
 		log.Println(err)
 		log.Fatalf("You will need to remove the image by 'sudo machinectl remove %s' then the next run of kube-spawn will download version %s of coreos image automatically.", BaseImageName, baseImageStableVersion)
 	}
+	return nil
 }
 
 func PrepareBaseImage() error {
@@ -750,7 +745,9 @@ func PrepareBaseImage() error {
 	} else {
 		// If BaseImageName is not new enough, remove the existing image,
 		// then next time `kube-spawn up` will download a new image again.
-		ensureBaseImageVersion()
+		if err := ensureBaseImageVersion(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
