@@ -391,9 +391,9 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) 
 
 			var machineNameSuffix string
 			if nodeNumber == 0 {
-				machineNameSuffix = fmt.Sprintf("master-%s", randString(6))
+				machineNameSuffix = fmt.Sprintf("master-%d", nodeNumber)
 			} else {
-				machineNameSuffix = fmt.Sprintf("worker-%s", randString(6))
+				machineNameSuffix = fmt.Sprintf("worker-%d", nodeNumber)
 			}
 			machineName := fmt.Sprintf("kube-spawn-%s-%s", c.name, machineNameSuffix)
 
