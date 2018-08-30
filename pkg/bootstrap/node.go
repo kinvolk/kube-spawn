@@ -46,6 +46,9 @@ const (
 var (
 	BaseImageName string = "flatcar"
 	baseImageURL  string = "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2"
+
+	// minimum pool size should be around 2G, because Flatcar image is 1.6G.
+	minPoolSize int64 = 2 * 1024 * 1024 * 1024
 )
 
 func GetPoolSize(baseImageName string, nodes int) (int64, error) {
@@ -738,6 +741,9 @@ func ensureBaseImageVersion() error {
 func PrepareBaseImage() error {
 	// If no image exists, just download it
 	if !machinectl.ImageExists(BaseImageName) {
+		if err := EnlargeStoragePool(minPoolSize); err != nil {
+			return err
+		}
 		log.Printf("pulling %s image...", BaseImageName)
 		if err := pullBaseImage(); err != nil {
 			return err
