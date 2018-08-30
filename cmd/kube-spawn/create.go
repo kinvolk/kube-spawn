@@ -51,7 +51,7 @@ func init() {
 	createCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	createCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")
 	createCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
-	createCmd.Flags().String("cni-plugin", "weave", "CNI plugin to use (weave, flannel, calico)")
+	createCmd.Flags().String("cni-plugin", "weave", "CNI plugin to use (weave, flannel, calico, canal)")
 	createCmd.Flags().String("cluster-cidr", "", "Cluster CIDR to use")
 	createCmd.Flags().String("pod-network-cidr", "", "Pod Network CIDR to use")
 	createCmd.Flags().String("rkt-binary-path", "/usr/local/bin/rkt", "Path to rkt binary")
