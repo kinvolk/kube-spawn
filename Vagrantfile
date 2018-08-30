@@ -5,7 +5,7 @@ ENV["TERM"] = "xterm-256color"
 ENV["LC_ALL"] = "en_US.UTF-8"
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/26-cloud-base" # defaults to fedora
+  config.vm.box = "fedora/28-cloud-base" # defaults to fedora
 
   # common parts
   if Vagrant.has_plugin?("vagrant-vbguest")
@@ -22,9 +22,9 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--cpus", "2"]
   end
 
-  # Fedora 26
+  # Fedora 28
   config.vm.define "fedora", primary: true do |fedora|
-    config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils polkit qemu-img rinetd systemd-container"
+    config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils make polkit qemu-img rinetd systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -45,10 +45,10 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  # Ubuntu 17.10 (Artful)
+  # Ubuntu 18.04 (Artful)
   config.vm.define "ubuntu", autostart: false do |ubuntu|
-    config.vm.box = "generic/ubuntu1710"
-    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils rinetd selinux-utils systemd-container"
+    config.vm.box = "generic/ubuntu1804"
+    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables make policykit-1 qemu-utils rinetd selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
@@ -69,7 +69,7 @@ Vagrant.configure("2") do |config|
   # Debian testing
   config.vm.define "debian", autostart: false do |debian|
     config.vm.box = "debian/testing64"
-    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables policykit-1 qemu-utils rinetd selinux-utils systemd-container"
+    config.vm.provision "shell", inline: "echo deb http://httpredir.debian.org/debian unstable main >> /etc/apt/sources.list; apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables make policykit-1 qemu-utils rinetd selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
