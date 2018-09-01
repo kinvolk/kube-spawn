@@ -128,7 +128,7 @@ func EnlargeStoragePool(poolSize int64) error {
 	// Check to see if the filesystem is already >= poolSize
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(machinesDir, &stat); err == nil {
-		if stat.Bsize >= poolSize {
+		if stat.Bsize*int64(stat.Blocks) >= poolSize {
 			return nil
 		}
 	}
