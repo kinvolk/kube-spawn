@@ -66,6 +66,7 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	bindmountDirs := []string{
 		"/var/lib/docker",
 		"/var/lib/rktlet",
+		"/var/lib/kubelet",
 	}
 	for _, d := range bindmountDirs {
 		if err := os.MkdirAll(path.Join(upperRootPath, d), 0755); err != nil {

@@ -75,7 +75,7 @@ mkdir -p /var/lib/weave
 # necessary to prevent docker from being blocked
 systemctl mask systemd-networkd-wait-online.service
 
-kubeadm reset {{.KubeadmResetOptions}}
+[ -f /etc/kubernetes/kubelet.conf ] && kubeadm reset {{.KubeadmResetOptions}}
 systemctl start --no-block kubelet.service
 `
 
