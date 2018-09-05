@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -17,6 +18,20 @@ type Machine struct {
 
 type Image struct {
 	Name string
+}
+
+func cleanIP(ip string) (string, error) {
+	trimmed := ip
+	for _, s := range []string{"...", "…"} {
+		trimmed = strings.TrimSuffix(trimmed, s)
+	}
+
+	parsedIP := net.ParseIP(trimmed)
+	if parsedIP == nil {
+		return "", fmt.Errorf("invalid IP %q", trimmed)
+	}
+
+	return parsedIP.String(), nil
 }
 
 func List() ([]Machine, error) {
@@ -33,9 +48,15 @@ func List() ([]Machine, error) {
 		if len(line) < 6 {
 			return nil, fmt.Errorf("got unexpected output from `machinectl list --no-legend`: %s", line)
 		}
+
+		ip, err := cleanIP(line[5])
+		if err != nil {
+			return nil, err
+		}
+
 		machine := Machine{
 			Name: strings.TrimSpace(line[0]),
-			IP:   strings.TrimSuffix(line[5], "..."),
+			IP:   ip,
 		}
 		machines = append(machines, machine)
 	}
