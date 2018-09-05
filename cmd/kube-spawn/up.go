@@ -43,6 +43,7 @@ func init() {
 	upCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	upCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")
 	upCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
+	upCmd.Flags().String("cni-plugin", "weave", "CNI plugin to use (weave, flannel, calico, canal)")
 	upCmd.Flags().String("rkt-binary-path", "/usr/local/bin/rkt", "Path to rkt binary")
 	upCmd.Flags().String("rkt-stage1-image-path", "/usr/local/bin/stage1-coreos.aci", "Path to rkt stage1-coreos.aci image")
 	upCmd.Flags().String("rktlet-binary-path", "/usr/local/bin/rktlet", "Path to rktlet binary")
