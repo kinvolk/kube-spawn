@@ -175,3 +175,7 @@ sudo make install
 ## Troubleshooting
 
 See [doc/troubleshooting](doc/troubleshooting.md)
+
+## Community
+
+Discuss the project on [Slack](https://kubernetes.slack.com/messages/C9ZMJH2NL/).
