@@ -68,7 +68,6 @@ const (
 	weaveNet           = "https://github.com/weaveworks/weave/releases/download/v2.0.5/weave-daemonset-k8s-1.7.yaml"
 	flannelNet         = "https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
 	calicoRBAC         = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
-	calicoNet          = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"
 
 	canalRBAC = "https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/canal/rbac.yaml"
 	canalNet  = "https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/canal/canal.yaml"
@@ -294,6 +293,9 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 			&buf); err != nil {
 			return err
 		}
+	}
+	if err := fs.CreateFileFromString(path.Join(rootfsDir, "/etc/cni/calico.yaml"), CalicoNet); err != nil {
+		return err
 	}
 	if err := fs.CreateFileFromString(path.Join(rootfsDir, "/etc/systemd/network/50-weave.network"), WeaveSystemdNetworkdConfig); err != nil {
 		return err
@@ -721,12 +723,11 @@ func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Write
 		}
 		return err2
 	case "calico":
-		_, err1 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoRBAC)
-		_, err2 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoNet)
-		if err1 != nil {
-			return err1
+		if _, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoRBAC); err != nil {
+			return err
 		}
-		return err2
+		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", "/etc/cni/calico.yaml")
+		return err
 	default:
 		return errors.Errorf("Incorrect cni plugin %q", cniPlugin)
 	}
