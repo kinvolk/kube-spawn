@@ -52,6 +52,12 @@ type Cluster struct {
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
+
+	// This is needed to avoid ellipsis at the end of machine name, when running
+	// `machinectl list` or `machinectl list-images`. Without setting COLUMNS to a
+	// high value, machinectl prints out a shortened machine name with an ellipsis
+	// at the end, so kube-spawn fails to start or stop the cluster.
+	_ = os.Setenv("COLUMNS", "200")
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
