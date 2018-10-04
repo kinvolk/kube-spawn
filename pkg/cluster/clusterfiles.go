@@ -106,6 +106,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 `
 
 const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
+kind: MasterConfiguration
 authorizationMode: AlwaysAllow
 apiServerExtraArgs:
   insecure-port: "8080"
