@@ -355,11 +355,11 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 	return nil
 }
 
-func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) error {
+func (c *Cluster) Start(numberNodes int, cniPluginDir, cniPlugin, flatcarChannel string) error {
 	if numberNodes < 1 {
 		return errors.Errorf("cannot start less than 1 node")
 	}
-	if err := bootstrap.PrepareBaseImage(); err != nil {
+	if err := bootstrap.PrepareBaseImage(flatcarChannel); err != nil {
 		return err
 	}
 

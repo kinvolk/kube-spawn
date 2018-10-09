@@ -45,7 +45,6 @@ const (
 
 var (
 	BaseImageName string = "flatcar"
-	baseImageURL  string = "https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2"
 
 	// minimum pool size should be around 2G, because Flatcar image is 1.6G.
 	minPoolSize int64 = 2 * 1024 * 1024 * 1024
@@ -698,7 +697,7 @@ func checkBaseImageVersion() error {
 	return nil
 }
 
-func pullBaseImage() error {
+func pullBaseImage(channelName string) error {
 	var cmdPath string
 	var err error
 
@@ -707,11 +706,13 @@ func pullBaseImage() error {
 		return fmt.Errorf("systemd-nspawn / machinectl not installed: %s", err)
 	}
 
+	ch := fmt.Sprintf("https://%s.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2", channelName)
+
 	args := []string{
 		cmdPath,
 		"pull-raw",
 		"--verify=no",
-		baseImageURL,
+		ch,
 		BaseImageName,
 	}
 
@@ -738,14 +739,14 @@ func ensureBaseImageVersion() error {
 	return nil
 }
 
-func PrepareBaseImage() error {
+func PrepareBaseImage(channelName string) error {
 	// If no image exists, just download it
 	if !machinectl.ImageExists(BaseImageName) {
 		if err := EnlargeStoragePool(minPoolSize); err != nil {
 			return err
 		}
 		log.Printf("pulling %s image...", BaseImageName)
-		if err := pullBaseImage(); err != nil {
+		if err := pullBaseImage(channelName); err != nil {
 			return err
 		}
 	} else {
