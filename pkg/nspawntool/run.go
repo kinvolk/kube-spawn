@@ -74,7 +74,30 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 		}
 	}
 
+	// Invocation of systemd-nspawn is done in the following steps.
+	//
+	// 1. "kube-spawn start" calls systemd-run to make use of transient scope.
+	//    This is necessary to avoid dealing with an additional unit file.
+	// 2. The transient scope calls "kube-spawn cni-spawn", a wrapper for
+	//    dealing with the network namespace for CNI. Note that only the options
+	//    before `--` are interpreted by cni-spawn.
+	// 3. cni-spawn actually calls systemd-nspawn. Note that only the options
+	//    after `--`, which are given below for systemd-run, are interpreted by
+	//    systemd-nspawn.
+	kubeSpawnExec, err := os.Executable()
+	if err != nil {
+		kubeSpawnExec = "kube-spawn"
+	}
+
+	var systemdRunExec string
+	if systemdRunExec, err = exec.LookPath("systemd-run"); err != nil {
+		return fmt.Errorf("systemd-run not installed: %s", err)
+	}
+
 	args := []string{
+		"--scope",
+		"--property=DevicePolicy=auto",
+		kubeSpawnExec,
 		"cni-spawn",
 		"--cni-plugin-dir", cniPluginDir,
 		"--",
@@ -88,14 +111,9 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 		args = append(args, fmt.Sprintf("--bind=%s:%s", path.Join(upperRootPath, d), d))
 	}
 
-	ex, err := os.Executable()
-	if err != nil {
-		ex = "kube-spawn"
-	}
-
 	c := &exec.Cmd{
-		Path: ex,
-		Args: append([]string{ex}, args...),
+		Path: systemdRunExec,
+		Args: append([]string{systemdRunExec}, args...),
 	}
 	c.Stderr = os.Stderr
 
@@ -106,7 +124,7 @@ func Run(baseImageName, lowerRootPath, upperRootPath, machineName, cniPluginDir 
 	defer stdout.Close()
 
 	if err := c.Start(); err != nil {
-		return errors.Wrapf(err, "error running %s cnispawn: %v", ex, args)
+		return errors.Wrapf(err, "error running %s cnispawn: %v", systemdRunExec, args)
 	}
 
 	cniDataJSON, err := ioutil.ReadAll(stdout)
