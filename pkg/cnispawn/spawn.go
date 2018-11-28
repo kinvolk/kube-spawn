@@ -56,6 +56,7 @@ func Spawn(cniPluginDir string, nspawnArgs []string) error {
 		"--bind-ro=/lib/modules",
 		"--boot",
 		"--notify-ready=yes",
+		"--keep-unit",
 	}
 
 	args = append(args, nspawnArgs...)
