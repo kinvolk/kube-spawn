@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -344,7 +345,7 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 		return err
 	}
 
-	buf, err = ExecuteTemplate(KubeadmConfigTmpl, clusterSettings)
+	buf, err = executeTemplateKubeadmConfig(kubeadmVersion, clusterSettings)
 	if err != nil {
 		return err
 	}
@@ -734,12 +735,45 @@ func getKubeadmApiVersion(kubeadmVersionStr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if isLargerEqual111.Check(kubeadmVersion) {
+	isLargerEqual113, err := semver.NewConstraint(">= 1.13")
+	if err != nil {
+		return "", err
+	}
+	if isLargerEqual113.Check(kubeadmVersion) {
+		kubeadmApiVersion = "v1beta1"
+	} else if isLargerEqual111.Check(kubeadmVersion) {
 		kubeadmApiVersion = "v1alpha2"
 	} else {
 		kubeadmApiVersion = "v1alpha1"
 	}
 	return kubeadmApiVersion, nil
+}
+
+func executeTemplateKubeadmConfig(kubeadmVersionStr string, clusterSettings *ClusterSettings) (bytes.Buffer, error) {
+	buf := bytes.Buffer{}
+
+	kubeadmVersion, err := semver.NewVersion(kubeadmVersionStr)
+	if err != nil {
+		return buf, err
+	}
+	isLargerEqual113, err := semver.NewConstraint(">= 1.13")
+	if err != nil {
+		return buf, err
+	}
+
+	if isLargerEqual113.Check(kubeadmVersion) {
+		buf, err = ExecuteTemplate(KubeadmConfigBetaTmpl, clusterSettings)
+		if err != nil {
+			return buf, err
+		}
+	} else {
+		buf, err = ExecuteTemplate(KubeadmConfigAlphaTmpl, clusterSettings)
+		if err != nil {
+			return buf, err
+		}
+	}
+
+	return buf, nil
 }
 
 func applyNetworkPlugin(kubectlPath, kubeconfigPath string, cniPlugin string, outWriter io.Writer) error {

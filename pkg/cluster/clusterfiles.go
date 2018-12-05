@@ -105,7 +105,7 @@ Environment="KUBELET_EXTRA_ARGS=\
 --authentication-token-webhook"
 `
 
-const KubeadmConfigTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
+const KubeadmConfigAlphaTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
 kind: MasterConfiguration
 authorizationMode: AlwaysAllow
 apiServerExtraArgs:
@@ -124,6 +124,27 @@ networking:
 {{- end }}
 {{if .HyperkubeImage -}}
 unifiedControlPlaneImage: {{.HyperkubeImage}}
+{{- end }}
+`
+
+const KubeadmConfigBetaTmpl = `apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
+kind: InitConfiguration
+---
+apiVersion: kubeadm.k8s.io/{{.KubeadmApiVersion}}
+kind: ClusterConfiguration
+controllerManager: {}
+{{if .PodNetworkCIDR -}}
+networking:
+  podSubnet: {{.PodNetworkCIDR}}
+{{- end }}
+{{if .HyperkubeImage -}}
+useHyperKubeImage: true
+{{- end }}
+{{if .ClusterCIDR -}}
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+clusterCIDR: {{.ClusterCIDR}}
 {{- end }}
 `
 
