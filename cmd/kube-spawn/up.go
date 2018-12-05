@@ -39,7 +39,7 @@ func init() {
 	// Flags should be kept in sync with `start` and `create`
 
 	upCmd.Flags().String("container-runtime", "docker", "Runtime to use for the cluster (can be docker or rkt)")
-	upCmd.Flags().String("kubernetes-version", "v1.9.6", "Kubernetes version to install")
+	upCmd.Flags().String("kubernetes-version", "v1.12.3", "Kubernetes version to install")
 	upCmd.Flags().String("kubernetes-source-dir", "", "Path to directory with Kubernetes sources")
 	upCmd.Flags().String("hyperkube-image", "", "Kubernetes hyperkube image to use (if unset, upstream k8s is installed)")
 	upCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
