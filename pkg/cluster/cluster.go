@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -344,7 +345,7 @@ func prepareBaseRootfs(rootfsDir string, clusterSettings *ClusterSettings) error
 		return err
 	}
 
-	buf, err = ExecuteTemplate(KubeadmConfigTmpl, clusterSettings)
+	buf, err = executeTemplateKubeadmConfig(kubeadmVersion, clusterSettings)
 	if err != nil {
 		return err
 	}
@@ -468,9 +469,6 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) 
 	if err := kubeadmInit(kubeadmVersion, masterMachine.Name, cliWriter); err != nil {
 		return errors.Wrapf(err, "failed to kubeadm init %q", masterMachine.Name)
 	}
-	if err := applyNetworkPlugin(masterMachine.Name, cniPlugin, cliWriter); err != nil {
-		return errors.Wrapf(err, "Failed to apply network plugin %q", cniPlugin)
-	}
 
 	adminKubeconfigSource := path.Join(c.MachineRootfsPath(), masterMachine.Name, "etc/kubernetes/admin.conf")
 	if err := fs.CopyFile(adminKubeconfigSource, c.AdminKubeconfigPath()); err != nil {
@@ -499,6 +497,12 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir string, cniPlugin string) 
 	if failed {
 		return errors.Errorf("provisioning the worker nodes with kubeadm didn't succeed")
 	}
+
+	kubectlPath := path.Join(c.BaseRootfsPath(), "usr/bin/kubectl")
+	if err := applyNetworkPlugin(kubectlPath, c.AdminKubeconfigPath(), cniPlugin, cliWriter); err != nil {
+		return errors.Wrapf(err, "Failed to apply network plugin %q", cniPlugin)
+	}
+
 	return nil
 }
 
@@ -731,7 +735,13 @@ func getKubeadmApiVersion(kubeadmVersionStr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if isLargerEqual111.Check(kubeadmVersion) {
+	isLargerEqual113, err := semver.NewConstraint(">= 1.13")
+	if err != nil {
+		return "", err
+	}
+	if isLargerEqual113.Check(kubeadmVersion) {
+		kubeadmApiVersion = "v1beta1"
+	} else if isLargerEqual111.Check(kubeadmVersion) {
 		kubeadmApiVersion = "v1alpha2"
 	} else {
 		kubeadmApiVersion = "v1alpha1"
@@ -739,26 +749,53 @@ func getKubeadmApiVersion(kubeadmVersionStr string) (string, error) {
 	return kubeadmApiVersion, nil
 }
 
-func applyNetworkPlugin(machineName string, cniPlugin string, outWriter io.Writer) error {
+func executeTemplateKubeadmConfig(kubeadmVersionStr string, clusterSettings *ClusterSettings) (bytes.Buffer, error) {
+	buf := bytes.Buffer{}
+
+	kubeadmVersion, err := semver.NewVersion(kubeadmVersionStr)
+	if err != nil {
+		return buf, err
+	}
+	isLargerEqual113, err := semver.NewConstraint(">= 1.13")
+	if err != nil {
+		return buf, err
+	}
+
+	if isLargerEqual113.Check(kubeadmVersion) {
+		buf, err = ExecuteTemplate(KubeadmConfigBetaTmpl, clusterSettings)
+		if err != nil {
+			return buf, err
+		}
+	} else {
+		buf, err = ExecuteTemplate(KubeadmConfigAlphaTmpl, clusterSettings)
+		if err != nil {
+			return buf, err
+		}
+	}
+
+	return buf, nil
+}
+
+func applyNetworkPlugin(kubectlPath, kubeconfigPath string, cniPlugin string, outWriter io.Writer) error {
 	switch cniPlugin {
 	case "weave":
-		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", weaveNet)
+		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", weaveNet).Output()
 		return err
 	case "flannel":
-		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", flannelNet)
+		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", flannelNet).Output()
 		return err
 	case "canal":
-		_, err1 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", canalRBAC)
-		_, err2 := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", canalNet)
+		_, err1 := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", canalRBAC).Output()
+		_, err2 := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", canalNet).Output()
 		if err1 != nil {
 			return err1
 		}
 		return err2
 	case "calico":
-		if _, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", calicoRBAC); err != nil {
+		if _, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", calicoRBAC).Output(); err != nil {
 			return err
 		}
-		_, err := machinectl.RunCommand(outWriter, nil, "", "shell", machineName, "/usr/bin/kubectl", "apply", "-f", "/etc/cni/calico.yaml")
+		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", "/etc/cni/calico.yaml").Output()
 		return err
 	default:
 		return errors.Errorf("Incorrect cni plugin %q", cniPlugin)
