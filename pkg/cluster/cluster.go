@@ -73,7 +73,7 @@ func randString(n int) string {
 
 const (
 	validNameRegexpStr = "^[a-zA-Z0-9-]{1,50}$"
-	weaveNet           = "https://github.com/weaveworks/weave/releases/download/v2.0.5/weave-daemonset-k8s-1.7.yaml"
+	weaveNet           = "https://github.com/weaveworks/weave/releases/download/v2.5.1/weave-daemonset-k8s-1.8.yaml"
 	flannelNet         = "https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
 	calicoRBAC         = "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
 
