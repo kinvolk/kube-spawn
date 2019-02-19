@@ -499,7 +499,8 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir, cniPlugin, flatcarChannel
 	}
 
 	kubectlPath := path.Join(c.BaseRootfsPath(), "usr/bin/kubectl")
-	if err := applyNetworkPlugin(kubectlPath, c.AdminKubeconfigPath(), cniPlugin, cliWriter); err != nil {
+	cniConfigDirPath := path.Join(c.BaseRootfsPath(), "etc/cni")
+	if err := applyNetworkPlugin(kubectlPath, c.AdminKubeconfigPath(), cniConfigDirPath, cniPlugin, cliWriter); err != nil {
 		return errors.Wrapf(err, "Failed to apply network plugin %q", cniPlugin)
 	}
 
@@ -776,7 +777,7 @@ func executeTemplateKubeadmConfig(kubeadmVersionStr string, clusterSettings *Clu
 	return buf, nil
 }
 
-func applyNetworkPlugin(kubectlPath, kubeconfigPath string, cniPlugin string, outWriter io.Writer) error {
+func applyNetworkPlugin(kubectlPath, kubeconfigPath, cniConfigDirPath string, cniPlugin string, outWriter io.Writer) error {
 	switch cniPlugin {
 	case "weave":
 		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", weaveNet).Output()
@@ -795,7 +796,7 @@ func applyNetworkPlugin(kubectlPath, kubeconfigPath string, cniPlugin string, ou
 		if _, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", calicoRBAC).Output(); err != nil {
 			return err
 		}
-		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", "/etc/cni/calico.yaml").Output()
+		_, err := exec.Command(kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", path.Join(cniConfigDirPath, "calico.yaml")).Output()
 		return err
 	default:
 		return errors.Errorf("Incorrect cni plugin %q", cniPlugin)
