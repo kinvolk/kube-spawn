@@ -40,6 +40,7 @@ func init() {
 	startCmd.Flags().IntP("nodes", "n", 3, "Number of nodes to start")
 	startCmd.Flags().String("cni-plugin-dir", "/opt/cni/bin", "Path to directory with CNI plugins")
 	startCmd.Flags().String("cni-plugin", "weave", "CNI plugin (weave, flannel, calico, canal)")
+	startCmd.Flags().String("flatcar-channel", "alpha", "Channel for Flatcar Linux (alpha, beta, stable)")
 }
 
 func runStart(cmd *cobra.Command, args []string) {
@@ -57,13 +58,14 @@ func doStart() {
 	numberNodes := viper.GetInt("nodes")
 	cniPluginDir := viper.GetString("cni-plugin-dir")
 	cniPlugin := viper.GetString("cni-plugin")
+	flatcarChannel := viper.GetString("flatcar-channel")
 
 	kluster, err := cluster.New(path.Join(kubespawnDir, "clusters", clusterName), clusterName)
 	if err != nil {
 		log.Fatalf("Failed to create cluster object: %v", err)
 	}
 
-	if err := kluster.Start(numberNodes, cniPluginDir, cniPlugin); err != nil {
+	if err := kluster.Start(numberNodes, cniPluginDir, cniPlugin, flatcarChannel); err != nil {
 		log.Fatalf("Failed to start cluster: %v", err)
 	}
 
