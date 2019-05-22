@@ -1,5 +1,6 @@
 FROM golang:latest
 
+ENV GOCACHE /tmp/.cache
 ENV GOPATH /go
 ENV PATH "/go/bin:${PATH}"
 
