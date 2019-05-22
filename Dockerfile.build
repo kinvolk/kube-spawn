@@ -1,13 +1,8 @@
 FROM golang:latest
 
 ENV GOCACHE /tmp/.cache
-ENV GOPATH /go
 ENV PATH "/go/bin:${PATH}"
 
-RUN go get -u github.com/golang/dep/...
-
-RUN mkdir -p /go/src/github.com/kinvolk/kube-spawn
-
-WORKDIR /go/src/github.com/kinvolk/kube-spawn
+WORKDIR /usr/src/kube-spawn
 
 ENTRYPOINT ["make", "DOCKERIZED=n"]
