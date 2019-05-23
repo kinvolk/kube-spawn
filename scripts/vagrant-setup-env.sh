@@ -29,10 +29,12 @@ GO111MODULE=off go get -u github.com/containernetworking/plugins/plugins/...
 
 DOCKERIZED=n make all
 
-sudo machinectl show-image flatcar || sudo machinectl pull-raw --verify=no https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2 flatcar
+if ! sudo machinectl show-image flatcar; then
+  sudo machinectl pull-raw --verify=no https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2 flatcar && rm /var/lib/machines/.raw-https*
+fi
 
 test -d /var/lib/kube-spawn/clusters/default || sudo GOPATH=$GOPATH ./kube-spawn create --cni-plugin-dir=$GOPATH/bin
-sudo GOPATH=$GOPATH ./kube-spawn start --cni-plugin-dir=$GOPATH/bin --nodes=2
+sudo GOPATH=$GOPATH ./kube-spawn start --cni-plugin-dir=$GOPATH/bin --nodes=2 && (rm /var/lib/machines/.raw-https* || true)
 
 if [ "\$KUBESPAWN_REDIRECT_TRAFFIC" == "true" ]; then
 	# Redirect traffic from the VM to kube-apiserver inside container
