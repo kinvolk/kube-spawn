@@ -31,7 +31,7 @@ DOCKERIZED=n make all
 
 sudo machinectl show-image flatcar || sudo machinectl pull-raw --verify=no https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2 flatcar
 
-sudo GOPATH=$GOPATH ./kube-spawn create --cni-plugin-dir=$GOPATH/bin
+test -d /var/lib/kube-spawn/clusters/default || sudo GOPATH=$GOPATH ./kube-spawn create --cni-plugin-dir=$GOPATH/bin
 sudo GOPATH=$GOPATH ./kube-spawn start --cni-plugin-dir=$GOPATH/bin --nodes=2
 
 if [ "\$KUBESPAWN_REDIRECT_TRAFFIC" == "true" ]; then
