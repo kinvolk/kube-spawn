@@ -53,6 +53,8 @@ fi
 EOF
 fi
 
-KUBERNETES_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-sudo curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
-sudo chmod +x /usr/local/bin/kubectl
+if [[ ! -f /usr/local/bin/kubectl ]]; then
+  KUBERNETES_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  sudo curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+  sudo chmod +x /usr/local/bin/kubectl
+fi
