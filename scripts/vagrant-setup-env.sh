@@ -19,7 +19,7 @@ echo 'Writing build.sh'
 if [[ ! -f $HOME/build.sh ]]; then
 	cat >>"$HOME/build.sh" <<-EOF
 #!/bin/bash
-set -xe
+set -xeo pipefail
 
 export PATH=$PATH:/usr/lib/go-1.12/bin
 
