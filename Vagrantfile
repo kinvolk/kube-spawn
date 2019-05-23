@@ -5,7 +5,7 @@ ENV["TERM"] = "xterm-256color"
 ENV["LC_ALL"] = "en_US.UTF-8"
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/28-cloud-base" # defaults to fedora
+  config.vm.box = "fedora/30-cloud-base" # defaults to fedora
 
   # common parts
   if Vagrant.has_plugin?("vagrant-vbguest")
@@ -22,7 +22,7 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--cpus", "2"]
   end
 
-  # Fedora 28
+  # Fedora 30
   config.vm.define "fedora", primary: true do |fedora|
     config.vm.provision "shell", inline: "dnf install -y btrfs-progs git go iptables libselinux-utils make polkit qemu-img rinetd systemd-container"
 
