@@ -23,7 +23,7 @@ set -xe
 
 cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
-go get -u github.com/containernetworking/plugins/plugins/...
+GO111MODULE=off go get -u github.com/containernetworking/plugins/plugins/...
 
 DOCKERIZED=n make all
 
