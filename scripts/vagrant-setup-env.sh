@@ -21,6 +21,8 @@ if [[ ! -f $HOME/build.sh ]]; then
 #!/bin/bash
 set -xe
 
+export PATH=$PATH:/usr/lib/go-1.12/bin
+
 cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
 GO111MODULE=off go get -u github.com/containernetworking/plugins/plugins/...
