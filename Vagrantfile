@@ -45,10 +45,10 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  # Ubuntu 18.04 (Artful)
+  # Ubuntu 19.04 (Disco)
   config.vm.define "ubuntu", autostart: false do |ubuntu|
-    config.vm.box = "generic/ubuntu1804"
-    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang iptables make policykit-1 qemu-utils rinetd selinux-utils systemd-container"
+    config.vm.box = "generic/ubuntu1904"
+    config.vm.provision "shell", inline: "apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs git golang-1.12 iptables make policykit-1 qemu-utils rinetd selinux-utils systemd-container"
 
     config.vm.synced_folder ".", "/vagrant", disabled: true
     config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/kinvolk/kube-spawn",
