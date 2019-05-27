@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -euo pipefail
 
 export KUBESPAWN_AUTOBUILD="true"
 export KUBESPAWN_DISTRO=${KUBESPAWN_DISTRO:-fedora}
