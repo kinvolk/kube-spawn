@@ -19,18 +19,22 @@ echo 'Writing build.sh'
 if [[ ! -f $HOME/build.sh ]]; then
 	cat >>"$HOME/build.sh" <<-EOF
 #!/bin/bash
-set -xe
+set -xeo pipefail
+
+export PATH=$PATH:/usr/lib/go-1.12/bin
 
 cd $GOPATH/src/github.com/kinvolk/kube-spawn
 
-go get -u github.com/containernetworking/plugins/plugins/...
+GO111MODULE=off go get -u github.com/containernetworking/plugins/plugins/...
 
 DOCKERIZED=n make all
 
-sudo machinectl show-image flatcar || sudo machinectl pull-raw --verify=no https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2 flatcar
+if ! sudo machinectl show-image flatcar; then
+  sudo machinectl pull-raw --verify=no https://alpha.release.flatcar-linux.net/amd64-usr/current/flatcar_developer_container.bin.bz2 flatcar && rm /var/lib/machines/.raw-https*
+fi
 
-sudo GOPATH=$GOPATH ./kube-spawn create --cni-plugin-dir=$GOPATH/bin
-sudo GOPATH=$GOPATH ./kube-spawn start --cni-plugin-dir=$GOPATH/bin --nodes=2
+test -d /var/lib/kube-spawn/clusters/default || sudo GOPATH=$GOPATH ./kube-spawn create --cni-plugin-dir=$GOPATH/bin
+sudo GOPATH=$GOPATH ./kube-spawn start --cni-plugin-dir=$GOPATH/bin --nodes=2 && (rm /var/lib/machines/.raw-https* || true)
 
 if [ "\$KUBESPAWN_REDIRECT_TRAFFIC" == "true" ]; then
 	# Redirect traffic from the VM to kube-apiserver inside container
@@ -51,6 +55,8 @@ fi
 EOF
 fi
 
-KUBERNETES_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-sudo curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
-sudo chmod +x /usr/local/bin/kubectl
+if [[ ! -f /usr/local/bin/kubectl ]]; then
+  KUBERNETES_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  sudo curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+  sudo chmod +x /usr/local/bin/kubectl
+fi

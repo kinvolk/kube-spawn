@@ -62,19 +62,30 @@ func GetPoolSize(baseImageName string, nodes int) (int64, error) {
 	var extraSizeRatio float64 = 0.5
 	var err error
 
-	baseImageAbspath := path.Join(machinesDir, baseImageName+".raw")
-
-	if poolSize, err = getAllocatedFileSize(machinesImage); err != nil {
+	// Select correct path to check disk space. On older systemd versions
+	// machinesImage is used.
+	p := machinesDir
+	poolExists, err := CheckPoolExists()
+	if err != nil {
 		return 0, err
+	} else if poolExists {
+		p = machinesImage
+
+		if poolSize, err = getAllocatedFileSize(machinesImage); err != nil {
+			return 0, err
+		}
+
+		extraSize = int64(float64(poolSize) * extraSizeRatio)
 	}
-	extraSize = int64(float64(poolSize) * extraSizeRatio)
+
+	baseImageAbspath := path.Join(machinesDir, baseImageName+".raw")
 
 	if biSize, err = getAllocatedFileSize(baseImageAbspath); err != nil {
 		return 0, err
 	}
 	extraSize += int64(float64(biSize)*extraSizeRatio) * int64(nodes)
 
-	varDir, _ := path.Split(machinesImage)
+	varDir, _ := path.Split(p)
 	freeVolSpace, err := getVolFreeSpace(varDir)
 	if err != nil {
 		return 0, err
@@ -93,6 +104,17 @@ func GetPoolSize(baseImageName string, nodes int) (int64, error) {
 	poolSize += extraSize
 
 	return poolSize, nil
+}
+
+func CheckPoolExists() (bool, error) {
+	if _, err := os.Stat(machinesImage); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func setPoolLimit(poolSize int64) error {

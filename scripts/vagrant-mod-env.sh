@@ -52,5 +52,5 @@ NF_HASHSIZE=/sys/module/nf_conntrack/parameters/hashsize
 # version on Ubuntu 17.10.
 sudo sed -i -e 's/^#*.*DNSStubListener=.*$/DNSStubListener=no/' /etc/systemd/resolved.conf
 sudo sed -i -e 's/nameserver 127.0.0.53/nameserver 8.8.8.8/' /etc/resolv.conf
-systemctl is-active systemd-resolved >& /dev/null && sudo systemctl stop systemd-resolved
-systemctl is-enabled systemd-resolved >& /dev/null && sudo systemctl disable systemd-resolved
+systemctl is-active systemd-resolved >& /dev/null && sudo systemctl stop systemd-resolved || true
+systemctl is-enabled systemd-resolved >& /dev/null && sudo systemctl disable systemd-resolved || true

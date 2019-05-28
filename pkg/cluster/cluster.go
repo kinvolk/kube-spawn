@@ -368,13 +368,27 @@ func (c *Cluster) Start(numberNodes int, cniPluginDir, cniPlugin, flatcarChannel
 		return err
 	}
 
-	poolSize, err := bootstrap.GetPoolSize(bootstrap.BaseImageName, numberNodes)
+	poolExists, err := bootstrap.CheckPoolExists()
 	if err != nil {
 		return err
 	}
-	log.Printf("new poolSize to be : %d\n", poolSize)
-	if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
+
+	// TODO This shouldn't be hardcoded, but I don't know where to put it yet
+	imageName := "flatcar"
+	if poolExists {
+		imageName = bootstrap.BaseImageName
+	}
+
+	poolSize, err := bootstrap.GetPoolSize(imageName, numberNodes)
+	if err != nil {
 		return err
+	}
+
+	if poolExists {
+		log.Printf("new poolSize to be : %d\n", poolSize)
+		if err := bootstrap.EnlargeStoragePool(poolSize); err != nil {
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
